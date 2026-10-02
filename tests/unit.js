@@ -65,7 +65,7 @@ const { launch, openApp, check, summary } = require('./lib');
     r.valid = PQ.parsePayload(base());
     r.notObj = PQ.parsePayload(null); r.arr = PQ.parsePayload([]); r.str = PQ.parsePayload('x');
     r.wrongFmt = PQ.parsePayload(Object.assign(base(), { format: 'test-parrot/package' }));
-    r.newer = PQ.parsePayload(Object.assign(base(), { schemaVersion: 2 }));
+    r.newer = PQ.parsePayload(Object.assign(base(), { schemaVersion: 3 }));
     r.zero = PQ.parsePayload(Object.assign(base(), { schemaVersion: 0 }));
     r.strVer = PQ.parsePayload(Object.assign(base(), { schemaVersion: '1' }));
     r.feat = PQ.parsePayload(Object.assign(base(), { requiredFeatures: ['hologram'] }));
@@ -294,6 +294,128 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
     catch (e) { return { r: e.code + ': ' + e.message, ms: Math.round(performance.now() - t0), compressed: z.length }; }
   });
   check('a decompression bomb (300 MB from ~300 KB) is stopped', /too-big|no-data/.test(bomb.r) , bomb);
+
+
+  /* ---------- I. test planning: versions, shuffle, keys ---------- */
+  console.log('I. test planning (Version A / B)');
+  const I = await page.evaluate(() => {
+    const T = '2026-10-01T10:00:00.000Z';
+    const base = (id, type, answer, extra) => Object.assign({ id, type, prompt: 'Prompt ' + id, course: '', unit: '', tags: [], difficulty: 'easy', status: 'ready', stimulusId: null, imageIds: [], table: null, answer, notes: '', created: T, updated: T }, extra || {});
+    const mc = (id, n, extra) => base(id, 'mc', { options: ['opt0-' + id, 'opt1-' + id, 'opt2-' + id, 'opt3-' + id], correct: n }, extra);
+    const qs = [];
+    for (let i = 0; i < 12; i++) qs.push(mc('q' + i, i % 4));
+    qs.push(mc('qa', 1, { stimulusId: 's1' })); qs.push(mc('qb', 2, { stimulusId: 's1' }));
+    qs.push(mc('qk', 3, { keepOrder: true, answer: { options: ['A first', 'B second', 'C third', 'All of the above'], correct: 3 } }));
+    qs.push(mc('qblank', 2, { answer: { options: ['x', '', 'z', ''], correct: 2 } }));
+    qs.push(mc('qghost', 0, { stimulusId: 'no-such-stimulus' }));
+    qs.push(base('qtf', 'tf', { correct: false }));
+    qs.push(base('qnum', 'numeric', { value: '1.00', units: 'g', tolerance: 0.01 }));
+    qs.push(base('qshort', 'short', { lines: 5, rubric: 'Mention density' }));
+    qs.push(base('qm', 'matching', { pairs: [{ left: 'Na', right: 'Sodium' }, { left: 'K', right: 'Potassium' }, { left: 'Fe', right: 'Iron' }, { left: 'Cu', right: 'Copper' }] }));
+    const stimuli = [{ id: 's1', title: 'Passage', text: 'x', imageIds: [], table: null, created: T, updated: T }];
+    const ids = ['q0', 'qa', 'q1', 'qk', 'q2', 'qb', 'qblank', 'qghost', 'qtf', 'q3', 'qnum', 'qshort', 'qm', 'q4', 'q5', 'q6', 'q7', 'q8', 'DELETED-ID'];
+    const test = { id: 't', title: 'T', course: 'C', questionIds: ids, seed: 12345, created: T, updated: T };
+    const A = PQ.planTest(test, qs, stimuli, 'A'), B = PQ.planTest(test, qs, stimuli, 'B');
+    const flat = p => p.blocks.flatMap(b => b.items);
+    const r = {};
+    r.aOrder = flat(A).map(i => i.q.id);
+    r.bOrder = flat(B).map(i => i.q.id);
+    r.aNums = flat(A).map(i => i.number); r.bNums = flat(B).map(i => i.number);
+    r.aNumsEqual = flat(A).every(i => i.number === i.aNumber);
+    r.bMap = flat(B).map(i => i.aNumber).sort((x, y) => x - y);
+    r.missing = A.missing;
+    r.total = [A.total, B.total];
+    r.aOptsPlain = flat(A).filter(i => i.q.type === 'mc').every(i => i.view.options.every((o, k) => k === 0 || true) && i.view.options.map(o => o.orig).join() === i.view.options.map(o => o.orig).slice().sort().join());
+    // grouping: qa and qb together (A and B), qghost standalone (stimulus not in bank)
+    const grpA = A.blocks.find(b => b.stimulus), grpB = B.blocks.find(b => b.stimulus);
+    r.grpA = grpA.items.map(i => i.q.id); r.grpB = grpB.items.map(i => i.q.id);
+    r.ghostStandalone = A.blocks.some(b => !b.stimulus && b.items.length === 1 && b.items[0].q.id === 'qghost');
+    // B really shuffles order (this seed) and is not identical to A
+    r.bDiffers = r.aOrder.join() !== r.bOrder.join();
+    // MC views: correct points at the right text; shuffled flag; keepOrder respected; blanks dropped
+    const bMc = flat(B).filter(i => i.q.type === 'mc');
+    r.bCorrectOk = bMc.every(i => i.view.correct < 0 || (i.view.options[i.view.correct].orig === i.q.answer.correct && i.view.options[i.view.correct].text === i.q.answer.options[i.q.answer.correct]));
+    r.someShuffled = bMc.filter(i => i.q.id !== 'qk').some(i => i.view.options.map(o => o.orig).join() !== [0, 1, 2, 3].join());
+    r.qkB = flat(B).find(i => i.q.id === 'qk').view.options.map(o => o.text);
+    r.qkA = flat(A).find(i => i.q.id === 'qk').view.options.map(o => o.text);
+    r.qkKeyB = PQ.keyText(flat(B).find(i => i.q.id === 'qk'));
+    const blankA = flat(A).find(i => i.q.id === 'qblank').view, blankB = flat(B).find(i => i.q.id === 'qblank').view;
+    r.blank = [blankA.options.map(o => o.text).join('|'), blankA.correct, blankB.options.length, blankB.options[blankB.correct].text];
+    // matching: key lines up; right column is never left in true order
+    const mA = flat(A).find(i => i.q.id === 'qm').view, mB = flat(B).find(i => i.q.id === 'qm').view;
+    const pairs = qs.find(q => q.id === 'qm').answer.pairs;
+    r.matchOk = [mA, mB].every(v => v.left.every((l, i) => pairs.find(p => p.left === l).right === v.right[v.key[i]]));
+    r.matchShuffled = [mA, mB].every(v => v.right.join() !== pairs.map(p => p.right).join());
+    // determinism
+    r.same = JSON.stringify(PQ.planTest(test, qs, stimuli, 'B')) === JSON.stringify(B);
+    r.diffSeed = JSON.stringify(flat(PQ.planTest(Object.assign({}, test, { seed: 999 }), qs, stimuli, 'B')).map(i => i.q.id)) !== JSON.stringify(r.bOrder);
+    // independence: editing/removing other questions does not change a question's option order
+    const q5 = flat(B).find(i => i.q.id === 'q5').view.options.map(o => o.orig).join();
+    const qs2 = qs.map(q => q.id === 'q3' ? Object.assign({}, q, { prompt: 'edited' }) : q);
+    const test2 = Object.assign({}, test, { questionIds: ids.filter(x => x !== 'q3' && x !== 'q0') });
+    r.indep = flat(PQ.planTest(test2, qs2, stimuli, 'B')).find(i => i.q.id === 'q5').view.options.map(o => o.orig).join() === q5;
+    // keys
+    const kA = PQ.keyEntries(A), kB = PQ.keyEntries(B);
+    r.keyCount = [kA.length, kB.length];
+    const itemQ3B = flat(B).find(i => i.q.id === 'q3'), entQ3B = kB.find(e => e.item.q.id === 'q3');
+    r.keyBletter = entQ3B.text.startsWith(String.fromCharCode(65 + itemQ3B.view.correct) + '. opt' + 0 + '-q3') || entQ3B.text.startsWith(String.fromCharCode(65 + itemQ3B.view.correct) + '. ');
+    r.keyBcorrectText = entQ3B.text.endsWith(qs.find(q => q.id === 'q3').answer.options[qs.find(q => q.id === 'q3').answer.correct]);
+    r.keyTypes = [PQ.keyText(flat(A).find(i => i.q.id === 'qtf')), PQ.keyText(flat(A).find(i => i.q.id === 'qnum')), PQ.keyText(flat(A).find(i => i.q.id === 'qshort')), PQ.keyText(flat(A).find(i => i.q.id === 'qm'))];
+    // prng sanity
+    const rnd = PQ.mulberry32(PQ.hashSeed(1, 'x')); let sum = 0, min = 1, max = 0; for (let i = 0; i < 20000; i++) { const v = rnd(); sum += v; min = Math.min(min, v); max = Math.max(max, v); }
+    r.prng = [sum / 20000, min, max];
+    // an empty test
+    const empty = PQ.planTest({ id: 'e', title: 'E', course: '', questionIds: [], seed: 1 }, qs, stimuli, 'B');
+    r.empty = [empty.total, empty.blocks.length];
+    return r;
+  });
+  check('A: your order, stimulus questions pulled together, unknown stimulus stays standalone', I.aOrder.slice(0, 8).join() === 'q0,qa,qb,q1,qk,q2,qblank,qghost', I.aOrder.slice(0, 8));
+  check('A: numbered 1..N continuously and A number = number', I.aNums.join() === I.aNums.map((_, i) => i + 1).join() && I.aNumsEqual, I.aNums);
+  check('a deleted question id is skipped and reported', I.missing.join() === 'DELETED-ID' && I.total[0] === 18, { missing: I.missing, total: I.total });
+  check('B: same questions, different order, numbered 1..N', I.bDiffers && [...I.bOrder].sort().join() === [...I.aOrder].sort().join() && I.bNums.join() === I.bNums.map((_, i) => i + 1).join(), { a: I.aOrder, b: I.bOrder });
+  check('B -> A numbers are a complete one-to-one mapping', I.bMap.join() === I.bMap.map((_, i) => i + 1).join(), I.bMap);
+  check('stimulus questions stay together as one block in A and in B', I.grpA.join() === 'qa,qb' && I.grpB.join() === 'qa,qb', { a: I.grpA, b: I.grpB });
+  check('A options keep their order', I.aOptsPlain);
+  check('B shuffles MC options, and the correct pointer follows the right option text', I.someShuffled && I.bCorrectOk);
+  check('keepOrder question is NOT shuffled in B (e.g. "All of the above")', I.qkB.join('|') === I.qkA.join('|') && I.qkB[3] === 'All of the above', { a: I.qkA, b: I.qkB });
+  check('keepOrder question key is still right', /^D\. All of the above$/.test(I.qkKeyB), I.qkKeyB);
+  check('blank options are not printed and the correct pointer still works', I.blank[0] === 'x|z' && I.blank[1] === 1 && I.blank[2] === 2 && I.blank[3] === 'z', I.blank);
+  check('matching: every left item lines up with its true partner via the key (A and B)', I.matchOk);
+  check('matching: right column is never printed in true order', I.matchShuffled);
+  check('same inputs always give the identical test (reprints identically)', I.same);
+  check('a different seed gives a different Version B', I.diffSeed);
+  check('editing or removing OTHER questions does not change how a question\'s options shuffle', I.indep);
+  check('answer keys have one entry per question, per version', I.keyCount.join() === '18,18', I.keyCount);
+  check('B key shows the letter from B\'s own shuffled options and the true answer text', I.keyBletter && I.keyBcorrectText, I.keyBletter);
+  check('keys for tf / numeric / short / matching', I.keyTypes[0] === 'False' && /^1\.00 g\s+\(±0\.01\)$/.test(I.keyTypes[1]) && I.keyTypes[2] === 'Mention density' && /^1-[A-D]\s+2-[A-D]\s+3-[A-D]\s+4-[A-D]$/.test(I.keyTypes[3]), I.keyTypes);
+  check('PRNG output is in [0,1) with a sane mean', I.prng[0] > 0.48 && I.prng[0] < 0.52 && I.prng[1] >= 0 && I.prng[2] < 1, I.prng);
+  check('an empty test plans to nothing without error', I.empty.join() === '0,0');
+
+  /* ---------- J. schema 2 and the previous version's bank ---------- */
+  console.log('J. schema 2 and importing a bank from the previous version');
+  const fx = fs.readFileSync(require('path').join(__dirname, 'fixtures', 'bank-schema1-v0.1.0.pdf')).toString('base64');
+  const J = await page.evaluate(async fx => {
+    const u = Uint8Array.from(atob(fx), c => c.charCodeAt(0));
+    const raw = await PQ.readPdfPayload(u);
+    const parsed = PQ.parsePayload(raw);
+    const T = '2026-10-01T15:00:00Z';
+    const q = Object.assign({ id: 'a', type: 'tf', prompt: 'p', course: '', unit: '', tags: [], difficulty: 'easy', status: 'ready', stimulusId: null, imageIds: [], table: null, answer: { correct: true }, notes: '', created: T, updated: T });
+    const p2 = (extra) => ({ format: 'prime-questions', schemaVersion: 2, appVersion: '9', requiredFeatures: [], exportedAt: T, questions: [Object.assign({}, q, extra)], stimuli: [], tests: [], images: {} });
+    return {
+      rawSchema: raw.schemaVersion, rawApp: raw.appVersion, ok: parsed.ok, errors: parsed.errors,
+      migratedSchema: parsed.ok && parsed.payload.schemaVersion, counts: parsed.ok && [parsed.payload.questions.length, parsed.payload.stimuli.length, parsed.payload.tests.length, Object.keys(parsed.payload.images).length],
+      untouched: parsed.ok && JSON.stringify(parsed.payload.questions) === JSON.stringify(raw.questions),
+      keepTrue: PQ.parsePayload(p2({ keepOrder: true })).ok, keepFalse: PQ.parsePayload(p2({ keepOrder: false })).ok, keepAbsent: PQ.parsePayload(p2({})).ok,
+      keepBad: PQ.parsePayload(p2({ keepOrder: 'yes' })).ok, v3: PQ.parsePayload(Object.assign(p2({}), { schemaVersion: 3 })).code,
+      appSchema: PQ.SCHEMA_VERSION, migrations: Object.keys(PQ.MIGRATIONS).join()
+    };
+  }, fx);
+  check('fixture really is a schema 1 bank written by v0.1.0', J.rawSchema === 1 && J.rawApp === '0.1.0', J);
+  check('the v0.1.0 bank imports (migrated 1 -> 2) and keeps every record untouched', J.ok && J.migratedSchema === 2 && J.untouched, J.errors);
+  check('fixture content: 7 questions, 1 stimulus, 1 test, 1 image', JSON.stringify(J.counts) === '[7,1,1,1]', J.counts);
+  check('schema is 2 with a 1->2 migration', J.appSchema === 2 && J.migrations === '1', J);
+  check('keepOrder true/false/absent accepted; non-boolean refused', J.keepTrue && J.keepFalse && J.keepAbsent && !J.keepBad);
+  check('a schema 3 bank is refused as newer', J.v3 === 'newer', J.v3);
 
   check('no console errors during the whole suite', problems.length === 0, problems);
   const fails = summary();

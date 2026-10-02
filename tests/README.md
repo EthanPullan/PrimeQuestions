@@ -16,7 +16,7 @@ inside the repo.
 ## Run
 ```
 node tests/run.js          # everything
-node tests/run.js unit     # one script (smoke, unit or ui)
+node tests/run.js unit     # one script (smoke, unit, ui or phase2)
 ```
 Output files (exported PDFs, screenshots) go to a temporary folder. Set
 `PQ_TEST_OUT` to choose where, for example to look at the rendered pages. They are
@@ -34,5 +34,17 @@ never written into the repo.
   every type, insert buttons, the unsaved-changes guard, export, wipe the
   database, import (the round trip), conflicts, refused files, delete
   confirmation, other apps' storage left alone, and the phone layout.
+
+- `phase2.js`: stimuli (text, tables, images), image resizing and refusal of bad
+  files, the question editor's stimulus/table/keep-order controls, the test builder,
+  Version A/B previews and keys, and printing. Printing is checked by turning the
+  paper into PDFs at Letter, Legal and A4 and reading them with poppler: page sizes,
+  greyscale only, and a property test over many layouts asserting that no question,
+  and no stimulus group that fits on a page, is ever split across pages. It also
+  checks that deletes keep tests and questions in step, imports the real schema-1
+  bank in `fixtures/` (written by app v0.1.0), and runs a full round trip.
+
+`fixtures/bank-schema1-v0.1.0.pdf` was produced by the v0.1.0 app before schema 2
+existed. Do not regenerate it with a newer app: its job is to be an old file.
 
 These run in headless Chromium only. Firefox, Safari and iPad are not covered.
