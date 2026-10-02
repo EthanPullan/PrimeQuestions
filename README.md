@@ -6,7 +6,7 @@ or use the hosted copy at <https://ethanpullan.github.io/PrimeQuestions/>.
 
 There are no accounts and no server. Your questions are stored in your browser.
 
-## What it does today (v0.3.0)
+## What it does today (v0.4.0)
 
 The sidebar has four places, like Test Parrot: **Home**, **Tests**,
 **Question Banks** and **Imports**.
@@ -39,9 +39,16 @@ The sidebar has four places, like Test Parrot: **Home**, **Tests**,
   and each multiple-choice question's options, the same way every time you print
   it (the shuffle is saved with the test). A multiple-choice question can be set
   to keep its options in order in Version B (for “All of the above”).
-- Print the test or the answer key for either version, on Letter, Legal or A4. The
-  page is plain black on white so it copies cleanly, and no question is split
-  across pages. Nothing about students is stored.
+- The **Format** menu sets how the paper looks, per test: paper size (Letter, Legal,
+  A4), heading size and text size (Small, Medium, Large), margins (Narrow, Normal,
+  Wide or your own in millimetres), and the question style: **Standard** (circle
+  the letter or T/F), **Classic** (a blank before each multiple-choice and
+  true/false number, ruled lines for written answers) or **Condensed** (tighter
+  spacing, short options across the page, closer-ruled lines to save paper).
+  A test you have not changed prints exactly as before.
+- Print the test or the answer key for either version. The page is plain black on
+  white so it copies cleanly, and no question is split across pages. Nothing about
+  students is stored.
 - The Version B answer key says which Version A question each one is and shows the
   correct answer as printed on Version B.
 

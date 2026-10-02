@@ -16,7 +16,7 @@ inside the repo.
 ## Run
 ```
 node tests/run.js          # everything
-node tests/run.js unit     # one script (smoke, unit, ui, phase2 or phase3)
+node tests/run.js unit     # one script (smoke, unit, ui, phase2, phase3 or format)
 ```
 Output files (exported PDFs, screenshots) go to a temporary folder. Set
 `PQ_TEST_OUT` to choose where, for example to look at the rendered pages. They are
@@ -54,8 +54,15 @@ checks were written for the Phase 2 interface and now drive the Phase 3 one.
   printing those options, version history (including the 50-save cap), the Check
   list, editing a question from the paper and the unsaved-changes guard.
 
-`fixtures/bank-schema1-v0.1.0.pdf` (app v0.1.0) and `fixtures/bank-schema2-v0.2.0.pdf`
-(app v0.2.0) were produced by those versions before the schema moved on. Do not
+- `format.js`: the Format menu (submenus, values, checks), schema 4 settings stored on
+  the test only when changed, undo, history and the bank file, and what each setting
+  does to the printed paper, measured with poppler: margins move the text, heading and
+  text sizes scale, Classic and Condensed layouts, an untouched test printing exactly
+  as before, plain black only, and a property test that no question or stimulus group
+  splits across pages in any style, size and paper.
+
+`fixtures/bank-schema1-v0.1.0.pdf` (app v0.1.0), `fixtures/bank-schema2-v0.2.0.pdf`
+(app v0.2.0) and `fixtures/bank-schema3-v0.3.0.pdf` (app v0.3.0) were produced by those versions before the schema moved on. Do not
 regenerate them with a newer app: their job is to be old files.
 
 These run in headless Chromium only. Firefox, Safari and iPad are not covered.

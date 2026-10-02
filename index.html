@@ -217,8 +217,8 @@
 
   /* === The printed test and answer key. Plain black on white (school copiers are greyscale); no colour carries meaning.
      Layout avoids flex and grid inside the questions so page breaks stay reliable on older browsers. === */
-  .sheet{font-family:Helvetica,Arial,"Liberation Sans",sans-serif;color:#000;background:#fff;font-size:11pt;line-height:1.35;}
-  .sheet h1{font-size:18pt;margin:0 0 2pt;line-height:1.2;}
+  .sheet{font-family:Helvetica,Arial,"Liberation Sans",sans-serif;color:#000;background:#fff;font-size:var(--tp-fs,11pt);line-height:1.35;}
+  .sheet h1{font-size:var(--tp-h1,18pt);margin:0 0 2pt;line-height:1.2;}
   .sheet .tp-head{border-bottom:1.5pt solid #000;padding-bottom:8pt;margin-bottom:12pt;}
   .sheet .tp-version{float:right;font-weight:700;border:1.5pt solid #000;padding:1pt 8pt;margin-left:12pt;}
   .sheet .tp-lines{display:flex;gap:24pt;margin-top:12pt;}
@@ -297,6 +297,12 @@
   .menu-item{display:flex;align-items:center;gap:6px;width:100%;border:none;background:none;text-align:left;padding:7px 10px;border-radius:7px;cursor:pointer;font-size:13px;color:var(--ink);}
   .menu-item:hover,.menu-item:focus{background:var(--panel-2);outline:none;}
   .menu-item[disabled]{opacity:.4;cursor:not-allowed;}
+  .menu-item.has-desc{align-items:flex-start;}
+  .menu-text{display:flex;flex-direction:column;flex:1;min-width:0;}
+  .menu-desc{font-size:11.5px;color:var(--muted);line-height:1.35;margin-top:1px;white-space:normal;}
+  .menu-value{color:var(--muted);font-size:12px;margin-left:10px;}
+  .menu-arrow{color:var(--muted);margin-left:6px;}
+  .menu.submenu{z-index:960;min-width:230px;max-width:330px;}
   .menu-check{width:14px;flex:none;color:var(--ok);font-weight:700;}
   .menu-hr{height:1px;background:var(--line);margin:4px 2px;}
 
@@ -376,7 +382,7 @@
   .sheet .tp-edit{font:inherit;color:inherit;background:transparent;border:1px dashed transparent;border-radius:4px;padding:1px 4px;margin:0 0 2pt -4px;width:calc(100% + 4px);display:block;}
   .sheet .tp-edit:hover{border-color:#bbb;}
   .sheet .tp-edit:focus{outline:none;border-color:var(--accent);background:#fffdf7;}
-  .sheet .tp-title{font-size:18pt;font-weight:700;line-height:1.2;width:calc(100% - 110pt);}
+  .sheet .tp-title{font-size:var(--tp-h1,18pt);font-weight:700;line-height:1.2;width:calc(100% - 110pt);}
   .sheet .tp-subin{font-size:11pt;color:#444;}
   .sheet textarea.tp-instr{resize:none;min-height:0;font-size:11pt;line-height:1.35;margin-top:6pt;overflow:hidden;}
   .sheet .tp-addinstr{border:none;background:none;color:#777;cursor:pointer;font:inherit;font-size:10pt;padding:2pt 0;}
@@ -384,6 +390,24 @@
   .sheet button.tp-line{background:none;border-top:none;border-left:none;border-right:none;font:inherit;color:inherit;text-align:left;cursor:pointer;border-radius:0;}
   .sheet .tp-line.off{opacity:.3;border-bottom-style:dashed;}
   @media (max-width:1100px){ .exam-panel{width:340px;} }
+  /* question styles: classic = a blank before each objective number; condensed = tighter, short options across */
+  .sheet.style-classic .tp-q{padding-left:58pt;}
+  .sheet.style-classic .tp-num{left:30pt;}
+  .sheet .tp-blank{position:absolute;top:0;height:1.15em;border-bottom:1pt solid #000;}
+  .sheet .tp-numblank{left:0;width:26pt;}
+  .sheet.style-classic .tp-part{padding-left:50pt;}
+  .sheet.style-classic .tp-plab{left:28pt;}
+  .sheet .tp-plblank{left:0;width:24pt;}
+  .sheet.style-condensed{line-height:1.25;}
+  .sheet.style-condensed .tp-q{margin-bottom:7pt;}
+  .sheet.style-condensed .tp-block{margin-bottom:7pt;}
+  .sheet.style-condensed .tp-head{margin-bottom:8pt;}
+  .sheet.style-condensed .tp-opts{margin-top:3pt;}
+  .sheet.style-condensed .tp-opt{margin:1pt 0;}
+  .sheet.style-condensed .tp-opts.across .tp-opt{display:inline-block;vertical-align:top;margin:1pt 16pt 1pt 0;padding-left:16pt;white-space:nowrap;}
+  .sheet.style-condensed .tp-rule{height:16pt;}
+  .sheet.style-condensed .tp-tf,.sheet.style-condensed .tp-numeric{margin-top:3pt;}
+  .sheet.style-condensed .tp-part{margin-top:3pt;}
   #print-root{display:none;color:#000;background:#fff;}
   @media print{
     html,body{height:auto;background:#fff;}
@@ -775,8 +799,8 @@ document.addEventListener('DOMContentLoaded', () => {
 'use strict';
 
 /* === CONSTANTS === */
-const APP_VERSION = '0.3.0';
-const SCHEMA_VERSION = 3;
+const APP_VERSION = '0.4.0';
+const SCHEMA_VERSION = 4;
 const DB_VERSION = 2;                      // IndexedDB version (2 adds banks and test version history)
 const FORMAT = 'prime-questions';
 const KNOWN_FEATURES = [];                 // payload.requiredFeatures entries this app understands
@@ -791,6 +815,21 @@ const TYPE_SHORT = { mc: 'MC', tf: 'T/F', numeric: 'NUM', short: 'SHORT', matchi
 const MAX_PARTS = 12;
 const PAPER_KEYS = ['letter', 'legal', 'a4'];
 const HEADER_DEFAULT = { name: true, class: false, date: true };   // lines printed under a test's title
+// Look of the printed paper (schema 4). Each is optional on a test; absent means the default (medium, medium, standard, 16/14/18/14 mm).
+const SIZE_KEYS = ['small', 'medium', 'large'];
+const SIZE_LABEL = { small: 'Small', medium: 'Medium', large: 'Large' };
+const HEADING_PT = { small: 15, medium: 18, large: 22 }, TEXT_PT = { small: 10, medium: 11, large: 12.5 };
+const STYLE_KEYS = ['standard', 'classic', 'condensed'];
+const MARGIN_DEFAULT = { top: 16, right: 14, bottom: 18, left: 14 };      // mm
+const MARGIN_PRESETS = { narrow: { top: 10, right: 10, bottom: 10, left: 10 }, normal: MARGIN_DEFAULT, wide: { top: 25, right: 22, bottom: 25, left: 22 } };
+const MARGIN_MIN = 5, MARGIN_MAX = 40;
+const testFormat = t => ({
+  headingSize: SIZE_KEYS.includes(t.headingSize) ? t.headingSize : 'medium',
+  textSize: SIZE_KEYS.includes(t.textSize) ? t.textSize : 'medium',
+  questionStyle: STYLE_KEYS.includes(t.questionStyle) ? t.questionStyle : 'standard',
+  margins: Object.assign({}, MARGIN_DEFAULT, t.margins || {})
+});
+const marginsOk = m => m && typeof m === 'object' && ['top', 'right', 'bottom', 'left'].every(k => typeof m[k] === 'number' && isFinite(m[k]) && m[k] >= MARGIN_MIN && m[k] <= MARGIN_MAX);
 // The bank every question belonged to before banks existed. One fixed id and fixed dates, so migrating a local
 // database and migrating an old file give the identical record and a re-import is "unchanged".
 const DEFAULT_BANK_ID = '00000000-0000-4000-8000-000000000001';
@@ -1241,7 +1280,8 @@ const MIGRATIONS = {
     if (need && !banks.some(b => b && b.id === DEFAULT_BANK_ID)) banks.push(defaultBank());
     const fix = r => lacks(r) ? Object.assign({}, r, { bankId: DEFAULT_BANK_ID }) : r;
     return Object.assign({}, p, { schemaVersion: 3, banks, questions: Array.isArray(qs) ? qs.map(fix) : qs, stimuli: Array.isArray(ss) ? ss.map(fix) : ss });
-  }
+  },
+  3: p => Object.assign({}, p, { schemaVersion: 4 })     // schema 4 only adds optional fields on tests
 };
 
 function migrate(p, migrations, target) {
@@ -1316,6 +1356,10 @@ function recordProblems(kind, r) {
     need(Number.isInteger(r.seed), 'has an invalid seed');
     need(r.header === undefined || (r.header && typeof r.header === 'object' && typeof r.header.name === 'boolean' && typeof r.header.class === 'boolean' && typeof r.header.date === 'boolean'), 'has an invalid header');
     need(r.paper === undefined || PAPER_KEYS.includes(r.paper), 'has an invalid paper size');
+    need(r.headingSize === undefined || SIZE_KEYS.includes(r.headingSize), 'has an invalid heading size');
+    need(r.textSize === undefined || SIZE_KEYS.includes(r.textSize), 'has an invalid text size');
+    need(r.questionStyle === undefined || STYLE_KEYS.includes(r.questionStyle), 'has an invalid question style');
+    need(r.margins === undefined || marginsOk(r.margins), 'has invalid margins');
     need(r.instructions === undefined || (isStr(r.instructions) && r.instructions.length <= 5000), 'has invalid instructions');
   }
   return e;
@@ -1502,7 +1546,7 @@ function planTest(test, questions, stimuli, version) {
   }));
   return {
     version, title: test.title, course: test.course, blocks: out, total: num, missing,
-    header: Object.assign({}, HEADER_DEFAULT, test.header || {}), instructions: test.instructions || '', paper: test.paper || null
+    header: Object.assign({}, HEADER_DEFAULT, test.header || {}), instructions: test.instructions || '', paper: test.paper || null, format: testFormat(test)
   };
 }
 
@@ -2266,29 +2310,56 @@ function promptDialog({ title, label, value, confirm }) {
   return p.then(v => (v === 'ok' ? input.value.trim() : null));
 }
 
-// A small popover menu under `anchor`. items: [{label, onclick, checked, disabled, hr, id}]. Closes on outside click or Escape.
-let openMenuEl = null, menuOff = null;
+// A small popover menu under `anchor`. items: [{label, onclick, checked, disabled, hr, id, value (muted text at the right),
+// desc (a second line), sub: [items] (opens a submenu beside it)}]. Closes on outside click or Escape.
+let openMenuEl = null, openSubEl = null, menuOff = null;
+function closeSub() { if (openSubEl) { openSubEl.remove(); openSubEl = null; } }
 function closeMenu() {
   if (menuOff) { document.removeEventListener('mousedown', menuOff, true); menuOff = null; }
+  closeSub();
   if (openMenuEl) { openMenuEl.remove(); openMenuEl = null; }
+}
+function menuItem(it, onSub) {
+  if (it.hr) return h('div', { class: 'menu-hr' });
+  return h('button', { type: 'button', role: 'menuitem', class: 'menu-item' + (it.desc ? ' has-desc' : '') + (it.sub ? ' has-sub' : ''), id: it.id, disabled: !!it.disabled, 'aria-haspopup': it.sub ? 'menu' : null,
+    onclick: e => { if (it.sub) { e.stopPropagation(); onSub(e.currentTarget, it.sub); } else { closeMenu(); if (it.onclick) it.onclick(); } } },
+    h('span', { class: 'menu-check' }, it.checked ? '✓' : ''),
+    h('span', { class: 'menu-text' }, h('span', { class: 'menu-label' }, it.label), it.desc ? h('span', { class: 'menu-desc' }, it.desc) : null),
+    it.value ? h('span', { class: 'menu-value' }, it.value) : null, it.sub ? h('span', { class: 'menu-arrow', 'aria-hidden': 'true' }, '›') : null);
 }
 function openMenu(anchor, items, opts) {
   closeMenu();
   const rect = anchor.getBoundingClientRect();
+  const showSub = (btn, subItems) => {
+    if (openSubEl && openSubEl.dataset.owner === btn.id) return;
+    closeSub();
+    const r = btn.getBoundingClientRect();
+    const sub = h('div', { class: 'menu submenu', role: 'menu', 'data-owner': btn.id }, subItems.map(it => menuItem(it, showSub)));
+    document.body.append(sub);
+    const w = sub.offsetWidth;
+    sub.style.left = (r.right + 4 + w > window.innerWidth ? Math.max(8, r.left - w - 4) : r.right + 4) + 'px';
+    sub.style.top = Math.max(8, Math.min(r.top - 5, window.innerHeight - sub.offsetHeight - 8)) + 'px';
+    openSubEl = sub;
+    sub.addEventListener('keydown', e => { if (e.key === 'ArrowLeft' || e.key === 'Escape') { e.stopPropagation(); closeSub(); btn.focus(); } subNav(e, sub); });
+    const first = sub.querySelector('.menu-item:not([disabled])'); if (first && document.activeElement === btn) first.focus();
+  };
+  const subNav = (e, root) => {
+    const its = Array.from(root.querySelectorAll('.menu-item:not([disabled])')), k = its.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown') { e.preventDefault(); its[(k + 1) % its.length].focus(); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); its[(k - 1 + its.length) % its.length].focus(); }
+  };
   const menu = h('div', { class: 'menu', role: 'menu', style: 'left:' + Math.max(8, Math.min(rect.left, window.innerWidth - 250)) + 'px;top:' + (rect.bottom + 4) + 'px;' + (opts && opts.right ? 'left:auto;right:' + Math.max(8, window.innerWidth - rect.right) + 'px;' : '') },
-    items.map(it => it.hr ? h('div', { class: 'menu-hr' }) : h('button', { type: 'button', role: 'menuitem', class: 'menu-item', id: it.id, disabled: !!it.disabled,
-      onclick: () => { closeMenu(); if (it.onclick) it.onclick(); } }, h('span', { class: 'menu-check' }, it.checked ? '✓' : ''), it.label)));
+    items.map(it => menuItem(it, showSub)));
   document.body.append(menu);
   openMenuEl = menu;
   const first = menu.querySelector('.menu-item:not([disabled])'); if (first) first.focus();
-  const off = e => { if (!menu.contains(e.target) && e.target !== anchor && !anchor.contains(e.target)) closeMenu(); };
+  const off = e => { if (!menu.contains(e.target) && !(openSubEl && openSubEl.contains(e.target)) && e.target !== anchor && !anchor.contains(e.target)) closeMenu(); };
   menuOff = off;                 // removed again by closeMenu, so an old menu's listener can never close a newer menu
   document.addEventListener('mousedown', off, true);
   menu.addEventListener('keydown', e => {
     if (e.key === 'Escape') { closeMenu(); anchor.focus(); }
-    const its = Array.from(menu.querySelectorAll('.menu-item:not([disabled])')), k = its.indexOf(document.activeElement);
-    if (e.key === 'ArrowDown') { e.preventDefault(); its[(k + 1) % its.length].focus(); }
-    if (e.key === 'ArrowUp') { e.preventDefault(); its[(k - 1 + its.length) % its.length].focus(); }
+    if (e.key === 'ArrowRight' && document.activeElement && document.activeElement.classList.contains('has-sub')) { e.preventDefault(); document.activeElement.click(); }
+    subNav(e, menu);
   });
 }
 
@@ -3191,9 +3262,13 @@ VIEWS.bank = v => {
 const planImageIds = plan => plan.blocks.flatMap(b => (b.stimulus ? b.stimulus.imageIds : []).concat(...b.items.map(i => i.q.imageIds)));
 
 // What a student writes on, for one question or one part of a multipart question (v = a questionView)
-function answerAreaDom(v) {
-  if (v.type === 'mc') return h('div', { class: 'tp-opts' }, v.options.map((o, i) => h('div', { class: 'tp-opt' }, h('span', { class: 'tp-let' }, letter(i) + '.'), h('span', { class: 'tp-text' }, o.text))));
-  if (v.type === 'tf') return h('div', { class: 'tp-tf' }, 'Circle one:', h('span', { class: 'tp-tfopt' }, 'True'), h('span', { class: 'tp-tfopt' }, 'False'));
+// st = the paper's question style. Classic has the student write the answer in a blank before the number, so true/false has
+// nothing to circle. Condensed runs short multiple-choice options across the page.
+const acrossOk = opts => opts.length <= 6 && opts.every(o => String(o.text).length <= 22) && opts.reduce((n, o) => n + String(o.text).length, 0) <= 90;
+const blankBefore = v => v.type === 'mc' || v.type === 'tf';
+function answerAreaDom(v, st) {
+  if (v.type === 'mc') return h('div', { class: 'tp-opts' + (st === 'condensed' && acrossOk(v.options) ? ' across' : '') }, v.options.map((o, i) => h('div', { class: 'tp-opt' }, h('span', { class: 'tp-let' }, letter(i) + '.'), h('span', { class: 'tp-text' }, o.text))));
+  if (v.type === 'tf') return st === 'classic' ? null : h('div', { class: 'tp-tf' }, 'Circle one:', h('span', { class: 'tp-tfopt' }, 'True'), h('span', { class: 'tp-tfopt' }, 'False'));
   if (v.type === 'numeric') return h('div', { class: 'tp-numeric' }, 'Answer:', h('span', { class: 'tp-blankline' }));
   if (v.type === 'short') return h('div', { class: 'tp-rules' }, Array.from({ length: v.lines }, () => h('div', { class: 'tp-rule' })));
   return h('div', { class: 'tp-match' },
@@ -3201,16 +3276,16 @@ function answerAreaDom(v) {
     h('div', { class: 'tp-mcol' }, v.right.map((r, i) => h('div', { class: 'tp-mrow r' }, h('span', { class: 'tp-let' }, letter(i) + '.'), h('span', { class: 'tp-text' }, r)))));
 }
 
-function buildQuestionDom(it) {
+function buildQuestionDom(it, st) {
   const q = it.q, v = it.view;
   const body = h('div', { class: 'tp-body' });
   if (q.type !== 'multipart' || q.prompt.trim()) body.append(h('div', { class: 'tp-text tp-prompt' }, q.prompt));
   if (q.table) body.append(buildTableDom(q.table));
   if (q.imageIds.length) body.append(buildImgsDom(q.imageIds, 'tp-imgs'));
-  if (v.type === 'multipart') v.parts.forEach((p, i) => body.append(h('div', { class: 'tp-part' }, h('span', { class: 'tp-plab' }, '(' + partLabel(i) + ')'),
-    h('div', { class: 'tp-pbody' }, p.prompt ? h('div', { class: 'tp-text' }, p.prompt) : null, answerAreaDom(p)))));
-  else body.append(answerAreaDom(v));
-  return h('div', { class: 'tp-q', 'data-n': String(it.number), 'data-qid': q.id }, h('span', { class: 'tp-num' }, it.number + '.'), body);
+  if (v.type === 'multipart') v.parts.forEach((p, i) => body.append(h('div', { class: 'tp-part' }, st === 'classic' && blankBefore(p) ? h('span', { class: 'tp-blank tp-plblank' }) : null, h('span', { class: 'tp-plab' }, '(' + partLabel(i) + ')'),
+    h('div', { class: 'tp-pbody' }, p.prompt ? h('div', { class: 'tp-text' }, p.prompt) : null, answerAreaDom(p, st)))));
+  else { const area = answerAreaDom(v, st); if (area) body.append(area); }
+  return h('div', { class: 'tp-q', 'data-n': String(it.number), 'data-qid': q.id }, st === 'classic' && blankBefore(v) ? h('span', { class: 'tp-blank tp-numblank' }) : null, h('span', { class: 'tp-num' }, it.number + '.'), body);
 }
 
 function stimulusDom(b) {
@@ -3225,7 +3300,9 @@ function stimulusDom(b) {
 // ed (optional) makes the paper editable on screen: { setTitle, setCourse, setInstructions, toggleLine(k), addInstructions(),
 // tools(kind, blockIndex, item) -> node }. Printing never passes it, so the printed paper has none of those controls.
 function buildSheet(plan, kind, ed) {
-  const root = h('div', { class: 'sheet' + (ed ? ' editing' : '') + ' paper-' + (PAPERS[plan.paper] ? plan.paper : 'letter') });
+  const fmt = plan.format || testFormat({});
+  const root = h('div', { class: 'sheet' + (ed ? ' editing' : '') + ' paper-' + (PAPERS[plan.paper] ? plan.paper : 'letter') + ' style-' + fmt.questionStyle,
+    style: '--tp-fs:' + TEXT_PT[fmt.textSize] + 'pt;--tp-h1:' + HEADING_PT[fmt.headingSize] + 'pt;' });
   const head = h('div', { class: 'tp-head' }, h('div', { class: 'tp-version' }, kind === 'key' ? 'Answer Key · Version ' + plan.version : 'Version ' + plan.version));
   if (ed) head.append(
     h('input', { type: 'text', class: 'tp-edit tp-title', id: 'f-test-title', value: plan.title, placeholder: 'Untitled Test', 'aria-label': 'Test title', oninput: e => ed.setTitle(e.target.value) }),
@@ -3253,7 +3330,7 @@ function buildSheet(plan, kind, ed) {
         wrap.append(st);
       }
       for (const it of b.items) {
-        const qd = buildQuestionDom(it);
+        const qd = buildQuestionDom(it, fmt.questionStyle);
         if (ed) qd.append(ed.tools('question', bi, it));
         wrap.append(qd);
       }
@@ -3277,7 +3354,8 @@ async function preparePrint(kind, version, test) {
   el.printRoot.textContent = '';
   el.printRoot.append(sheet);
   renderMath(sheet);
-  el.pageStyle.textContent = '@page{size:' + PAPERS[effectivePaper(test)].css + ' portrait;margin:16mm 14mm 18mm;}';
+  const m = plan.format.margins;
+  el.pageStyle.textContent = '@page{size:' + PAPERS[effectivePaper(test)].css + ' portrait;margin:' + m.top + 'mm ' + m.right + 'mm ' + m.bottom + 'mm ' + m.left + 'mm;}';
   await Promise.all(Array.from(sheet.querySelectorAll('img')).map(i => (i.decode ? i.decode().catch(() => {}) : Promise.resolve())));
   return plan;
 }
@@ -3454,6 +3532,8 @@ function createExam(opts) {
     paintIds = plan.blocks.map(b => b.items.map(i => i.q.id));
     const active0 = document.activeElement && R.sheetHost.contains(document.activeElement) ? document.activeElement.id : null;
     const sheet = buildSheet(plan, kind, edit ? edApi : null);
+    const mg = plan.format.margins;
+    sheet.style.padding = mg.top + 'mm ' + mg.right + 'mm ' + mg.bottom + 'mm ' + mg.left + 'mm';     // the page margins, drawn on screen
     if (edit && !plan.total) sheet.append(h('div', { class: 'tp-empty', id: 'tp-empty' }, 'Drag questions here from your question bank, or press “Add” on a question.'));
     if (!edit && !plan.total) sheet.append(h('div', { class: 'tp-empty' }, 'Add questions to see this version.'));
     R.sheetHost.textContent = '';
@@ -3693,15 +3773,45 @@ function createExam(opts) {
     { hr: true },
     { label: 'New shuffle for Version B…', id: 'mi-reseed', onclick: reseed }
   ];
+  // Format: each look setting is stored on the test only when it differs from the default, so an untouched test keeps its shape.
+  const setFmt = (key, value, def) => mutate(() => { if (value === def) delete d[key]; else d[key] = value; });
+  const marginsEqual = (a, b) => ['top', 'right', 'bottom', 'left'].every(k => a[k] === b[k]);
+  const setMargins = m => mutate(() => { if (marginsEqual(m, MARGIN_DEFAULT)) delete d.margins; else d.margins = { top: m.top, right: m.right, bottom: m.bottom, left: m.left }; });
+  async function customMargins() {
+    const cur = testFormat(d).margins, inputs = {};
+    const row = (k, label) => { inputs[k] = h('input', { type: 'number', id: 'mg-' + k, min: String(MARGIN_MIN), max: String(MARGIN_MAX), step: '1', value: String(cur[k]), 'aria-label': label + ' margin in millimetres', oninput: check }); return field(label + ' (mm)', inputs[k], 'mg-' + k); };
+    const ok = () => ['top', 'right', 'bottom', 'left'].every(k => { const n = parseFloat(inputs[k].value); return isFinite(n) && n >= MARGIN_MIN && n <= MARGIN_MAX; });
+    const warn = h('p', { class: 'hint', id: 'mg-hint' }, 'Between ' + MARGIN_MIN + ' and ' + MARGIN_MAX + ' mm. Most printers cannot print closer than about 5 mm to the edge.');
+    function check() { const b = document.querySelector('.modal .btn.primary'); if (b) b.disabled = !ok(); warn.style.color = ok() ? '' : 'var(--danger)'; }
+    const body = h('div', null, h('div', { class: 'row2' }, row('top', 'Top'), row('bottom', 'Bottom')), h('div', { class: 'row2' }, row('left', 'Left'), row('right', 'Right')), warn);
+    const p = modal({ title: 'Page margins', body, actions: [{ label: 'Cancel', value: null }, { label: 'Apply', value: 'ok', kind: 'primary' }], dismissValue: null });
+    check(); inputs.top.focus(); inputs.top.select();
+    if ((await p) !== 'ok' || !ok()) return;
+    setMargins({ top: parseFloat(inputs.top.value), right: parseFloat(inputs.right.value), bottom: parseFloat(inputs.bottom.value), left: parseFloat(inputs.left.value) });
+  }
+  const STYLE_INFO = {
+    standard: ['Standard', 'Circle the letter or T/F; no blanks before numbers.'],
+    classic: ['Classic', 'A blank before each objective number; ruled lines for written answers.'],
+    condensed: ['Condensed', 'Saves paper: tighter spacing, short options across the page, closer-ruled lines.']
+  };
   const formatItems = () => {
-    const x = hdr(), p = effectivePaper(d);
-    return Object.keys(PAPERS).map(k => ({ label: 'Paper: ' + PAPERS[k].label, id: 'mi-paper-' + k, checked: p === k, onclick: () => { ls.set('paper', k); mutate(() => { d.paper = k; }); } }))
-      .concat([{ hr: true },
-        { label: 'Name line', id: 'mi-line-name', checked: x.name, onclick: () => edApi.toggleLine('name') },
-        { label: 'Class line', id: 'mi-line-class', checked: x.class, onclick: () => edApi.toggleLine('class') },
-        { label: 'Date line', id: 'mi-line-date', checked: x.date, onclick: () => edApi.toggleLine('date') },
-        { hr: true },
-        { label: 'Instructions for students', id: 'mi-instructions', checked: edApi.hasInstructions(), onclick: () => { if (edApi.hasInstructions()) mutate(() => { delete d.instructions; }); else edApi.addInstructions(); } }]);
+    const x = hdr(), p = effectivePaper(d), f = testFormat(d);
+    const radio = (key, def, vals, label, pre) => vals.map(v => ({ label: label(v), id: 'mi-' + pre + '-' + v, checked: f[key] === v, onclick: () => setFmt(key, v, def) }));
+    const presetName = Object.keys(MARGIN_PRESETS).find(k => marginsEqual(MARGIN_PRESETS[k], f.margins));
+    return [
+      { label: 'Paper size', id: 'mi-paper', value: PAPERS[p].label, sub: Object.keys(PAPERS).map(k => ({ label: PAPERS[k].label, id: 'mi-paper-' + k, checked: p === k, onclick: () => { ls.set('paper', k); mutate(() => { d.paper = k; }); } })) },
+      { label: 'Heading size', id: 'mi-heading', value: SIZE_LABEL[f.headingSize], sub: radio('headingSize', 'medium', SIZE_KEYS, v => SIZE_LABEL[v], 'heading') },
+      { label: 'Text size', id: 'mi-text', value: SIZE_LABEL[f.textSize], sub: radio('textSize', 'medium', SIZE_KEYS, v => SIZE_LABEL[v], 'text') },
+      { label: 'Questions', id: 'mi-style', value: STYLE_INFO[f.questionStyle][0], sub: STYLE_KEYS.map(k => ({ label: STYLE_INFO[k][0], desc: STYLE_INFO[k][1], id: 'mi-style-' + k, checked: f.questionStyle === k, onclick: () => setFmt('questionStyle', k, 'standard') })) },
+      { label: 'Margins', id: 'mi-margins', value: presetName ? cap(presetName) : 'Custom', sub: Object.keys(MARGIN_PRESETS).map(k => ({ label: cap(k), desc: 'Top ' + MARGIN_PRESETS[k].top + ', sides ' + MARGIN_PRESETS[k].right + ', bottom ' + MARGIN_PRESETS[k].bottom + ' mm', id: 'mi-margins-' + k, checked: presetName === k, onclick: () => setMargins(MARGIN_PRESETS[k]) }))
+        .concat([{ label: 'Custom…', id: 'mi-margins-custom', checked: !presetName, onclick: customMargins }]) },
+      { hr: true },
+      { label: 'Name line', id: 'mi-line-name', checked: x.name, onclick: () => edApi.toggleLine('name') },
+      { label: 'Class line', id: 'mi-line-class', checked: x.class, onclick: () => edApi.toggleLine('class') },
+      { label: 'Date line', id: 'mi-line-date', checked: x.date, onclick: () => edApi.toggleLine('date') },
+      { hr: true },
+      { label: 'Instructions for students', id: 'mi-instructions', checked: edApi.hasInstructions(), onclick: () => { if (edApi.hasInstructions()) mutate(() => { delete d.instructions; }); else edApi.addInstructions(); } }
+    ];
   };
   const printItems = () => [['Version A', 'test', 'A', 'a'], ['Version B', 'test', 'B', 'b'], ['Answer key A', 'key', 'A', 'ka'], ['Answer key B', 'key', 'B', 'kb']]
     .map(([l, k, v, id]) => ({ label: l, id: 'pi-' + id, disabled: !hasQ(), onclick: () => print(k, v) }));
@@ -3892,7 +4002,7 @@ window.PQ = {
   hashSeed, mulberry32, shuffled, newSeed, formBlocks, questionView, planTest, keyText, keyEntries,
   isTextSafe, needsImage, textWidth, wrapText, blockLines, layoutText,
   buildBankPdf, readPdfPayload, renderBlockImage, buildSheet, preparePrint, processImageFile, ensureImageUrls,
-  dataUrlToBlob, blobToDataUrl, db, collectPayload, loadAll, state, active, navigate, render, checkTest
+  dataUrlToBlob, blobToDataUrl, db, collectPayload, loadAll, state, active, navigate, render, checkTest, testFormat, MARGIN_DEFAULT, MARGIN_PRESETS, acrossOk
 };
 
 /* === START === */
