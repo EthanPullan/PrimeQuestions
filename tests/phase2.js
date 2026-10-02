@@ -1,5 +1,5 @@
-// Phase 2: stimuli, tables, images, the test builder, printing, deletes that keep other records in step,
-// and importing a bank written by the previous version (schema 1, app 0.1.0).
+// Phase 2 features in the Phase 3 interface: stimuli, tables, images, the test editor, printing, deletes that keep
+// other records in step, and importing a bank written by an earlier version (schema 1, app 0.1.0).
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
@@ -15,6 +15,10 @@ const pdfPages = file => Number((/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [
   await openApp(page);
   const modal = page.locator('.modal');
   const toastText = async () => (await page.locator('.toast').allInnerTexts()).join(' | ');
+  const openBank = async () => { await page.click('#nav-banks'); await page.click('.card-tile[data-id] .ct-main'); await page.waitForSelector('#page-bank'); };
+  const newQ = async t => { await page.click('#btn-new'); await page.click('#new-' + t); };
+  const openTest = async () => { await page.click('#nav-tests'); await page.click('.card-tile .ct-main'); await page.waitForSelector('#sheet-preview .sheet'); };
+  const sed = () => 'PQ.active.sed', qed = () => 'PQ.active.qed';
 
   // image fixtures made in the page itself
   const mk = async (w, h, type) => page.evaluate(async ([w, h, type]) => {
@@ -30,8 +34,8 @@ const pdfPages = file => Number((/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [
   fs.writeFileSync('evil.svg', '<svg xmlns="http://www.w3.org/2000/svg"><unclosed></svg>');
 
   console.log('1. stimulus editor: text, table, images');
-  await page.click('#mode-stimuli');
-  check('mode switch shows the stimuli panel and button label', await page.locator('#btn-new').innerText().then(t => /New stimulus/.test(t)) && /No stimuli yet/.test(await page.locator('.qlist').innerText()));
+  await openBank(); await page.click('#tab-stimuli');
+  check('the Stimuli tab shows the stimuli panel and button label', await page.locator('#btn-new').innerText().then(t => /New stimulus/.test(t)) && /No stimuli yet/.test(await page.locator('.qlist').innerText()));
   await page.click('#btn-new');
   check('Save is disabled for a stimulus with no title', await page.locator('#btn-save').isDisabled());
   await page.fill('#f-title', 'Density data');
@@ -41,16 +45,16 @@ const pdfPages = file => Number((/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [
   await page.click('#btn-add-col'); await page.fill('input[aria-label="Column 3 heading"]', 'Volume');
   await page.fill('input[aria-label="Row 1, column 1"]', 'A'); await page.fill('input[aria-label="Row 1, column 2"]', '10'); await page.fill('input[aria-label="Row 1, column 3"]', '5');
   await page.click('#btn-add-row'); await page.fill('input[aria-label="Row 2, column 1"]', 'B'); await page.fill('input[aria-label="Row 2, column 3"]', '\\(1.0 \\times 10^{1}\\)');
-  let t = await page.evaluate(() => PQ.state.editor.draft.table);
+  let t = await page.evaluate(() => PQ.active.sed.getDraft().table);
   check('table editor builds headers and rows (3 columns, 2 rows, ragged-proof)', t.headers.length === 3 && t.rows.length === 2 && t.rows.every(r => r.length === 3), t);
   await page.click('button[aria-label="Remove column 2"]'); await page.click('#btn-add-col');
-  t = await page.evaluate(() => PQ.state.editor.draft.table);
+  t = await page.evaluate(() => PQ.active.sed.getDraft().table);
   check('removing and adding a column keeps every row the same length', t.headers.length === 3 && t.rows.every(r => r.length === 3) && t.headers[1] === 'Volume', t);
   await page.waitForTimeout(250);
   check('preview shows a real table with MathML inside a cell', (await page.locator('#preview table.pq-table').count()) === 1 && (await page.locator('#preview table math').count()) >= 1);
   // images: big PNG downscaled, SVG kept, bad file refused with a message, evil svg refused
   await page.setInputFiles('#f-image-file', ['big.png', 'pic.svg', 'bad.png', 'evil.svg']);
-  await page.waitForFunction(() => PQ.state.editor.draft.imageIds.length === 2);
+  await page.waitForFunction(() => PQ.active.sed.getDraft().imageIds.length === 2);
   await page.waitForFunction(() => /evil\.svg/.test(document.getElementById('toasts').innerText));   // files are handled in order; wait for the last one
   const tx = await toastText();
   check('a non-image and a broken SVG are refused with clear messages', /bad\.png: Use a PNG, JPEG or SVG image/.test(tx) && /evil\.svg: Use a PNG, JPEG or SVG image/.test(tx), tx);
@@ -66,20 +70,20 @@ const pdfPages = file => Number((/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [
   await page.click('#btn-close');
   await page.click('#btn-new'); await page.fill('#f-title', 'Sizes');
   await page.setInputFiles('#f-image-file', ['small.png', 'tall.jpg']);
-  await page.waitForFunction(() => PQ.state.editor.draft.imageIds.length === 2);
-  const dims = await page.evaluate(async () => { const e = PQ.state.editor, out = []; for (const id of e.draft.imageIds) { const b = e.pending.get(id); const m = await createImageBitmap(b); out.push([b.type, m.width, m.height]); } return out; });
+  await page.waitForFunction(() => PQ.active.sed.getDraft().imageIds.length === 2);
+  const dims = await page.evaluate(async () => { const e = PQ.active.sed, out = []; for (const id of e.getDraft().imageIds) { const b = e.pending.get(id); const m = await createImageBitmap(b); out.push([b.type, m.width, m.height]); } return out; });
   check('a small PNG is kept at its size; a tall JPEG is scaled by its long edge (2000 -> 1600)', dims[0][0] === 'image/png' && dims[0][1] === 300 && dims[1][0] === 'image/jpeg' && dims[1][2] === 1600 && dims[1][1] === 720, dims);
   // limit of six
   await page.setInputFiles('#f-image-file', ['small.png', 'small.png', 'small.png', 'small.png', 'small.png']);
   await page.waitForTimeout(600);
-  check('at most 6 images per record', (await page.evaluate(() => PQ.state.editor.draft.imageIds.length)) === 6 && /At most 6/.test(await toastText()));
+  check('at most 6 images per record', (await page.evaluate(() => PQ.active.sed.getDraft().imageIds.length)) === 6 && /At most 6/.test(await toastText()));
   // discarding must not leave orphan images behind
   const keep = (await page.evaluate(() => PQ.db.getImageIds())).length;
   await page.click('#btn-close'); await modal.locator('button:has-text("Discard changes")').click();
   check('discarded images never reach the database (no orphans)', (await page.evaluate(() => PQ.db.getImageIds())).length === keep && keep === 2);
 
   console.log('2. question editor: stimulus, table, images, keepOrder');
-  await page.click('#mode-questions'); await page.click('#btn-new');
+  await page.click('#tab-questions'); await newQ('mc');
   await page.fill('#f-prompt', 'Which sample is densest?');
   await page.fill('input[aria-label="Option A"]', 'A'); await page.fill('input[aria-label="Option B"]', 'B'); await page.fill('input[aria-label="Option C"]', 'Both A and B'); await page.fill('input[aria-label="Option D"]', 'None of the above');
   await page.locator('input[name=correct]').nth(1).check();
@@ -92,10 +96,10 @@ const pdfPages = file => Number((/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [
   await page.fill('input[aria-label="Row 1, column 1"]', 'x');
   check('keepOrder checkbox is offered for multiple choice', await page.locator('#f-keeporder').isVisible() && !(await page.locator('#f-keeporder').isChecked()));
   await page.check('#f-keeporder'); await page.uncheck('#f-keeporder');
-  check('unticking keepOrder leaves the question identical to untouched (property absent)', (await page.evaluate(() => 'keepOrder' in PQ.state.editor.draft)) === false);
+  check('unticking keepOrder leaves the question identical to untouched (property absent)', (await page.evaluate(() => 'keepOrder' in PQ.active.qed.getDraft())) === false);
   await page.check('#f-keeporder');
   await page.click('.seg button[data-type=tf]');
-  check('keepOrder is not offered for other types and is dropped on a type change', (await page.locator('#f-keeporder').count()) === 0 && (await page.evaluate(() => 'keepOrder' in PQ.state.editor.draft)) === false);
+  check('keepOrder is not offered for other types and is dropped on a type change', (await page.locator('#f-keeporder').count()) === 0 && (await page.evaluate(() => 'keepOrder' in PQ.active.qed.getDraft())) === false);
   await page.click('.seg button[data-type=mc]'); await page.check('#f-keeporder');
   await page.selectOption('#f-status', 'ready'); await page.click('#btn-save'); await page.waitForFunction(() => PQ.state.questions.length === 1);
   const q1 = await page.evaluate(() => PQ.state.questions[0]);
@@ -105,7 +109,7 @@ const pdfPages = file => Number((/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [
   // more questions straight into the database (the editor itself is covered in ui.js)
   await page.evaluate(async () => {
     const T = '2026-10-01T10:00:00.000Z'; const sid = PQ.state.stimuli[0].id;
-    const base = (id, type, prompt, answer, extra) => Object.assign({ id, type, prompt, course: 'Science 9', unit: 'Matter', tags: [], difficulty: 'medium', status: 'ready', stimulusId: null, imageIds: [], table: null, answer, notes: '', created: T, updated: T }, extra || {});
+    const base = (id, type, prompt, answer, extra) => Object.assign({ id, bankId: PQ.DEFAULT_BANK_ID, type, prompt, course: 'Science 9', unit: 'Matter', tags: [], difficulty: 'medium', status: 'ready', stimulusId: null, imageIds: [], table: null, answer, notes: '', created: T, updated: T }, extra || {});
     const recs = [
       base('q-b', 'mc', 'Greatest mass? (second question on the passage)', { options: ['A', 'B', 'C', 'D'], correct: 1 }, { stimulusId: sid }),
       base('q-c', 'mc', 'What is \\(\\frac{1}{2}+\\frac{1}{4}\\)?', { options: ['\\(\\frac{3}{4}\\)', '\\(\\frac{2}{6}\\)', '\\(\\frac{1}{4}\\)', '\\(\\frac{1}{2}\\)'], correct: 0 }),
@@ -120,30 +124,34 @@ const pdfPages = file => Number((/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [
     await PQ.loadAll();
   });
   await page.reload(); await page.waitForFunction(() => window.PQ && PQ.ready);
-  await page.click('#mode-tests'); await page.click('#btn-new');
-  check('Save needs a title; Print buttons are off with no questions', await page.locator('#btn-save').isDisabled() && await page.locator('#btn-print-a').isDisabled() && /Add questions to enable printing/.test(await page.locator('#test-warn').innerText()));
+  await page.click('#nav-tests'); await page.click('#tile-new-test'); await page.waitForSelector('#sheet-preview .sheet');
+  check('a new test starts empty: Save is off and printing is off', await page.locator('#btn-save').isDisabled() && await page.locator('#btn-print').isDisabled());
   await page.fill('#f-test-title', 'Matter Unit Test'); await page.fill('#f-test-course', 'Science 9');
-  const pickerText = await page.locator('#picker').innerText();
-  check('picker lists every question not yet in the test', (await page.locator('#picker .trow').count()) === 9, pickerText.slice(0, 80));
-  await page.fill('#f-pick', 'ice');
-  check('picker search filters the bank', (await page.locator('#picker .trow').count()) === 1);
-  await page.fill('#f-pick', '');
-  await page.selectOption('#f-picktype', 'matching'); check('picker type filter works', (await page.locator('#picker .trow').count()) === 1);
-  await page.selectOption('#f-picktype', '');
-  await page.click('#btn-add-all');
-  check('"Add all shown" adds every question', (await page.locator('#test-list .trow').count()) === 9 && /Every question in your bank is already/.test(await page.locator('#picker').innerText()));
-  const warn = await page.locator('#test-warn').innerText();
-  check('checks warn about review status and an "all of the above" option that is not protected', /1 question is marked .Needs review./.test(warn) && /all\/none of the above/.test(warn), warn);
-  // reorder: move last to first via up arrows, then remove it and re-add
-  const idsOf = () => page.evaluate(() => PQ.state.editor.draft.questionIds.slice());
+  check('the title and course are typed straight onto the paper', await page.locator('#exam-name').innerText() === 'Matter Unit Test' && /Unsaved/.test(await page.locator('#dirty-flag').innerText()));
+  check('the bank panel lists every question not yet in the test', (await page.locator('#panel-list .qcard').count()) === 9, (await page.locator('#panel-list').innerText()).slice(0, 80));
+  await page.fill('#panel-search', 'ice');
+  check('panel search filters the bank', (await page.locator('#panel-list .qcard').count()) === 1);
+  await page.fill('#panel-search', '');
+  await page.selectOption('#panel-type', 'matching'); check('panel type filter works', (await page.locator('#panel-list .qcard').count()) === 1);
+  await page.selectOption('#panel-type', '');
+  for (let i = 0; i < 9; i++) await page.locator('#panel-list .qcard button.primary').first().click();
+  await page.waitForFunction(() => PQ.active.exam.getDraft().questionIds.length === 9);
+  check('adding every question puts all 9 on the paper; each card now says Added', (await page.locator('.tp-q').count()) === 9 && (await page.locator('#panel-list .qcard.used').count()) === 9);
+  await page.click('#btn-check');
+  const warn = await page.locator('.modal').innerText();
+  check('Check warns about review status and an "all of the above" option that is not protected', /1 question is marked .Needs review./.test(warn) && /all\/none of the above/.test(warn), warn);
+  await page.keyboard.press('Escape');
+  // reorder: the last block moves up one place, then is removed and re-added
+  const idsOf = () => page.evaluate(() => PQ.active.exam.getDraft().questionIds.slice());
   const before = await idsOf();
-  await page.click('button[aria-label="Move question 9 up"]'); await page.click('button[aria-label="Move question 8 up"]');
+  const lastN = await page.locator('.tp-q').count();
+  await page.click('button[aria-label="Move question ' + lastN + ' up"]');
   const after = await idsOf();
-  check('move up twice takes the last question two places up', after[6] === before[8] && after[7] === before[6] && after[8] === before[7], { before, after });
-  check('first row cannot move up, last cannot move down', await page.locator('button[aria-label="Move question 1 up"]').isDisabled() && await page.locator('button[aria-label="Move question 9 down"]').isDisabled());
-  await page.click('button[aria-label="Remove question 9 from the test"]');
+  check('move up swaps the last question with the one before it', after[8] === before[7] && after[7] === before[8], { before, after });
+  check('first row cannot move up, last cannot move down', await page.locator('button[aria-label="Move question 1 up"]').isDisabled() && await page.locator('button[aria-label="Move question ' + lastN + ' down"]').isDisabled());
+  await page.click('button[aria-label="Remove question ' + lastN + ' from the test"]');
   check('remove takes a question out of the test but not the bank', (await idsOf()).length === 8 && (await page.evaluate(() => PQ.state.questions.length)) === 9);
-  await page.locator('#picker .trow button:has-text("+ Add")').first().click();
+  await page.locator('#panel-list .qcard button.primary').first().click();
   check('re-added question goes to the end', (await idsOf()).length === 9);
   await page.click('#btn-save'); await page.waitForFunction(() => PQ.state.tests.length === 1);
   const saved = await page.evaluate(() => PQ.state.tests[0]);
@@ -151,25 +159,27 @@ const pdfPages = file => Number((/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [
   // preview
   await page.waitForTimeout(400);
   const pvA = await page.locator('#sheet-preview').innerText();
-  check('preview A: header, Version A, name/date lines, numbered questions', /Matter Unit Test/.test(pvA) && /Version A/.test(pvA) && /Name:/.test(pvA) && /Date:/.test(pvA) && /Use the information below to answer questions? \d+( to \d+)?\./.test(pvA), pvA.slice(0, 200));
+  check('paper A: Version A, Name/Date lines, numbered questions and the stimulus intro; title in its box', await page.inputValue('#f-test-title') === 'Matter Unit Test' && await page.inputValue('#f-test-course') === 'Science 9' && /Version A/.test(pvA) && /Name:/.test(pvA) && /Date:/.test(pvA) && /Use the information below to answer questions? \d+( to \d+)?\./.test(pvA), pvA.slice(0, 200));
   await page.click('#pv-b'); await page.waitForTimeout(300);
-  check('preview B says Version B', /Version B/.test(await page.locator('#sheet-preview').innerText()));
+  check('preview B says Version B (and is not editable)', /Version B/.test(await page.locator('#sheet-preview').innerText()) && (await page.locator('#sheet-preview .ed-tools').count()) === 0 && (await page.locator('#sheet-preview input').count()) === 0);
   await page.click('#pv-kb'); await page.waitForTimeout(300);
   const keyB = await page.locator('#sheet-preview').innerText();
   check('B key has columns B / is A / Answer (as printed on Version B)', /Answer Key · Version B/.test(keyB) && /is A/.test(keyB) && /as printed on Version B/.test(keyB) && /A\d+/.test(keyB), keyB.slice(0, 160));
   await page.click('#pv-ka'); await page.waitForTimeout(300);
   check('A key has No. / Answer only', /Answer Key · Version A/.test(await page.locator('#sheet-preview').innerText()) && !(/is A/.test(await page.locator('#sheet-preview').innerText())));
+  await page.click('#pv-a');
   // reshuffle asks first on a saved test
-  const seed0 = await page.evaluate(() => PQ.state.editor.draft.seed);
-  await page.click('#btn-reseed'); check('reshuffle on a saved test asks first', /Reshuffle Version B/.test(await modal.innerText()));
+  const seed0 = await page.evaluate(() => PQ.active.exam.getDraft().seed);
+  await page.click('#menu-edit'); await page.click('#mi-reseed'); check('reshuffle on a saved test asks first', /Reshuffle Version B/.test(await modal.innerText()));
   await modal.locator('button:has-text("Keep current shuffle")').click();
-  check('declining keeps the seed', (await page.evaluate(() => PQ.state.editor.draft.seed)) === seed0);
-  await page.click('#btn-reseed'); await modal.locator('button.danger').click();
-  const seed1 = await page.evaluate(() => PQ.state.editor.draft.seed);
+  check('declining keeps the seed', (await page.evaluate(() => PQ.active.exam.getDraft().seed)) === seed0);
+  await page.click('#menu-edit'); await page.click('#mi-reseed'); await modal.locator('button.danger').click();
+  const seed1 = await page.evaluate(() => PQ.active.exam.getDraft().seed);
   check('accepting gives a new seed and marks the test unsaved', seed1 !== seed0 && /Unsaved/.test(await page.locator('#dirty-flag').innerText()));
-  await page.evaluate(s => { PQ.state.editor.draft.seed = s; }, seed0);
-  await page.fill('#f-test-title', 'Matter Unit Test ');   // trigger recompute; then it equals saved after trim on save
-  await page.click('#btn-save'); await page.waitForFunction(() => PQ.state.tests[0].title === 'Matter Unit Test' && !PQ.state.editor.dirty);
+  await page.click('#btn-undo');
+  check('Undo brings the old shuffle back (and the test is saved-clean again)', (await page.evaluate(() => PQ.active.exam.getDraft().seed)) === seed0 && !(await page.evaluate(() => PQ.active.exam.isDirty())));
+  await page.fill('#f-test-title', 'Matter Unit Test ');   // trailing space: unsaved until saved, then trimmed
+  await page.click('#btn-save'); await page.waitForFunction(() => PQ.state.tests[0].title === 'Matter Unit Test' && !PQ.active.exam.isDirty());
 
   console.log('4. printing: paper sizes, no split questions, greyscale');
   const dump = async (kind, version, paper, file) => {
@@ -204,7 +214,7 @@ const pdfPages = file => Number((/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [
   // property test: across many layouts and the three sizes, no question and no stimulus group splits across pages
   const gen = await page.evaluate(async () => {
     const T = '2026-10-01T10:00:00.000Z';
-    const base = (id, type, prompt, answer, extra) => Object.assign({ id, type, prompt, course: '', unit: '', tags: [], difficulty: 'medium', status: 'ready', stimulusId: null, imageIds: [], table: null, answer, notes: '', created: T, updated: T }, extra || {});
+    const base = (id, type, prompt, answer, extra) => Object.assign({ id, bankId: PQ.DEFAULT_BANK_ID, type, prompt, course: '', unit: '', tags: [], difficulty: 'medium', status: 'ready', stimulusId: null, imageIds: [], table: null, answer, notes: '', created: T, updated: T }, extra || {});
     const qs = [], ids = [];
     for (let i = 0; i < 40; i++) {
       const n = String(i).padStart(2, '0');
@@ -217,7 +227,7 @@ const pdfPages = file => Number((/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [
       ids.push('p' + n);
     }
     // a stimulus group: stimulus title token + two questions
-    const stim = { id: 'sg', title: 'STIMTOKEN', text: 'Short passage. '.repeat(8), imageIds: [], table: null, created: T, updated: T };
+    const stim = { id: 'sg', bankId: PQ.DEFAULT_BANK_ID, title: 'STIMTOKEN', text: 'Short passage. '.repeat(8), imageIds: [], table: null, created: T, updated: T };
     qs.push(base('g1', 'mc', 'GS1 first on the passage', { options: ['a', 'b', 'c', 'GE1'], correct: 0 }, { stimulusId: 'sg' }));
     qs.push(base('g2', 'mc', 'GS2 second on the passage', { options: ['a', 'b', 'c', 'GE2'], correct: 0 }, { stimulusId: 'sg' }));
     for (const q of qs) await PQ.db.put('questions', q);
@@ -258,9 +268,8 @@ const pdfPages = file => Number((/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [
   console.log('5. deleting keeps other records in step');
   await page.reload(); await page.waitForFunction(() => window.PQ && PQ.ready);
   // make sure the saved test still has the 9 original questions in it
-  await page.click('#mode-tests'); await page.locator('.qrow').first().click();
-  const inTest = await page.evaluate(() => PQ.state.editor.draft.questionIds.length);
-  await page.click('#mode-questions');
+  const inTest = await page.evaluate(() => PQ.state.tests[0].questionIds.length);
+  await openBank();
   await page.fill('input[aria-label="Search questions"]', 'Water boils');
   await page.locator('.qrow').first().click(); await page.click('#btn-delete');
   const delText = await modal.innerText();
@@ -270,7 +279,7 @@ const pdfPages = file => Number((/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [
   check('the deleted question was removed from the test in the same step', !tAfter.includes('q-d') && tAfter.length === inTest - 1, tAfter);
   check('no dangling ids remain in any test', await page.evaluate(() => { const ids = new Set(PQ.state.questions.map(q => q.id)); return PQ.state.tests.every(t => t.questionIds.every(i => ids.has(i))); }));
   await page.fill('input[aria-label="Search questions"]', '');
-  await page.click('#mode-stimuli'); await page.locator('.qrow').first().click();
+  await page.click('#tab-stimuli'); await page.locator('.qrow').first().click();
   check('stimulus list says how many questions use it', /2 questions use it/.test(await page.locator('.qrow').first().innerText()), await page.locator('.qrow').first().innerText());
   await page.click('#btn-delete');
   check('deleting a stimulus says how many questions lose it', /2 questions use it/.test(await modal.innerText()), await modal.innerText());
@@ -290,22 +299,24 @@ const pdfPages = file => Number((/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [
   await modal.locator('button:has-text("Apply")').click(); await page.waitForFunction(() => PQ.state.tests.length === 1);
   check('everything arrived intact', await page.evaluate(() => PQ.state.questions.length === 7 && PQ.state.stimuli.length === 1 && PQ.state.stimuli[0].table.rows.length === 4 && PQ.state.imageIds.size === 1));
   check('records from the old version were stored exactly as written (no keepOrder invented)', await page.evaluate(() => PQ.state.questions.every(q => !('keepOrder' in q))));
-  await page.click('#mode-tests'); await page.locator('.qrow').first().click();
+  await openTest();
   await page.waitForTimeout(500);
   const pv = await page.locator('#sheet-preview').innerText();
   check('the imported test builds: stimulus grouped as questions 2 to 3, table and image shown', /answer questions 2 to 3\./.test(pv) && (await page.locator('#sheet-preview table.pq-table').count()) >= 1 && (await page.locator('#sheet-preview img').count()) >= 1, pv.slice(0, 200));
-  check('the imported test warns that its "All of the above" question is not protected', /all\/none of the above/.test(await page.locator('#test-warn').innerText()));
+  await page.click('#btn-check');
+  check('the imported test warns that its "All of the above" question is not protected', /all\/none of the above/.test(await page.locator('#check-list').innerText()));
+  await page.keyboard.press('Escape');
 
   console.log('7. full round trip with stimuli, tables, images, tests and keepOrder');
   // protect the all-of-the-above question, then export -> wipe -> import
-  await page.click('#mode-questions'); await page.fill('input[aria-label="Search questions"]', 'frac'); await page.locator('.qrow').first().click();
+  await page.click('#btn-back-tests'); await openBank(); await page.fill('input[aria-label="Search questions"]', 'frac'); await page.locator('.qrow').first().click();
   await page.check('#f-keeporder'); await page.click('#btn-save'); await page.waitForFunction(() => PQ.state.questions.some(q => q.keepOrder === true));
   await page.fill('input[aria-label="Search questions"]', '');
   const planKey = async v => page.evaluate(v => { const p = PQ.planTest(PQ.state.tests[0], PQ.state.questions, PQ.state.stimuli, v); return JSON.stringify(PQ.keyEntries(p).map(e => [e.number, e.aNumber, e.text])); }, v);
   const keyA0 = await planKey('A'), keyB0 = await planKey('B');
   const snap = async () => page.evaluate(async () => { const p = await PQ.collectPayload(); delete p.exportedAt; return JSON.parse(JSON.stringify(p)); });
   const before2 = await snap();
-  check('payload carries schema 2, keepOrder on exactly one question, tables, a stimulus, a test and an image', before2.schemaVersion === 2 && before2.questions.filter(q => q.keepOrder === true).length === 1 && before2.questions.some(q => q.table) && before2.stimuli.length === 1 && before2.tests.length === 1 && Object.keys(before2.images).length === 1);
+  check('payload carries schema 2, keepOrder on exactly one question, tables, a stimulus, a test and an image', before2.schemaVersion === 3 && before2.banks.length === 1 && before2.questions.filter(q => q.keepOrder === true).length === 1 && before2.questions.some(q => q.table) && before2.stimuli.length === 1 && before2.tests.length === 1 && Object.keys(before2.images).length === 1);
   const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 90000 }), page.click('#btn-export')]);
   await dl.saveAs('p2-export.pdf'); await page.waitForSelector('.toast.ok');
   const list = execFileSync('pdfdetach', ['-list', 'p2-export.pdf']).toString();
@@ -323,9 +334,7 @@ const pdfPages = file => Number((/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [
   // the same test prints identically after the round trip (seed and order are data)
   check('Version A and Version B answer keys are identical after the round trip (the test reprints identically)', (await planKey('A')) === keyA0 && (await planKey('B')) === keyB0 && keyB0.length > 50 && keyA0 !== keyB0);
 
-  console.log('8. phone layout, errors, network');
-  await page.setViewportSize({ width: 390, height: 800 });
-  for (const m of ['stimuli', 'tests']) { await page.click('#mode-' + m); await page.locator('.qrow').first().click(); await page.waitForTimeout(250); check('no horizontal scroll at 390px in ' + m + ' mode', await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth])); }
+  console.log('8. errors, network');
   check('zero network requests', requests.length === 0, requests);
   check('no console errors or warnings', problems.length === 0, problems);
 

@@ -612,6 +612,77 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
   await page.reload(); await page.waitForFunction(() => window.PQ && PQ.ready === true);
   check('a fresh database starts with the default bank "My Questions"', await page.evaluate(async () => { const b = await PQ.db.getAll('banks'); return b.length === 1 && b[0].name === 'My Questions' && b[0].id === PQ.DEFAULT_BANK_ID; }));
 
+
+  /* ---------- O. natural equation typing ---------- */
+  console.log('O. natural typing -> LaTeX');
+  const cases = [
+    ['1/2', '\\frac{1}{2}'], ['3/4+1/4', '\\frac{3}{4}+\\frac{1}{4}'], ['x^2', 'x^{2}'], ['x^2+3x-4=0', 'x^{2}+3x-4=0'],
+    ['(x+1)/(x-2)', '\\frac{x+1}{x-2}'], ['1/(x+1)', '\\frac{1}{x+1}'], ['a/b/c', '\\frac{\\frac{a}{b}}{c}'], ['x^2/3', '\\frac{x^{2}}{3}'], ['1/2x', '\\frac{1}{2}x'],
+    ['(1/2)^2', '\\left(\\frac{1}{2}\\right)^{2}'], ['x_1/x_2', '\\frac{x_{1}}{x_{2}}'], ['a_(n+1)', 'a_{n+1}'], ['x^2^3', '{x^{2}}^{3}'],
+    ['sqrt(x)', '\\sqrt{x}'], ['sqrt(x+1)', '\\sqrt{x+1}'], ['sqrt[3](27)', '\\sqrt[3]{27}'], ['cbrt(8)', '\\sqrt[3]{8}'], ['root(4)(16)', '\\sqrt[4]{16}'], ['sqrt 2/3', '\\frac{\\sqrt{2}}{3}'],
+    ['x = (-b +- sqrt(b^2 - 4ac))/(2a)', 'x=\\frac{-b\\pm\\sqrt{b^{2}-4ac}}{2a}'],
+    ['pi r^2', '\\pi r^{2}'], ['2pir', '2\\pi r'], ['alpha + beta', '\\alpha+\\beta'], ['theta = 30 deg', '\\theta=30^{\\circ}'], ['Delta x', '\\Delta x'], ['oo', '\\infty'],
+    ['6.02 xx 10^23', '6.02\\times10^{23}'], ['10^-3', '10^{-3}'], ['3 -: 4', '3\\div4'], ['2*3', '2\\cdot3'], ['1.5', '1.5'], ['.5', '.5'],
+    ['x <= 5', 'x\\le5'], ['a >= b', 'a\\ge b'], ['a != b', 'a\\ne b'], ['x -> 3', 'x\\to3'], ['x<-3', 'x<-3'], ['a ~= b', 'a\\approx b'], ['5 // 2', '5/2'],
+    ['90 deg', '90^{\\circ}'], ['30 degC', '30^{\\circ}\\mathrm{C}'], ['50%', '50\\%'],
+    ['sin(x)/cos(x)', '\\frac{\\sin(x)}{\\cos(x)}'], ['sin^2(x)+cos^2(x)=1', '\\sin^{2}(x)+\\cos^{2}(x)=1'], ['sin x', '\\sin x'], ['log_2 8 = 3', '\\log_{2}8=3'], ['f(x) = 2x + 1', 'f(x)=2x+1'], ['f(x)/2', '\\frac{f(x)}{2}'],
+    ['lim_(x->0) sin(x)/x', '\\lim_{x\\to0}\\frac{\\sin(x)}{x}'], ['sum_(i=1)^n i', '\\sum_{i=1}^{n}i'], ['int_0^1 x dx', '\\int_{0}^{1}xdx'],
+    ['2 1/3', '2\\tfrac{1}{3}'], ['x = 3 1/2', 'x=3\\tfrac{1}{2}'],
+    ['60 km/h', '60\\,\\mathrm{km/h}'], ['9.8 m/s^2', '9.8\\,\\mathrm{m/s^{2}}'], ['2 mol/L', '2\\,\\mathrm{mol/L}'], ['5 kg', '5\\,\\mathrm{kg}'], ['120 km / 2 h', '\\frac{120\\,\\mathrm{km}}{2}h'], ['(120 km)/(2 h)', '\\frac{120\\,\\mathrm{km}}{2h}'],
+    ['2m + 3', '2m+3'], ['3 g', '3g'], ['2x', '2x'], ['5 min(a,b)', '5\\min(a,b)'], ['3kg + 2m', '3\\,\\mathrm{kg}+2m'],
+    ['|x-2| < 3', '\\left|x-2\\right|<3'], ['abs(x)', '\\left|x\\right|'], ['e^(-x^2/2)', 'e^{-\\frac{x^{2}}{2}}'], ['{1,2,3}', '\\{1,2,3\\}'], ['[a,b]', '[a,b]'], ['3(x+1)', '3(x+1)'],
+    ['angle ABC = 90 deg', '\\angle ABC=90^{\\circ}'], ['AB || CD', 'AB\\parallel CD'], ['AB _|_ CD', 'AB\\perp CD'], ['vec(AB)', '\\vec{AB}'], ['bar(x)', '\\overline{x}'],
+    ['"speed" = d/t', '\\text{speed}=\\frac{d}{t}'], ['x in RR', 'x\\in\\mathbb{R}'], ["f'(x)", 'f^{\\prime}(x)'], ["f''(x)", 'f^{\\prime\\prime}(x)'], ["x'^2", "{x^{\\prime}}^{2}"],
+    ['ce(H2O)', '\\ce{H2O}'], ['ce(2H2 + O2 -> 2H2O)', '\\ce{2H2 + O2 -> 2H2O}'], ['ce(SO4^2-)', '\\ce{SO4^2-}'],
+    ['\\frac{a}{b}', '\\frac{a}{b}'], ['\\sqrt[3]{x}', '\\sqrt[3]{x}'], ['x^{n+1}', 'x^{n+1}'], ['\\alpha/2', '\\frac{\\alpha}{2}'], ['\\left( x \\right)', '\\left(x\\right)'], ['a \\\\ b', 'a\\\\b'],
+    ['\\begin{cases} x+y=3 \\\\ x-y=1 \\end{cases}', '\\begin{cases} x+y=3 \\\\ x-y=1 \\end{cases}'],
+    ['', ''], ['   ', '']
+  ];
+  const Or = await page.evaluate(cs => cs.map(([src, want]) => { let got, err = null, renders = true; try { got = PQ.asciiToTex(src); } catch (e) { err = String(e); }
+    if (got) { try { temml.renderToString(got, { throwOnError: true }); } catch (e) { renders = String(e.message).slice(0, 80); } }
+    return { src, want, got, err, renders }; }), cases);
+  const wrong = Or.filter(r => r.err || r.got !== r.want);
+  check('natural typing: ' + cases.length + ' conversions give the expected LaTeX', wrong.length === 0, wrong.slice(0, 5));
+  const notRender = Or.filter(r => r.renders !== true);
+  check('every converted result renders in Temml without error', notRender.length === 0, notRender.slice(0, 5));
+  const fuzz = await page.evaluate(() => {
+    const run = (alpha, validate, count, seed0) => {
+      const out = { n: 0, threw: 0, slowest: 0, invalid: 0, sample: [] };
+      let seed = seed0; const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+      for (let k = 0; k < count; k++) {
+        let str = ''; const len = 1 + Math.floor(rnd() * 40);
+        for (let j = 0; j < len; j++) str += alpha[Math.floor(rnd() * alpha.length)];
+        const t0 = performance.now(); let tex = null;
+        try { tex = PQ.asciiToTex(str); } catch (e) { out.threw++; }
+        out.slowest = Math.max(out.slowest, performance.now() - t0); out.n++;
+        if (validate && tex) { try { temml.renderToString(tex, { throwOnError: true }); } catch (e) { out.invalid++; if (out.sample.length < 3) out.sample.push([str, tex, String(e.message).slice(0, 60)]); } }
+      }
+      return out;
+    };
+    const natural = run('abx12+-*/^_()[]{}|<>=!.,"%$# `~&:;?\'sqrtpiceal', true, 6000, 12345);
+    const withBackslash = run('abx12+-*/^_()[]{}|<>=!.,\\"%$# \n`~&:;?\'sqrtpiceal', false, 4000, 777);   // random backslash commands are usually not real commands, so only "no crash"
+    // pathological sizes: each must finish quickly
+    const time = s => { const t0 = performance.now(); try { PQ.asciiToTex(s); } catch (e) { return 'threw ' + e; } return Math.round(performance.now() - t0); };
+    const path = { deep: time('('.repeat(5000) + 'x' + ')'.repeat(5000)), long: time('a/b+'.repeat(20000)), carets: time('^'.repeat(5000)), slashes: time('/'.repeat(5000)), backslashes: time('\\'.repeat(3001)), braces: time('{'.repeat(4000)), letters: time('a'.repeat(20000)), quotes: time('"'.repeat(5000)), primes: time("'".repeat(5000)) };
+    return { natural, withBackslash, path };
+  });
+  check('fuzz: 6000 random natural-typing strings and 4000 with backslashes never throw', fuzz.natural.threw === 0 && fuzz.withBackslash.threw === 0 && fuzz.natural.n === 6000, [fuzz.natural.threw, fuzz.withBackslash.threw]);
+  check('fuzz: at least 99.5% of random natural-typing garbage still gives LaTeX that renders', fuzz.natural.invalid <= 30, { invalid: fuzz.natural.invalid, sample: fuzz.natural.sample });
+  check('pathological input (5000 nested brackets, 80 KB, 20000 letters, 5000 carets/slashes/quotes/primes) is fast and never throws', Object.values(fuzz.path).every(v => typeof v === 'number' && v < 1500), fuzz.path);
+  const bt = await page.evaluate(() => {
+    const at = (t) => PQ.convertBackticksAt(t, t.length);
+    return {
+      basic: at('Half is `1/2`'), none: at('no backtick'), open: at('`only open'), empty: at('a `` b'),
+      mid: PQ.convertBackticksAt('Solve `x^2+1` now', 'Solve `x^2+1`'.length),
+      insideMath: at('\\(a `x^2`'), bad: at('`\\frac{1`'), newline: at('`a\nb`'), two: at('`1/2` and `3/4`'), fraction: at('`(x+1)/(x-2)`')
+    };
+  });
+  check('backticks: `1/2` becomes \\(\\frac{1}{2}\\) and the caret lands after it', bt.basic && bt.basic.text === 'Half is \\(\\frac{1}{2}\\)' && bt.basic.caret === bt.basic.text.length, bt.basic);
+  check('backticks: converts in the middle of text and keeps the rest', bt.mid && bt.mid.text === 'Solve \\(x^{2}+1\\) now' && bt.mid.caret === 'Solve \\(x^{2}+1\\)'.length, bt.mid);
+  check('backticks: only the span just closed is converted (an earlier pair stays as typed? no: it is already converted)', bt.two && bt.two.text === '`1/2` and \\(\\frac{3}{4}\\)', bt.two);
+  check('backticks: nothing to do without a closing backtick, for empty spans, newlines, inside \\( \\), or invalid maths', !bt.none && !bt.open && !bt.empty && !bt.newline && !bt.insideMath && !bt.bad, bt);
+  check('backticks: a fraction of groups', bt.fraction && bt.fraction.text === '\\(\\frac{x+1}{x-2}\\)', bt.fraction);
+
   check('no console errors during the whole suite', problems.length === 0, problems);
   const fails = summary();
   await browser.close();

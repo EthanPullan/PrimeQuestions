@@ -59,9 +59,7 @@
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px;}
 
   /* === FRAME (§6) === */
-  .app{display:flex;flex-direction:column;height:100vh;height:100dvh;}
-  .toolbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:9px 16px;
-    background:var(--panel);border-bottom:1px solid var(--line);}
+  .app{display:flex;flex-direction:row;height:100vh;height:100dvh;}
   .brand{display:flex;align-items:center;gap:9px;font-weight:700;letter-spacing:.14em;
     text-transform:uppercase;font-size:13px;color:var(--ink);white-space:nowrap;}
   .brand .mark{width:16px;height:16px;border-radius:4px;background:var(--accent);
@@ -206,8 +204,7 @@
     .btn:active{transform:none;} *{scroll-behavior:auto;} .toast{animation:none;} .progress-bar > div{transition:none;}
   }
 
-  /* === APP: modes, tables, images, test builder === */
-  .modeseg{margin-left:6px;}
+  /* === APP: tables, images === */
   .tbl-scroll{overflow-x:auto;}
   .tbl-edit{border-collapse:separate;border-spacing:4px;}
   .tbl-edit th,.tbl-edit td{padding:0;font-weight:inherit;vertical-align:middle;}
@@ -216,20 +213,7 @@
   .thumbs{display:flex;flex-wrap:wrap;gap:10px;}
   .thumb{border:1px solid var(--line);border-radius:8px;background:var(--panel-2);padding:6px;display:flex;align-items:flex-start;gap:4px;}
   .thumb img{max-width:140px;max-height:110px;display:block;}
-  .trow{display:flex;gap:10px;align-items:center;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);margin-bottom:6px;}
-  .trow.missing{border-style:dashed;background:var(--danger-soft);}
-  .trow .num{font-family:var(--mono);font-weight:600;color:var(--muted);min-width:24px;text-align:right;}
-  .trow .tmain{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
-  .trow .top{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
-  .trow .snip{font-size:13px;}
-  .tbtns{display:flex;gap:2px;flex:none;}
-  .tbtns .xbtn:hover{color:var(--ink);background:var(--panel-2);}
-  .tbtns .xbtn:last-child:hover{color:var(--danger);background:var(--danger-soft);}
-  .tbtns .xbtn[disabled]{opacity:.3;cursor:not-allowed;}
-  .print-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
   .mono{font-family:var(--mono);font-weight:600;}
-  .paper-sheet{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:16px;overflow:auto;}
-  .paper-sheet .sheet{background:var(--panel);max-width:8.5in;margin:0 auto;padding:.6in .55in;box-shadow:var(--shadow);}
 
   /* === The printed test and answer key. Plain black on white (school copiers are greyscale); no colour carries meaning.
      Layout avoids flex and grid inside the questions so page breaks stay reliable on older browsers. === */
@@ -238,8 +222,12 @@
   .sheet .tp-head{border-bottom:1.5pt solid #000;padding-bottom:8pt;margin-bottom:12pt;}
   .sheet .tp-version{float:right;font-weight:700;border:1.5pt solid #000;padding:1pt 8pt;margin-left:12pt;}
   .sheet .tp-lines{display:flex;gap:24pt;margin-top:12pt;}
-  .sheet .tp-line{flex:2;border-bottom:1pt solid #000;padding-bottom:1pt;}
-  .sheet .tp-line.tp-short{flex:1;}
+  .sheet .tp-line{border-bottom:1pt solid #000;padding-bottom:1pt;}
+  .sheet .tp-line.tp-long{flex:2;}
+  .sheet .tp-line.tp-mid{flex:1;}
+  .sheet div.tp-instr{margin-top:8pt;white-space:pre-wrap;overflow-wrap:anywhere;}
+  .sheet .tp-part{position:relative;padding-left:22pt;margin:6pt 0 0;break-inside:avoid;page-break-inside:avoid;}
+  .sheet .tp-plab{position:absolute;left:0;font-weight:700;}
   .sheet .tp-block{break-inside:avoid;page-break-inside:avoid;margin-bottom:12pt;}
   .sheet .tp-intro{font-style:italic;margin-bottom:5pt;}
   .sheet .tp-stim{border:1pt solid #000;padding:8pt;margin-bottom:10pt;}
@@ -272,6 +260,130 @@
   .sheet .tp-key{width:100%;border-collapse:collapse;}
   .sheet .tp-key th,.sheet .tp-key td{border:1pt solid #000;padding:4pt 8pt;text-align:left;vertical-align:top;}
   .sheet .tp-key tr{break-inside:avoid;page-break-inside:avoid;}
+  /* === APP: shell, pages, cards (Phase 3) === */
+  .sidebar{width:216px;flex:none;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:4px;padding:14px 12px;}
+  .sidebar .brand{padding:4px 8px 16px;}
+  .app.focus .sidebar{display:none;}
+  .nav-btn{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:none;background:none;padding:9px 10px;border-radius:9px;cursor:pointer;font-size:14px;font-weight:600;color:var(--muted);}
+  .nav-btn:hover{background:var(--panel-2);color:var(--ink);}
+  .nav-btn.active{background:var(--board);color:#fff;}
+  .nav-btn .ic{width:18px;text-align:center;font-size:15px;}
+  .content{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;}
+  .view{flex:1;min-height:0;display:flex;flex-direction:column;overflow:auto;}
+  .app.dropping .content{outline:3px dashed var(--accent);outline-offset:-6px;}
+  .page{padding:22px 30px 30px;max-width:1120px;width:100%;margin:0 auto;}
+  .topbar2{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px;}
+  .topbar2 h2{margin:0;font-size:20px;}
+  .sect{margin-bottom:28px;}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;}
+  .tile{min-height:112px;border:2px dashed var(--board-line);border-radius:var(--radius);cursor:pointer;color:var(--board);
+    background-color:var(--room-bg);background-image:radial-gradient(var(--grid-line) 1.2px,transparent 1.2px);background-size:14px 14px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:14px;font-weight:700;}
+  .tile:hover{border-color:var(--accent);background-color:var(--accent-soft);}
+  .tile-plus{font-size:28px;line-height:1;font-weight:400;}
+  .card-tile{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;text-align:left;
+    cursor:pointer;display:flex;flex-direction:column;gap:5px;min-height:112px;color:var(--ink);font-size:14px;}
+  .card-tile:hover{border-color:var(--board-line);}
+  .card-tile.has-actions{padding:0;cursor:default;}
+  .ct-main{border:none;background:none;text-align:left;cursor:pointer;padding:14px 16px 6px;display:flex;flex-direction:column;gap:5px;flex:1;color:inherit;font-size:14px;}
+  .ct-actions{display:flex;gap:6px;padding:0 12px 12px;}
+  .ct-title{font-weight:700;font-size:15px;overflow-wrap:anywhere;}
+  .ct-sub{font-size:12.5px;color:var(--muted);}
+  .ct-when{font-size:11.5px;color:var(--muted);font-family:var(--mono);margin-top:auto;}
+  .dropzone{border:2px dashed var(--accent);border-radius:var(--radius);background:var(--accent-soft);padding:34px;text-align:center;margin-bottom:18px;display:flex;flex-direction:column;align-items:center;gap:8px;}
+  .dz-title{font-size:17px;font-weight:700;}
+  .plainlist{margin:0;padding-left:18px;font-size:13px;line-height:1.65;}
+  .menu{position:fixed;z-index:950;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(20,40,33,.2);padding:5px;min-width:210px;}
+  .menu-item{display:flex;align-items:center;gap:6px;width:100%;border:none;background:none;text-align:left;padding:7px 10px;border-radius:7px;cursor:pointer;font-size:13px;color:var(--ink);}
+  .menu-item:hover,.menu-item:focus{background:var(--panel-2);outline:none;}
+  .menu-item[disabled]{opacity:.4;cursor:not-allowed;}
+  .menu-check{width:14px;flex:none;color:var(--ok);font-weight:700;}
+  .menu-hr{height:1px;background:var(--line);margin:4px 2px;}
+
+  /* a bank's workspace */
+  .page.bankpage{max-width:none;padding:0;margin:0;flex:1;min-height:0;display:flex;flex-direction:column;}
+  .bankpage .topbar2{margin:0;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);}
+  .bankpage .topbar2 h2{font-size:16px;}
+  .editor{display:flex;flex-direction:column;flex:1;min-height:0;}
+  .editor.compact .editor-grid{grid-template-columns:minmax(0,1fr);}
+  .editor.compact .editor-grid > .col-preview{position:static;}
+  .editor.compact .stage-bar{padding:8px 12px;}
+  .part-card{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px;background:var(--panel-2);}
+  .part-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .eq-dialog textarea{font-family:var(--mono);}
+  .eq-preview{min-height:56px;border:1px solid var(--line);border-radius:9px;padding:10px 12px;background:var(--panel);font-size:1.3em;margin:8px 0;overflow:auto;}
+  .eq-err{color:var(--danger);min-height:1.3em;}
+  .eq-grid{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+  .eq-sym{min-width:38px;justify-content:center;font-family:var(--mono);}
+  .eq-dialog .seg{margin-top:4px;}
+
+  /* the test editor: paper on the left, banks on the right */
+  .exam{display:flex;flex-direction:column;flex:1;min-height:0;}
+  .exam-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--line);}
+  .exam-name{font-weight:700;font-size:14px;margin:0 12px 0 6px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .menubtn{border-color:transparent;background:none;}
+  .menubtn:hover{background:var(--panel-2);}
+  .btn.icon{padding:5px 10px;font-size:15px;}
+  .btn.active{background:var(--accent-soft);border-color:var(--accent);}
+  .chk-badge{font-family:var(--mono);font-size:11px;border-radius:20px;padding:0 6px;background:var(--panel-2);color:var(--ok);}
+  .btn.warn .chk-badge{background:var(--accent);color:#fff;}
+  .exam-main{flex:1;display:flex;min-height:0;}
+  .exam-paper{flex:1;min-width:0;overflow:auto;padding:14px 28px 50px;background:var(--app-bg);}
+  .pv-bar{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;}
+  .exam .paper-sheet{background:none;border:none;padding:0;position:relative;overflow:visible;}
+  .exam .sheet{background:#fff;margin:0 auto;padding:.6in .8in .6in .65in;box-shadow:var(--shadow);min-height:9in;}
+  .exam .sheet.paper-letter,.exam .sheet.paper-legal{max-width:8.5in;}
+  .exam .sheet.paper-a4{max-width:210mm;}
+  .exam-panel{width:430px;flex:none;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0;}
+  .ep-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px 0;}
+  .ep-head:empty{display:none;}
+  .ep-title{font-weight:700;}
+  .ep-tabs{display:flex;gap:5px;flex-wrap:wrap;align-items:center;}
+  .ep-tab{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:20px;background:var(--panel-2);overflow:hidden;}
+  .ep-tab > button{border:none;background:none;cursor:pointer;padding:4px 10px;font-size:12.5px;font-weight:600;color:var(--muted);max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .ep-tab.active{background:var(--board);border-color:var(--board);}
+  .ep-tab.active > button{color:#fff;}
+  .ep-tab .ep-x{padding:4px 8px 4px 0;font-size:14px;}
+  .ep-plus{border:1px dashed var(--board-line);background:none;border-radius:20px;cursor:pointer;width:28px;height:26px;font-size:16px;color:var(--board);}
+  .ep-plus:hover{background:var(--accent-soft);}
+  .ep-body{flex:1;min-height:0;overflow:hidden;padding:12px;display:flex;flex-direction:column;gap:10px;}
+  .ep-body.is-editor{padding:0;}
+  .ep-tools{display:flex;flex-direction:column;gap:8px;}
+  .ep-list{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:2px;}
+  .qcard{border:1px solid var(--line);border-radius:10px;padding:9px 10px;background:var(--panel);cursor:grab;flex:none;}
+  .qcard:hover{border-color:var(--board-line);}
+  .qcard.used{opacity:.6;cursor:default;}
+  .qcard .top{display:flex;gap:6px;flex-wrap:wrap;}
+  .qcard .snip{font-size:13px;line-height:1.4;margin:6px 0 8px;overflow-wrap:anywhere;}
+  .qcard .acts{display:flex;gap:6px;}
+  .vcard{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--panel);flex:none;display:flex;flex-direction:column;gap:4px;}
+  .vtitle{display:flex;gap:8px;align-items:center;}
+  .vcard .acts{margin-top:6px;}
+  .tp-empty{border:2px dashed #bbb;border-radius:8px;padding:34px;text-align:center;color:#666;margin:10px 0;}
+  .is-dragging .tp-empty{border-color:var(--accent);background:var(--accent-soft);}
+  .drop-line{display:none;position:absolute;left:8px;right:8px;height:0;border-top:3px solid var(--accent);border-radius:3px;pointer-events:none;z-index:5;}
+  .sheet.editing .tp-q,.sheet.editing .tp-stim{position:relative;}
+  .ed-tools{position:absolute;top:-8px;right:0;display:flex;flex-direction:row;align-items:center;gap:1px;opacity:0;transition:opacity .1s;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:2px;box-shadow:var(--shadow-sm);z-index:3;}
+  .sheet.editing .tp-q:hover > .ed-tools,.sheet.editing .tp-stim:hover > .ed-tools,.ed-tools:focus-within{opacity:1;}
+  .ed-tools.for-stim{top:2px;right:2px;}
+  .ed-tools .xbtn{font-size:12px;padding:3px 7px;}
+  .ed-tools .xbtn:hover{color:var(--ink);background:var(--panel-2);}
+  .ed-tools .xbtn.t-remove:hover{color:var(--danger);background:var(--danger-soft);}
+  .ed-tools .xbtn[disabled]{opacity:.3;cursor:not-allowed;}
+  .ed-handle{cursor:grab;text-align:center;color:var(--muted);padding:2px 4px;user-select:none;font-size:15px;}
+  .tp-block.dragging{opacity:.4;}
+  .tp-block.join-target{outline:3px solid var(--accent);outline-offset:4px;border-radius:4px;}
+  .sheet .tp-edit{font:inherit;color:inherit;background:transparent;border:1px dashed transparent;border-radius:4px;padding:1px 4px;margin:0 0 2pt -4px;width:calc(100% + 4px);display:block;}
+  .sheet .tp-edit:hover{border-color:#bbb;}
+  .sheet .tp-edit:focus{outline:none;border-color:var(--accent);background:#fffdf7;}
+  .sheet .tp-title{font-size:18pt;font-weight:700;line-height:1.2;width:calc(100% - 110pt);}
+  .sheet .tp-subin{font-size:11pt;color:#444;}
+  .sheet textarea.tp-instr{resize:none;min-height:0;font-size:11pt;line-height:1.35;margin-top:6pt;overflow:hidden;}
+  .sheet .tp-addinstr{border:none;background:none;color:#777;cursor:pointer;font:inherit;font-size:10pt;padding:2pt 0;}
+  .sheet .tp-addinstr:hover{color:var(--board);}
+  .sheet button.tp-line{background:none;border-top:none;border-left:none;border-right:none;font:inherit;color:inherit;text-align:left;cursor:pointer;border-radius:0;}
+  .sheet .tp-line.off{opacity:.3;border-bottom-style:dashed;}
+  @media (max-width:1100px){ .exam-panel{width:340px;} }
   #print-root{display:none;color:#000;background:#fff;}
   @media print{
     html,body{height:auto;background:#fff;}
@@ -759,6 +871,258 @@ function mathErrors(text) {
     catch (e) { out.push(String(e && e.message || e).replace(/^Temml parse error:\s*/, '')); }
   }
   return out;
+}
+
+/* === EQUATIONS: natural typing to LaTeX (pure, no DOM) === */
+// A colleague types what they would say: 1/2, x^2, sqrt(x), pi, <=, 2 1/3, ce(H2O). This turns it into LaTeX.
+// LaTeX typed by hand (\frac{a}{b}, \alpha, x^{n+1}) passes through, so the two styles can be mixed. Never throws.
+const EQ_GREEK = ['varepsilon', 'vartheta', 'upsilon', 'epsilon', 'omega', 'lambda', 'varphi', 'alpha', 'gamma', 'delta', 'kappa', 'sigma', 'theta', 'zeta', 'beta', 'iota', 'chi', 'phi', 'psi', 'rho', 'tau', 'eta', 'mu', 'nu', 'xi', 'pi',
+  'Gamma', 'Delta', 'Theta', 'Lambda', 'Omega', 'Sigma', 'Phi', 'Psi', 'Pi', 'Xi'];     // longest first, for prefix matching
+const EQ_TRIG = ['arcsin', 'arccos', 'arctan', 'sinh', 'cosh', 'tanh', 'sin', 'cos', 'tan', 'sec', 'csc', 'cot', 'log', 'ln', 'exp'];   // take an argument: sin x, sin(x)
+const EQ_OPFUNCS = ['lim', 'max', 'min', 'det', 'gcd'];                                  // only a directly following (group)
+const EQ_WORDS = {
+  oo: '\\infty', inf: '\\infty', infty: '\\infty', pm: '\\pm', mp: '\\mp', xx: '\\times', times: '\\times', cdot: '\\cdot', div: '\\div',
+  angle: '\\angle', triangle: '\\triangle', perp: '\\perp', parallel: '\\parallel', therefore: '\\therefore',
+  sum: '\\sum', prod: '\\prod', int: '\\int', partial: '\\partial', nabla: '\\nabla', forall: '\\forall', exists: '\\exists',
+  in: '\\in', notin: '\\notin', subset: '\\subset', cup: '\\cup', cap: '\\cap', emptyset: '\\emptyset',
+  approx: '\\approx', sim: '\\sim', cong: '\\cong', and: '\\text{ and }', or: '\\text{ or }', if: '\\text{ if }',
+  cdots: '\\cdots', ldots: '\\ldots', NN: '\\mathbb{N}', ZZ: '\\mathbb{Z}', QQ: '\\mathbb{Q}', RR: '\\mathbb{R}', CC: '\\mathbb{C}',
+  deg: '^{\\circ}', degC: '^{\\circ}\\mathrm{C}', degF: '^{\\circ}\\mathrm{F}'
+};
+const EQ_ACCENTS = { vec: '\\vec', bar: '\\overline', hat: '\\hat', dot: '\\dot', tilde: '\\tilde', overline: '\\overline', underline: '\\underline' };
+const EQ_OPS = [['<=>', '\\Leftrightarrow'], ['<=', '\\le'], ['>=', '\\ge'], ['!=', '\\ne'], ['~=', '\\approx'], ['~~', '\\approx'], ['->', '\\to'], ['=>', '\\Rightarrow'],
+  ['+-', '\\pm'], ['-+', '\\mp'], ['-:', '\\div'], ['...', '\\ldots'], ['||', '\\parallel'], ['_|_', '\\perp'], ['//', '/'], ['*', '\\cdot']];
+
+function asciiToTex(input) {
+  const src = String(input == null ? '' : input);
+  if (/\\begin\b/.test(src)) return src.trim();          // a LaTeX environment is left exactly as typed
+  const n = src.length;
+  let i = 0, depth = 0;
+  // A number followed by a unit is written upright: 60 km/h, 9.8 m/s^2, 5 kg. Only units that cannot be mistaken for algebra
+  // (km, kg, mol, ...) or a unit over a unit (m/s, g/mL); "2m" and "3 g" stay as variables, because 2m is far more often algebra.
+  const U1 = '(?:km|cm|mm|kg|mg|ms|mL|mol|Hz|kPa|Pa|kJ|MHz|min|hr|[mgsNJWVALK])', U2 = '(?:km|cm|mm|kg|mg|ms|mL|mol|min|hr|[mgshLK])';
+  const UNIT = new RegExp('[ \\t]*(' + U1 + ')(?:/(' + U2 + ')(?:\\^(\\d))?)?(?![A-Za-z(])', 'y');
+  const NUM = /\d+(?:\.\d+)?|\.\d+/y, RUN = /[A-Za-z]{1,12}/y, MIX = /[ \t]+(\d+)[ \t]*\/[ \t]*(\d+)(?![\d.])/y;
+  const isLetter = c => c !== undefined && /[A-Za-z]/.test(c), isDigit = c => c !== undefined && c >= '0' && c <= '9';
+  const CLOSE = { ')': 1, ']': 1, '}': 1 };
+  const ws = () => { while (i < n && /\s/.test(src[i])) i++; };
+  // a LaTeX command followed by a letter needs a space between them
+  const join = parts => { let r = '', last = ''; for (const p of parts) { if (!p) continue; if (last && /\\[A-Za-z]+$/.test(last) && /^[A-Za-z]/.test(p)) r += ' '; r += p; last = p; } return r; };
+  const needsLR = t => /\\frac|\\sum|\\prod|\\int|\\binom|\\tfrac/.test(t);
+  const escText = t => t.replace(/[\\{}^~`]/g, '').replace(/[%&#_$]/g, m => '\\' + m);
+  const rawGroup = (open, close) => {      // src[i] === open: copy through the matching close, verbatim (closing it if the input did not).
+    let d = 0, out = '';                   // A bare % $ # & would break TeX (a % swallows the closing brace), so those are escaped.
+    while (i < n) {
+      const c = src[i];
+      if (c === '\\') { out += src.slice(i, i + 2); i += 2; continue; }
+      if (c === open) d++; else if (c === close) { d--; if (d === 0) { i++; return out + c; } }
+      out += (c === '%' || c === '$' || c === '#' || c === '&') ? '\\' + c : c;
+      i++;
+    }
+    return out + close.repeat(Math.max(d, 0));
+  };
+  const rawParen = () => {                  // src[i] === '(': the text up to the matching ')', verbatim
+    let d = 0; const start = i + 1;
+    while (i < n) { const c = src[i]; if (c === '(') d++; else if (c === ')') { d--; if (d === 0) { const t = src.slice(start, i); i++; return t; } } i++; }
+    return src.slice(start, n);
+  };
+  const group = close => {                  // the opener has been consumed; parse to the closer
+    if (depth >= 120) return '';
+    depth++; const inner = parseSeq(close); depth--;
+    if (src[i] === close) i++;
+    return inner;
+  };
+  const balancedBraces = t => { let d = 0; for (const c of t) { if (c === '{') d++; else if (c === '}') { d--; if (d < 0) return false; } } return d === 0; };
+
+  const operand = () => {                   // one atom, used by sqrt( ), vec( ) ...
+    ws();
+    if (i >= n || CLOSE[src[i]]) return '';
+    const a = parseAtom();
+    return a.inner != null ? a.inner : a.tex;
+  };
+
+  const scriptArg = () => {                 // what follows ^ or _
+    let sign = '';
+    if (src[i] === '-' || src[i] === '+') { sign = src[i]; i++; }
+    const c = src[i];
+    if (c === undefined) return sign;
+    if (c === '(') { i++; return sign + group(')'); }
+    if (c === '{') { const g = rawGroup('{', '}'); return sign + g.slice(1, -1); }
+    if (isDigit(c) || (c === '.' && isDigit(src[i + 1]))) { NUM.lastIndex = i; const m = NUM.exec(src); i += m[0].length; return sign + m[0]; }
+    if (c === '\\') return sign + parseAtom().tex;
+    if (isLetter(c)) {
+      RUN.lastIndex = i; const run = RUN.exec(src)[0];
+      const g = EQ_GREEK.find(w => run.startsWith(w));
+      if (g) { i += g.length; return sign + '\\' + g; }
+      for (const w of ['infty', 'inf', 'oo']) if (run === w) { i += w.length; return sign + '\\infty'; }
+      i++; return sign + c;
+    }
+    return sign;
+  };
+
+  const parseFunc = (name, takesArg) => {
+    let tex = '\\' + name;
+    for (;;) { const c = src[i]; if (c === '^' || (c === '_' && !src.startsWith('_|_', i))) { i++; tex += (c === '^' ? '^{' : '_{') + scriptArg() + '}'; } else break; }
+    if (src[i] === '(') { i++; return { tex: tex + '(' + group(')') + ')' }; }
+    if (takesArg) {
+      const save = i; ws();
+      if (i < n && (isLetter(src[i]) || isDigit(src[i]) || src[i] === '\\')) return { tex: join([tex, parseAtom().tex]) };
+      i = save;
+    }
+    return { tex };
+  };
+
+  const parseWord = () => {
+    RUN.lastIndex = i; const run = RUN.exec(src)[0];
+    if ((run === 'ce' || run === 'pu') && src[i + run.length] === '(') {
+      i += run.length; let raw = rawParen().replace(/[%$#&]/g, '');
+      if (raw.endsWith('\\')) raw = raw.slice(0, -1);
+      if (!balancedBraces(raw)) raw = raw.replace(/[{}]/g, '');
+      return { tex: '\\' + run + '{' + raw + '}' };
+    }
+    if (run.startsWith('sqrt')) {
+      i += 4; let idx = null;
+      if (src[i] === '[') { i++; idx = group(']'); }
+      return { tex: '\\sqrt' + (idx !== null ? '[' + idx + ']' : '') + '{' + operand() + '}' };
+    }
+    if (run === 'cbrt') { i += 4; return { tex: '\\sqrt[3]{' + operand() + '}' }; }
+    if (run === 'root') {
+      i += 4; let idx = '';
+      if (src[i] === '(') { i++; idx = group(')'); }
+      return { tex: '\\sqrt[' + idx + ']{' + operand() + '}' };
+    }
+    if (run === 'abs') { i += 3; return { tex: '\\left|' + operand() + '\\right|' }; }
+    if (run === 'floor') { i += 5; return { tex: '\\lfloor ' + operand() + '\\rfloor' }; }
+    if (run === 'ceil') { i += 4; return { tex: '\\lceil ' + operand() + '\\rceil' }; }
+    if (EQ_ACCENTS[run]) { i += run.length; return { tex: EQ_ACCENTS[run] + '{' + operand() + '}' }; }
+    if (run === 'text' && src[i + 4] === '(') { i += 4; return { tex: '\\text{' + escText(rawParen()) + '}' }; }
+    const trig = EQ_TRIG.find(w => run.startsWith(w));
+    if (trig) { i += trig.length; return parseFunc(trig, true); }
+    const opf = EQ_OPFUNCS.find(w => run.startsWith(w));
+    if (opf) { i += opf.length; return parseFunc(opf, false); }
+    const g = EQ_GREEK.find(w => run.startsWith(w));
+    if (g) { i += g.length; return { tex: '\\' + g }; }
+    if (Object.prototype.hasOwnProperty.call(EQ_WORDS, run)) { i += run.length; return { tex: EQ_WORDS[run] }; }
+    // a single variable; f(x) stays together so f(x)/2 is a fraction of the whole call
+    const c = src[i]; i++;
+    if (src[i] === '(' && depth < 120) { i++; return { tex: c + '(' + group(')') + ')' }; }
+    return { tex: c };
+  };
+
+  const parseAtom = () => {
+    if (i >= n) return { tex: '' };
+    const c = src[i];
+    if (isDigit(c) || (c === '.' && isDigit(src[i + 1]))) {
+      NUM.lastIndex = i; const m = NUM.exec(src); i += m[0].length;
+      UNIT.lastIndex = i; const u = UNIT.exec(src);
+      if (u && (u[2] || u[1].length > 1)) { i += u[0].length; return { tex: m[0] + '\\,\\mathrm{' + u[1] + (u[2] ? '/' + u[2] + (u[3] ? '^{' + u[3] + '}' : '') : '') + '}' }; }
+      return { tex: m[0] };
+    }
+    if (isLetter(c)) return parseWord();
+    if (c === '\\') {
+      const j = i + 1;
+      if (j >= n) { i = n; return { tex: '' }; }
+      if (!isLetter(src[j])) { const t = src.slice(i, j + 1); i = j + 1; return { tex: t }; }       // \\ \{ \, \; \%
+      RUN.lastIndex = j; const name = RUN.exec(src)[0]; i = j + name.length;
+      let tex = '\\' + name;
+      if (name === 'left' || name === 'right') { if (src[i] === '\\') { tex += src.slice(i, i + 2); i += 2; } else if (i < n) { tex += src[i]; i++; } return { tex }; }
+      for (;;) { if (src[i] === '{') tex += rawGroup('{', '}'); else if (name === 'sqrt' && src[i] === '[') tex += rawGroup('[', ']'); else break; }
+      return { tex };
+    }
+    if (c === '(') { i++; const inner = group(')'); return { tex: needsLR(inner) ? '\\left(' + inner + '\\right)' : '(' + inner + ')', inner }; }
+    if (c === '[') { i++; const inner = group(']'); return { tex: '[' + inner + ']', inner }; }
+    if (c === '{') { i++; const inner = group('}'); return { tex: '\\{' + inner + '\\}', inner }; }
+    if (c === '|') { i++; const inner = group('|'); return { tex: '\\left|' + inner + '\\right|', inner }; }
+    if (c === '"') { i++; const e = src.indexOf('"', i); const t = e < 0 ? src.slice(i) : src.slice(i, e); i = e < 0 ? n : e + 1; return { tex: '\\text{' + escText(t) + '}' }; }
+    if (c === '^' || c === '_' || c === "'") return { tex: '{}' };       // a script with nothing before it; parseScript consumes it
+    i++;
+    if (c === '%' || c === '$' || c === '#' || c === '&') return { tex: '\\' + c };
+    if (c === '~') return { tex: '\\sim' };
+    if (c === '`') return { tex: '' };
+    return { tex: c };
+  };
+
+  const parseScript = () => {
+    const base = parseAtom();
+    let tex = base.tex || '{}', hasSup = false, hasSub = false, scripted = false;
+    for (;;) {
+      const c = src[i];
+      if (c === "'") {                      // f'(x): primes are a superscript
+        let k = 0; while (src[i] === "'") { i++; k++; }
+        if (hasSup) { tex = '{' + tex + '}'; hasSub = false; }
+        tex += '^{' + '\\prime'.repeat(k) + '}'; hasSup = true; scripted = true;
+        continue;
+      }
+      if (c === '^' || (c === '_' && !src.startsWith('_|_', i))) {
+        i++;
+        if ((c === '^' && hasSup) || (c === '_' && hasSub)) { tex = '{' + tex + '}'; hasSup = hasSub = false; }   // x^2^3 -> {x^2}^3
+        tex += (c === '^' ? '^{' : '_{') + scriptArg() + '}';
+        if (c === '^') hasSup = true; else hasSub = true;
+        scripted = true;
+        continue;
+      }
+      break;
+    }
+    return scripted ? { tex } : base;
+  };
+
+  const parseFrac = () => {
+    let left = parseScript();
+    for (;;) {
+      if (/^\d+$/.test(left.tex)) {      // mixed number: a whole number, a space, then n/d
+        MIX.lastIndex = i; const m = MIX.exec(src);
+        if (m) { i += m[0].length; left = { tex: left.tex + '\\tfrac{' + m[1] + '}{' + m[2] + '}' }; continue; }
+      }
+      const save = i; ws();
+      if (src[i] === '/' && src[i + 1] !== '/') {
+        i++; ws();
+        if (i >= n || CLOSE[src[i]]) { i = save; break; }
+        const right = parseScript();
+        left = { tex: '\\frac{' + (left.inner != null ? left.inner : left.tex) + '}{' + (right.inner != null ? right.inner : right.tex) + '}' };
+        continue;
+      }
+      i = save; break;
+    }
+    return left;
+  };
+
+  const parseItem = () => {
+    for (const [from, to] of EQ_OPS) if (src.startsWith(from, i)) { i += from.length; return { tex: to }; }
+    return parseFrac();
+  };
+
+  function parseSeq(close) {
+    const parts = [];
+    for (;;) {
+      ws();
+      if (i >= n) break;
+      const c = src[i];
+      if (close && c === close) break;
+      if (CLOSE[c]) { parts.push(c === '}' ? '\\}' : c); i++; continue; }      // a stray closer is just a character
+      const before = i;
+      parts.push(parseItem().tex);
+      if (i === before) i++;                                                      // never stall
+    }
+    return join(parts);
+  }
+
+  return parseSeq(null).trim();
+}
+
+// The user has just typed a closing backtick at `caret`. If `...` before it is a valid natural equation, return the text with
+// that span replaced by \( LaTeX \) and the new caret; otherwise null and nothing changes. Not used inside \( \) already.
+function convertBackticksAt(text, caret) {
+  if (text[caret - 1] !== '`') return null;
+  const open = text.lastIndexOf('`', caret - 2);
+  if (open < 0) return null;
+  const inner = text.slice(open + 1, caret - 1);
+  if (!inner.trim() || inner.indexOf('\n') >= 0) return null;
+  if (insideMath(text, open)) return null;
+  const tex = asciiToTex(inner);
+  if (!tex) return null;
+  try { temml.renderToString(tex, { throwOnError: true, displayMode: false }); } catch (e) { return null; }
+  const rep = '\\(' + tex + '\\)';
+  return { text: text.slice(0, open) + rep + text.slice(caret), caret: open + rep.length };
 }
 
 /* === QUESTIONS: shape, text fields, readiness === */
@@ -1798,20 +2162,23 @@ async function renderBlockImage(lines, widthPt) {
 
 /* === APP STATE === */
 const state = {
-  questions: [], stimuli: [], tests: [], imageIds: new Set(),
-  mode: 'questions',                       // 'questions' | 'stimuli' | 'tests'
-  selectedId: null,
-  editor: null,                            // { kind, draft, original, isNew, dirty, pending, ... }
-  filter: { text: '', type: '', course: '', status: '' },
-  search: { stimuli: '', tests: '' },
+  banks: [], questions: [], stimuli: [], tests: [], imageIds: new Set(),
+  view: { name: 'home' },                 // home | tests | banks | bank {id} | test {id|null} | imports
   persisted: null
 };
-const el = {};         // cached DOM nodes
-let lastField = null;  // last focused text field in the editor (target of the insert buttons)
+const el = {};                            // shell nodes
+const active = { qed: null, sed: null, exam: null };   // editors on screen, for the unsaved-changes guard
+const bankById = id => state.banks.find(b => b.id === id);
+const sortedBanks = () => state.banks.slice().sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many || one + 's');
+const snippet = s => { const t = s.replace(/\\\(([\s\S]*?)\\\)/g, '[math]').replace(/\s+/g, ' ').trim(); return t.length > 110 ? t.slice(0, 107) + '…' : (t || '(no text yet)'); };
+const PAPERS = { letter: { label: 'Letter', css: 'letter' }, legal: { label: 'Legal', css: 'legal' }, a4: { label: 'A4', css: 'A4' } };
+const paperPref = () => (PAPERS[ls.get('paper')] ? ls.get('paper') : 'letter');
+const effectivePaper = test => (test && PAPERS[test.paper] ? test.paper : paperPref());
 
 async function loadAll() {
-  const [q, s, t, ids] = await Promise.all([db.getAll('questions'), db.getAll('stimuli'), db.getAll('tests'), db.getImageIds()]);
-  state.questions = q; state.stimuli = s; state.tests = t; state.imageIds = new Set(ids);
+  const [b, q, s, t, ids] = await Promise.all([db.getAll('banks'), db.getAll('questions'), db.getAll('stimuli'), db.getAll('tests'), db.getImageIds()]);
+  state.banks = b; state.questions = q; state.stimuli = s; state.tests = t; state.imageIds = new Set(ids);
 }
 
 async function ensurePersist() {
@@ -1819,6 +2186,13 @@ async function ensurePersist() {
   ls.set('persistAsked', '1');
   try { if (navigator.storage && navigator.storage.persist) state.persisted = await navigator.storage.persist(); } catch (e) { /* not supported */ }
 }
+
+const relTime = iso => {
+  const ms = Date.now() - Date.parse(iso);
+  if (isNaN(ms)) return '';
+  const m = Math.floor(ms / 60000), hr = Math.floor(m / 60), d = Math.floor(hr / 24);
+  return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : hr < 24 ? plural(hr, 'hour') + ' ago' : d < 30 ? plural(d, 'day') + ' ago' : new Date(iso).toLocaleDateString();
+};
 
 /* === IMAGES and TABLES: shared by the editors, the previews and printing === */
 const MAX_IMAGE_EDGE = 1600, MAX_IMAGE_BYTES = 25 * 1024 * 1024, MAX_SVG_BYTES = 2 * 1024 * 1024;
@@ -1876,137 +2250,114 @@ function buildImgsDom(ids, cls) {
   return h('div', { class: cls || 'pq-imgs' }, ids.map((id, i) => imgUrls.has(id) ? h('img', { src: imgUrls.get(id), alt: 'Image ' + (i + 1) }) : h('span', { class: 'hint' }, '[image not found]')));
 }
 
-/* === UI: shell, modes, lists === */
-const PAPERS = { letter: { label: 'Letter', css: 'letter' }, legal: { label: 'Legal', css: 'legal' }, a4: { label: 'A4', css: 'A4' } };
-const MODES = [['questions', 'Questions'], ['stimuli', 'Stimuli'], ['tests', 'Tests']];
+/* === SMALL UI PIECES === */
+function field(label, control, id) { return h('div', { class: 'field' }, h('label', { for: id }, label), control); }
+const section = (title, ...kids) => h('section', { class: 'sect' }, h('h3', { class: 'section-title' }, title), kids);
+const topbar = (title, ...actions) => h('div', { class: 'topbar2' }, h('h2', null, title), h('div', { class: 'spacer' }), actions);
+const tile = (label, id, onclick) => h('button', { type: 'button', class: 'tile', id, onclick }, h('span', { class: 'tile-label' }, label), h('span', { class: 'tile-plus' }, '+'));
+const cards = (...kids) => h('div', { class: 'cards' }, kids);
+
+function promptDialog({ title, label, value, confirm }) {
+  const input = h('input', { type: 'text', class: 'in', id: 'prompt-input', value: value || '', 'aria-label': label,
+    onkeydown: e => { if (e.key === 'Enter') { e.preventDefault(); const b = document.querySelector('.modal .btn.primary'); if (b) b.click(); } } });
+  const p = modal({ title, body: h('div', { class: 'field' }, h('label', { for: 'prompt-input' }, label), input),
+    actions: [{ label: 'Cancel', value: null }, { label: confirm || 'OK', value: 'ok', kind: 'primary' }], dismissValue: null });
+  input.focus(); input.select();
+  return p.then(v => (v === 'ok' ? input.value.trim() : null));
+}
+
+// A small popover menu under `anchor`. items: [{label, onclick, checked, disabled, hr, id}]. Closes on outside click or Escape.
+let openMenuEl = null, menuOff = null;
+function closeMenu() {
+  if (menuOff) { document.removeEventListener('mousedown', menuOff, true); menuOff = null; }
+  if (openMenuEl) { openMenuEl.remove(); openMenuEl = null; }
+}
+function openMenu(anchor, items, opts) {
+  closeMenu();
+  const rect = anchor.getBoundingClientRect();
+  const menu = h('div', { class: 'menu', role: 'menu', style: 'left:' + Math.max(8, Math.min(rect.left, window.innerWidth - 250)) + 'px;top:' + (rect.bottom + 4) + 'px;' + (opts && opts.right ? 'left:auto;right:' + Math.max(8, window.innerWidth - rect.right) + 'px;' : '') },
+    items.map(it => it.hr ? h('div', { class: 'menu-hr' }) : h('button', { type: 'button', role: 'menuitem', class: 'menu-item', id: it.id, disabled: !!it.disabled,
+      onclick: () => { closeMenu(); if (it.onclick) it.onclick(); } }, h('span', { class: 'menu-check' }, it.checked ? '✓' : ''), it.label)));
+  document.body.append(menu);
+  openMenuEl = menu;
+  const first = menu.querySelector('.menu-item:not([disabled])'); if (first) first.focus();
+  const off = e => { if (!menu.contains(e.target) && e.target !== anchor && !anchor.contains(e.target)) closeMenu(); };
+  menuOff = off;                 // removed again by closeMenu, so an old menu's listener can never close a newer menu
+  document.addEventListener('mousedown', off, true);
+  menu.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeMenu(); anchor.focus(); }
+    const its = Array.from(menu.querySelectorAll('.menu-item:not([disabled])')), k = its.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown') { e.preventDefault(); its[(k + 1) % its.length].focus(); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); its[(k - 1 + its.length) % its.length].focus(); }
+  });
+}
+
+/* === SHELL and NAVIGATION === */
+const NAV = [['home', 'Home', '⌂'], ['tests', 'Tests', '▤'], ['banks', 'Question Banks', '☰'], ['imports', 'Imports', '⇩']];
+const navGroup = name => (name === 'bank' ? 'banks' : name === 'test' ? 'tests' : name);
 
 function buildShell() {
   const fileInput = h('input', { type: 'file', accept: 'application/pdf,.pdf', style: 'display:none', id: 'file-input', onchange: async e => { const f = e.target.files[0]; e.target.value = ''; if (f) await importFile(f); } });
-  el.search = h('input', { type: 'text', class: 'in', placeholder: 'Search questions…', 'aria-label': 'Search questions', oninput: e => { if (state.mode === 'questions') state.filter.text = e.target.value; else state.search[state.mode] = e.target.value; renderPanel(); } });
-  const mkSel = (key, aria) => h('select', { 'aria-label': aria, onchange: e => { state.filter[key] = e.target.value; renderPanel(); } });
-  el.fType = mkSel('type', 'Filter by type');
-  el.fCourse = mkSel('course', 'Filter by course');
-  el.fStatus = mkSel('status', 'Filter by status');
-  el.filters = h('div', { class: 'filters' }, el.fType, el.fCourse, el.fStatus);
-  el.panelTitle = h('h3', { class: 'section-title', style: 'margin:0' }, 'Questions');
-  el.count = h('span', { class: 'count-pill' }, '0');
-  el.list = h('ul', { class: 'qlist' });
-  el.stage = h('div', { class: 'stage' });
-  el.stage.addEventListener('focusin', e => { if (e.target.dataset && e.target.dataset.math !== undefined) lastField = e.target; });
+  el.fileInput = fileInput;
+  el.view = h('div', { class: 'view', id: 'view' });
   el.status = h('footer', { class: 'statusbar' });
-  el.newLabel = h('span', null, 'New question');
   el.printRoot = h('div', { id: 'print-root' });
   el.pageStyle = h('style', { id: 'page-style' });
   document.head.append(el.pageStyle);
-  const modeSeg = h('div', { class: 'seg modeseg', role: 'group', 'aria-label': 'What to work on' },
-    MODES.map(([m, l]) => h('button', { type: 'button', id: 'mode-' + m, 'data-mode': m, 'aria-pressed': 'false', onclick: () => setMode(m) }, l)));
-  document.getElementById('root').append(h('div', { class: 'app' },
-    h('header', { class: 'toolbar' },
-      h('div', { class: 'brand' }, h('span', { class: 'mark' }), 'Prime Questions ', h('small', null, 'question bank')),
-      modeSeg,
-      h('div', { class: 'spacer' }),
-      h('button', { class: 'btn primary', type: 'button', id: 'btn-new', onclick: () => newItem() }, h('span', { class: 'ic' }, '+'), el.newLabel),
-      h('button', { class: 'btn', type: 'button', id: 'btn-import', onclick: () => fileInput.click() }, 'Import bank'),
-      h('button', { class: 'btn primary', type: 'button', id: 'btn-export', onclick: () => exportBank() }, 'Export bank'),
-      fileInput),
-    h('div', { class: 'main' },
-      h('aside', { class: 'panel' },
-        h('div', { class: 'panel-head' }, el.search, el.filters, h('div', { class: 'panel-meta' }, el.panelTitle, el.count)),
-        el.list),
-      el.stage),
-    el.status), el.printRoot);
-  window.addEventListener('beforeunload', e => { if (state.editor && state.editor.dirty) { e.preventDefault(); e.returnValue = ''; } });
-  syncChrome();
+  el.sidebar = h('nav', { class: 'sidebar', 'aria-label': 'Main' },
+    h('div', { class: 'brand' }, h('span', { class: 'mark' }), h('span', null, 'Prime Questions')),
+    NAV.map(([name, label, icon]) => h('button', { type: 'button', class: 'nav-btn', id: 'nav-' + name, 'data-nav': name, onclick: () => navigate({ name }) }, h('span', { class: 'ic', 'aria-hidden': 'true' }, icon), label)),
+    h('div', { class: 'spacer' }),
+    h('button', { class: 'btn primary', type: 'button', id: 'btn-export', title: 'Save a backup of everything as one PDF', onclick: () => exportBank() }, 'Export everything'),
+    fileInput);
+  el.app = h('div', { class: 'app' }, el.sidebar, h('div', { class: 'content' }, el.view, el.status));
+  document.getElementById('root').append(el.app, el.printRoot);
+  window.addEventListener('beforeunload', e => { if (anyDirty()) { e.preventDefault(); e.returnValue = ''; } });
+  // a bank PDF dropped anywhere on the page is imported
+  const hasFiles = e => e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
+  window.addEventListener('dragover', e => { if (hasFiles(e)) { e.preventDefault(); el.app.classList.add('dropping'); } });
+  window.addEventListener('dragleave', e => { if (e.target === document.documentElement || !e.relatedTarget) el.app.classList.remove('dropping'); });
+  window.addEventListener('drop', e => { if (hasFiles(e)) { e.preventDefault(); el.app.classList.remove('dropping'); const f = e.dataTransfer.files[0]; if (f) importFile(f); } });
 }
 
-// Toolbar and panel furniture that depends on the mode.
-function syncChrome() {
-  const m = state.mode;
-  document.querySelectorAll('.modeseg button').forEach(b => { const on = b.dataset.mode === m; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
-  el.filters.style.display = m === 'questions' ? '' : 'none';
-  el.search.value = m === 'questions' ? state.filter.text : state.search[m];
-  el.search.placeholder = 'Search ' + m + '…';
-  el.search.setAttribute('aria-label', 'Search ' + m);
-  el.panelTitle.textContent = cap(m);
-  el.newLabel.textContent = m === 'questions' ? 'New question' : m === 'stimuli' ? 'New stimulus' : 'New test';
+const anyDirty = () => [active.qed, active.sed, active.exam].some(e => e && e.isDirty());
+
+// only: optionally limit the check to some editors, e.g. ['qed']
+async function guardDirty(only) {
+  const e = (only ? only.map(k => active[k]) : [active.exam, active.qed, active.sed]).find(x => x && x.isDirty());
+  if (!e) return true;
+  return modal({
+    title: 'Discard unsaved changes?',
+    body: h('p', null, 'This ' + e.kind + ' has changes that are not saved. If you leave now they will be lost.'),
+    actions: [{ label: 'Keep editing', value: false }, { label: 'Discard changes', value: true, kind: 'danger' }],
+    dismissValue: false
+  });
 }
 
-async function setMode(m) {
-  if (m === state.mode) return;
-  if (!(await guardDirty())) return;
-  state.mode = m; state.editor = null; state.selectedId = null; lastField = null;
-  syncChrome(); renderPanel(); renderEditor();
+function teardown() {
+  for (const k of ['qed', 'sed', 'exam']) { if (active[k] && active[k].destroy) active[k].destroy(); active[k] = null; }
+  closeMenu();
 }
 
-function fillSelect(sel, firstLabel, values, current) {
-  sel.textContent = '';
-  sel.append(h('option', { value: '' }, firstLabel));
-  for (const [v, l] of values) sel.append(h('option', { value: v }, l));
-  sel.value = values.some(([v]) => v === current) ? current : '';
+async function navigate(view) {
+  if (!(await guardDirty())) return false;
+  teardown();
+  state.view = view;
+  render();
+  return true;
 }
 
-function searchText(q) {
-  return textFields(q).map(f => f.text).concat([q.course, q.unit, q.tags.join(' ')]).join('\n').toLowerCase();
-}
-const snippet = s => { const t = s.replace(/\\\(([\s\S]*?)\\\)/g, '[math]').replace(/\s+/g, ' ').trim(); return t.length > 110 ? t.slice(0, 107) + '…' : (t || '(no text yet)'); };
-const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many || one + 's');
+// Go to a view without asking about unsaved changes: for when what was being edited has just been deleted on purpose.
+function leave(view) { teardown(); state.view = view; render(); }
 
-function renderPanel() {
-  const m = state.mode;
-  el.list.textContent = '';
-  if (m === 'questions') renderQuestionList();
-  else if (m === 'stimuli') renderStimulusList();
-  else renderTestList();
-}
-
-function renderQuestionList() {
-  const f = state.filter, t = f.text.trim().toLowerCase();
-  const courses = Array.from(new Set(state.questions.map(q => q.course).filter(Boolean))).sort();
-  fillSelect(el.fType, 'All types', TYPES.map(x => [x, TYPE_LABEL[x]]), f.type);
-  fillSelect(el.fCourse, 'All courses', courses.map(c => [c, c]), f.course);
-  fillSelect(el.fStatus, 'Any status', STATUSES.map(x => [x, STATUS_LABEL[x]]), f.status);
-  f.type = el.fType.value; f.course = el.fCourse.value; f.status = el.fStatus.value;
-  const rows = state.questions
-    .filter(q => (!f.type || q.type === f.type) && (!f.course || q.course === f.course) && (!f.status || q.status === f.status) && (!t || searchText(q).includes(t)))
-    .sort((a, b) => Date.parse(b.updated) - Date.parse(a.updated));
-  el.count.textContent = rows.length === state.questions.length ? String(rows.length) : rows.length + ' of ' + state.questions.length;
-  if (!rows.length) {
-    el.list.append(h('li', { class: 'empty' }, state.questions.length
-      ? 'No questions match these filters.'
-      : 'No questions yet. Choose “New question”, or “Import bank” to bring in a bank you exported earlier.'));
-  }
-  for (const q of rows) {
-    el.list.append(h('li', null, h('button', { type: 'button', class: 'qrow' + (q.id === state.selectedId ? ' sel' : ''), 'data-id': q.id, onclick: () => openRecord('question', q.id) },
-      h('span', { class: 'top' }, h('span', { class: 'badge' }, TYPE_SHORT[q.type]), q.status === 'review' ? h('span', { class: 'badge review' }, 'REVIEW') : null,
-        h('span', { class: 'badge' }, cap(q.difficulty))),
-      h('span', { class: 'snip' }, snippet(q.prompt)),
-      (q.course || q.unit) ? h('span', { class: 'sub' }, [q.course, q.unit].filter(Boolean).join(' · ')) : null)));
-  }
-}
-
-function renderStimulusList() {
-  const t = state.search.stimuli.trim().toLowerCase();
-  const rows = state.stimuli.filter(s => !t || (s.title + '\n' + s.text).toLowerCase().includes(t)).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-  el.count.textContent = rows.length === state.stimuli.length ? String(rows.length) : rows.length + ' of ' + state.stimuli.length;
-  if (!rows.length) el.list.append(h('li', { class: 'empty' }, state.stimuli.length ? 'No stimuli match this search.' : 'No stimuli yet. A stimulus is a passage, data table or picture that several questions share. Choose “New stimulus” to make one.'));
-  for (const s of rows) {
-    const n = state.questions.filter(q => q.stimulusId === s.id).length;
-    el.list.append(h('li', null, h('button', { type: 'button', class: 'qrow' + (s.id === state.selectedId ? ' sel' : ''), 'data-id': s.id, onclick: () => openRecord('stimulus', s.id) },
-      h('span', { class: 'snip' }, h('b', null, s.title || 'Untitled stimulus')),
-      h('span', { class: 'sub' }, plural(n, 'question') + ' use it' + (s.table ? ' · table' : '') + (s.imageIds.length ? ' · ' + plural(s.imageIds.length, 'image') : '')))));
-  }
-}
-
-function renderTestList() {
-  const t = state.search.tests.trim().toLowerCase();
-  const rows = state.tests.filter(x => !t || (x.title + '\n' + x.course).toLowerCase().includes(t)).sort((a, b) => Date.parse(b.updated) - Date.parse(a.updated));
-  el.count.textContent = rows.length === state.tests.length ? String(rows.length) : rows.length + ' of ' + state.tests.length;
-  if (!rows.length) el.list.append(h('li', { class: 'empty' }, state.tests.length ? 'No tests match this search.' : 'No tests yet. Choose “New test”, then add questions from your bank.'));
-  for (const x of rows) {
-    el.list.append(h('li', null, h('button', { type: 'button', class: 'qrow' + (x.id === state.selectedId ? ' sel' : ''), 'data-id': x.id, onclick: () => openRecord('test', x.id) },
-      h('span', { class: 'snip' }, h('b', null, x.title || 'Untitled test')),
-      h('span', { class: 'sub' }, [x.course, plural(x.questionIds.length, 'question')].filter(Boolean).join(' · ')))));
-  }
+const VIEWS = {};
+function render() {
+  const v = state.view;
+  document.querySelectorAll('.nav-btn').forEach(b => { const on = b.dataset.nav === navGroup(v.name); b.classList.toggle('active', on); b.setAttribute('aria-current', on ? 'page' : 'false'); });
+  el.app.classList.toggle('focus', v.name === 'test');
+  el.view.textContent = '';
+  VIEWS[v.name](v);
+  renderStatus();
 }
 
 function backupInfo() {
@@ -2022,7 +2373,7 @@ function renderStatus() {
   el.status.append(
     h('span', { class: 'stat' }, 'Questions: ', h('b', null, String(state.questions.length))),
     h('span', { class: 'dotline' }),
-    h('span', { class: 'stat' + (b.warn ? ' warn' : ''), id: 'stat-backup', title: 'Counted from the last time you used Export bank on this device.' },
+    h('span', { class: 'stat' + (b.warn ? ' warn' : ''), id: 'stat-backup', title: 'Counted from the last time you used Export on this device.' },
       (b.warn ? '⚠ ' : ''), 'Last backup: ', h('b', null, b.text)),
     h('span', { class: 'dotline' }),
     h('span', { class: 'stat', id: 'stat-storage', title: 'Storage opened from a file on your computer is separate from storage on the website. If your questions seem missing, you may be on the other copy.' },
@@ -2031,7 +2382,131 @@ function renderStatus() {
     h('span', { class: 'stamp' }, 'v' + APP_VERSION));
 }
 
-/* === UI: insert buttons, editor frame === */
+/* === PAGES: Home, Tests, Question Banks, Imports === */
+const testMeta = t => [t.course, plural(t.questionIds.length, 'question')].filter(Boolean).join(' · ');
+function testCard(t) {
+  return h('button', { type: 'button', class: 'card-tile', 'data-id': t.id, onclick: () => navigate({ name: 'test', id: t.id }) },
+    h('span', { class: 'ct-title' }, t.title || 'Untitled test'), h('span', { class: 'ct-sub' }, testMeta(t)), h('span', { class: 'ct-when' }, 'Edited ' + relTime(t.updated)));
+}
+// A bank's own record is not touched when its questions are edited, so "edited" is the latest of the two.
+const bankWhen = b => {
+  const ms = state.questions.filter(q => q.bankId === b.id).reduce((m, q) => Math.max(m, Date.parse(q.updated) || 0), Date.parse(b.updated) || 0);
+  return ms > Date.parse(DEFAULT_BANK_TIME) ? 'Edited ' + relTime(new Date(ms).toISOString()) : '';
+};
+function bankCard(b, withActions) {
+  const nq = state.questions.filter(q => q.bankId === b.id).length, ns = state.stimuli.filter(s => s.bankId === b.id).length;
+  const open = () => navigate({ name: 'bank', id: b.id });
+  if (!withActions) return h('button', { type: 'button', class: 'card-tile', 'data-id': b.id, onclick: open },
+    h('span', { class: 'ct-title' }, b.name), h('span', { class: 'ct-sub' }, plural(nq, 'question') + (ns ? ' · ' + plural(ns, 'stimulus', 'stimuli') : '')), h('span', { class: 'ct-when' }, bankWhen(b)));
+  return h('div', { class: 'card-tile has-actions', 'data-id': b.id },
+    h('button', { type: 'button', class: 'ct-main', onclick: open }, h('span', { class: 'ct-title' }, b.name), h('span', { class: 'ct-sub' }, plural(nq, 'question') + (ns ? ' · ' + plural(ns, 'stimulus', 'stimuli') : '')), h('span', { class: 'ct-when' }, bankWhen(b))),
+    h('div', { class: 'ct-actions' },
+      h('button', { class: 'btn small', type: 'button', onclick: () => renameBank(b) }, 'Rename'),
+      h('button', { class: 'btn small', type: 'button', onclick: () => exportBank({ bankId: b.id }) }, 'Export'),
+      h('button', { class: 'btn small danger', type: 'button', onclick: () => deleteBank(b) }, 'Delete')));
+}
+
+VIEWS.home = () => {
+  const recents = state.tests.slice().sort((a, b) => Date.parse(b.updated) - Date.parse(a.updated)).slice(0, 4);
+  el.view.append(h('div', { class: 'page', id: 'page-home' },
+    topbar('Home', h('button', { class: 'btn primary', type: 'button', id: 'btn-import-home', onclick: () => el.fileInput.click() }, 'Import')),
+    section('Pick up where you left off', cards(recents.map(testCard), tile('New Test', 'tile-new-test', () => navigate({ name: 'test', id: null })))),
+    section('Question banks', cards(sortedBanks().map(b => bankCard(b, false)), tile('New Question Bank', 'tile-new-bank', () => newBankFlow())))));
+};
+
+VIEWS.tests = () => {
+  let search = '';
+  const grid = h('div', { class: 'cards' });
+  const paint = () => {
+    const t = search.trim().toLowerCase();
+    const rows = state.tests.filter(x => !t || (x.title + '\n' + x.course).toLowerCase().includes(t)).sort((a, b) => Date.parse(b.updated) - Date.parse(a.updated));
+    grid.textContent = '';
+    for (const x of rows) grid.append(h('div', { class: 'card-tile has-actions', 'data-id': x.id },
+      h('button', { type: 'button', class: 'ct-main', onclick: () => navigate({ name: 'test', id: x.id }) }, h('span', { class: 'ct-title' }, x.title || 'Untitled test'), h('span', { class: 'ct-sub' }, testMeta(x)), h('span', { class: 'ct-when' }, 'Edited ' + relTime(x.updated))),
+      h('div', { class: 'ct-actions' }, h('button', { class: 'btn small danger', type: 'button', onclick: () => deleteTestFlow(x) }, 'Delete'))));
+    grid.append(tile('New Test', 'tile-new-test', () => navigate({ name: 'test', id: null })));
+  };
+  el.view.append(h('div', { class: 'page', id: 'page-tests' },
+    topbar('Tests', h('input', { type: 'text', class: 'in', id: 'tests-search', placeholder: 'Search tests…', 'aria-label': 'Search tests', style: 'max-width:240px', oninput: e => { search = e.target.value; paint(); } })),
+    grid));
+  paint();
+};
+
+VIEWS.banks = () => {
+  el.view.append(h('div', { class: 'page', id: 'page-banks' },
+    topbar('Question Banks', h('button', { class: 'btn primary', type: 'button', id: 'btn-new-bank', onclick: () => newBankFlow() }, '+ New Question Bank')),
+    h('p', { class: 'hint' }, 'A bank is a named collection of questions, for example “Science 9 Matter”. Open one to write and organise its questions, then drag questions from it into a test.'),
+    cards(sortedBanks().map(b => bankCard(b, true)), tile('New Question Bank', 'tile-new-bank', () => newBankFlow()))));
+};
+
+const importLog = () => { try { const v = JSON.parse(ls.get('imports') || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } };
+function logImport(entry) { ls.set('imports', JSON.stringify([entry].concat(importLog()).slice(0, 20))); }
+
+VIEWS.imports = () => {
+  const log = importLog();
+  el.view.append(h('div', { class: 'page', id: 'page-imports' },
+    topbar('Imports'),
+    h('div', { class: 'dropzone', id: 'drop-zone' },
+      h('div', { class: 'dz-title' }, 'Drop a bank PDF here'), h('div', { class: 'hint' }, 'or'),
+      h('button', { class: 'btn primary', type: 'button', id: 'btn-choose-import', onclick: () => el.fileInput.click() }, 'Choose a file…')),
+    h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'How importing works'),
+      h('ul', { class: 'plainlist' },
+        h('li', null, 'Use a PDF that was exported from Prime Questions. Import reads the data hidden inside it. A copy that was printed, scanned or saved again as a PDF has lost that data.'),
+        h('li', null, 'You always see a summary first: what is new, what changed and what is already there. Nothing is changed until you confirm.'),
+        h('li', null, 'Importing adds to your questions. It never deletes anything, and where the same question exists in both, the newer copy wins.'))),
+    h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Recent imports'),
+      log.length ? h('ul', { class: 'plainlist', id: 'import-log' }, log.map(x => h('li', null, h('b', null, x.name || 'a file'), ' · ' + new Date(x.at).toLocaleString() + ' · ' + x.summary)))
+        : h('p', { class: 'hint', id: 'import-log-empty' }, 'Nothing imported on this device yet.'))));
+};
+
+/* === BANK actions === */
+async function newBankFlow() {
+  const name = await promptDialog({ title: 'New question bank', label: 'Name', value: '', confirm: 'Create' });
+  if (!name) return;
+  const t = nowIso(), b = { id: uuid(), name: name.slice(0, 200), created: t, updated: t };
+  try { await ensurePersist(); await db.applyBatch({ banks: [b] }); } catch (e) { toast('Could not create the bank: ' + (e && e.message || e), 'err'); return; }
+  await loadAll();
+  navigate({ name: 'bank', id: b.id });
+}
+async function renameBank(b) {
+  const name = await promptDialog({ title: 'Rename question bank', label: 'Name', value: b.name, confirm: 'Rename' });
+  if (!name || name === b.name) return;
+  try { await db.applyBatch({ banks: [Object.assign({}, b, { name: name.slice(0, 200), updated: nowIso() })] }); } catch (e) { toast('Could not rename: ' + (e && e.message || e), 'err'); return; }
+  await loadAll();
+  render();
+}
+async function deleteBank(b) {
+  const qs = state.questions.filter(q => q.bankId === b.id), ss = state.stimuli.filter(s => s.bankId === b.id);
+  const qids = new Set(qs.map(q => q.id));
+  const tests = state.tests.filter(t => t.questionIds.some(id => qids.has(id)));
+  const ok = await modal({
+    title: 'Delete this question bank?',
+    body: h('div', null, h('p', null, h('b', null, b.name)),
+      h('p', null, 'This permanently removes ' + plural(qs.length, 'question') + (ss.length ? ' and ' + plural(ss.length, 'stimulus', 'stimuli') : '') + ' from this browser.' + (tests.length ? ' They will also be taken out of ' + plural(tests.length, 'saved test') + ' (' + tests.map(t => t.title || 'Untitled').join(', ') + ').' : '')),
+      h('p', { class: 'hint' }, 'If you have not exported a recent backup, it cannot be recovered.')),
+    actions: [{ label: 'Cancel', value: false }, { label: 'Delete bank and its questions', value: true, kind: 'danger' }], dismissValue: false
+  });
+  if (!ok) return;
+  const t = nowIso();
+  try {
+    await db.applyBatch({ deletes: { banks: [b.id], questions: qs.map(q => q.id), stimuli: ss.map(s => s.id) },
+      tests: tests.map(x => Object.assign({}, x, { questionIds: x.questionIds.filter(id => !qids.has(id)), updated: t })) });
+  } catch (e) { toast('Could not delete: ' + (e && e.message || e), 'err'); return; }
+  await loadAll();
+  if (state.view.name === 'bank') leave({ name: 'banks' }); else render();
+  toast('Question bank deleted.', 'ok');
+}
+async function deleteTestFlow(x) {
+  const ok = await modal({ title: 'Delete this test?', body: h('div', null, h('p', null, x.title || 'Untitled test'), h('p', { class: 'hint' }, 'The questions stay in their banks. Only the saved test and its history are removed. If you have not exported a recent backup, it cannot be recovered.')),
+    actions: [{ label: 'Cancel', value: false }, { label: 'Delete test', value: true, kind: 'danger' }], dismissValue: false });
+  if (!ok) return;
+  try { const versions = (await db.getAll('testVersions')).filter(v => v.testId === x.id).map(v => v.id); await db.applyBatch({ deletes: { tests: [x.id], testVersions: versions } }); } catch (e) { toast('Could not delete: ' + (e && e.message || e), 'err'); return; }
+  await loadAll();
+  if (state.view.name === 'test') leave({ name: 'tests' }); else render();
+  toast('Test deleted.', 'ok');
+}
+
+/* === MATH INPUT: insert buttons and the equation dialog === */
 const MATH_BUTTONS = [
   { label: '\\( \\)', title: 'Wrap selection in math delimiters', kind: 'delims' },
   { label: 'a/b', title: 'Fraction (select the numerator first, or just click)', withSel: '\\frac{¦}{§}', noSel: '\\frac{§}{}' },
@@ -2048,8 +2523,7 @@ const MATH_BUTTONS = [
 
 function insideMath(v, pos) { const before = v.slice(0, pos); return before.lastIndexOf('\\(') > before.lastIndexOf('\\)'); }
 
-function insertSnippet(btn) {
-  const f = lastField;
+function insertSnippet(f, btn) {
   if (!f || !f.isConnected) { toast('Click into a text box first, then use the insert buttons.', 'warn'); return; }
   const v = f.value, s = f.selectionStart, e = f.selectionEnd, sel = v.slice(s, e);
   const inside = insideMath(v, s);
@@ -2060,8 +2534,7 @@ function insertSnippet(btn) {
     text = '\\(' + sel + '\\)'; caret = sel ? text.length : 2;
   } else {
     let tpl = sel ? btn.withSel : btn.noSel;
-    const wrap = !inside;
-    if (wrap) tpl = '\\(' + tpl + '\\)';
+    if (!inside) tpl = '\\(' + tpl + '\\)';
     tpl = tpl.replace('¦', () => sel);      // function form: the selection may contain "$" patterns
     const at = tpl.indexOf('§');
     text = tpl.replace('§', '');
@@ -2073,82 +2546,101 @@ function insertSnippet(btn) {
   f.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
-const KIND_LABEL = { question: 'question', stimulus: 'stimulus', test: 'test' };
+// The symbol palette of the equation dialog. ¦ marks where the caret goes. Inserted text is LaTeX, which the converter passes through.
+const EQ_PALETTE = [
+  ['Basics', [['+', '+'], ['−', '-'], ['×', '\\times '], ['÷', '\\div '], ['=', '='], ['≠', '\\ne '], ['≤', '\\le '], ['≥', '\\ge '], ['±', '\\pm '], ['≈', '\\approx '], ['( )', '(¦)'], ['|x|', '\\left|¦\\right|'], ['%', '\\%']]],
+  ['Fractions & powers', [['a/b', '\\frac{¦}{}'], ['2⅓', '\\tfrac{¦}{}'], ['xⁿ', '^{¦}'], ['xₙ', '_{¦}'], ['x²', '^{2}'], ['x³', '^{3}'], ['10ⁿ', '10^{¦}'], ['√', '\\sqrt{¦}'], ['∛', '\\sqrt[3]{¦}'], ['ⁿ√', '\\sqrt[¦]{}']]],
+  ['Greek', ['α', 'β', 'γ', 'δ', 'ε', 'θ', 'λ', 'μ', 'π', 'ρ', 'σ', 'τ', 'φ', 'ω', 'Δ', 'Σ', 'Ω', 'Φ', 'Π', 'Θ'].map(g => [g, g])],
+  ['Operators', [['∑', '\\sum_{¦}^{}'], ['∫', '\\int_{¦}^{}'], ['lim', '\\lim_{¦\\to }'], ['sin', '\\sin '], ['cos', '\\cos '], ['tan', '\\tan '], ['log', '\\log '], ['ln', '\\ln '], ['∞', '\\infty '], ['→', '\\to '], ['⇒', '\\Rightarrow '], ['∈', '\\in '], ['∪', '\\cup '], ['∩', '\\cap ']]],
+  ['Geometry', [['∠', '\\angle '], ['△', '\\triangle '], ['∥', '\\parallel '], ['⊥', '\\perp '], ['°', '^{\\circ}'], ['≅', '\\cong '], ['∼', '\\sim '], ['v⃗', '\\vec{¦}'], ['AB̅', '\\overline{¦}']]],
+  ['Chemistry', [['\\ce{ }', '\\ce{¦}'], ['H₂O', '\\ce{H2O}'], ['A → B', '\\ce{¦ -> }'], ['⇌', '\\ce{¦ <=> }'], ['(s)', '(s)'], ['(l)', '(l)'], ['(g)', '(g)'], ['(aq)', '(aq)'], ['²⁺', '^2+'], ['²⁻', '^2-']]]
+];
 
-async function guardDirty() {
-  if (!state.editor || !state.editor.dirty) return true;
-  return modal({
-    title: 'Discard unsaved changes?',
-    body: h('p', null, 'This ' + KIND_LABEL[state.editor.kind] + ' has changes that are not saved. If you leave now they will be lost.'),
-    actions: [{ label: 'Keep editing', value: false }, { label: 'Discard changes', value: true, kind: 'danger' }],
-    dismissValue: false
+// "Equation": type naturally, see it rendered, insert it as \( LaTeX \). If the caret is inside an equation that is already there, edit that one.
+async function openEquationDialog(f) {
+  if (!f || !f.isConnected) { toast('Click into a text box first, then choose Equation.', 'warn'); return; }
+  const v = f.value, s0 = f.selectionStart, e0 = f.selectionEnd;
+  let range = [s0, e0], initial = v.slice(s0, e0), raw = false;
+  const before = v.slice(0, s0), open = before.lastIndexOf('\\('), closeBefore = before.lastIndexOf('\\)');
+  if (open >= 0 && open > closeBefore) { const close = v.indexOf('\\)', open + 2); if (close >= 0) { range = [open, close + 2]; initial = v.slice(open + 2, close); raw = true; } }
+  else if (e0 > s0 && initial.startsWith('\\(') && initial.endsWith('\\)') && initial.length > 4) { initial = initial.slice(2, -2); raw = true; }
+  const editing = raw;
+  const input = h('textarea', { id: 'eq-input', rows: '3', value: initial, 'aria-label': 'Equation', placeholder: 'for example: (x+1)/(x-2) = sqrt(3)' });
+  const rawBox = h('input', { type: 'checkbox', id: 'eq-raw', checked: raw });
+  const preview = h('div', { class: 'eq-preview', id: 'eq-preview', 'aria-live': 'polite' });
+  const err = h('div', { class: 'hint eq-err', id: 'eq-error' });
+  const texOut = h('code', { id: 'eq-tex' });
+  const tabs = h('div', { class: 'seg', role: 'group', 'aria-label': 'Symbols' });
+  const grid = h('div', { class: 'eq-grid', id: 'eq-grid' });
+  let tab = 0, tex = '', ok = false;
+  const primary = () => document.querySelector('.modal .btn.primary');
+  const update = () => {
+    tex = rawBox.checked ? input.value.trim() : asciiToTex(input.value);
+    texOut.textContent = tex || '';
+    ok = false; err.textContent = '';
+    preview.textContent = '';
+    if (tex) {
+      try { temml.render('\\displaystyle ' + tex, preview, { throwOnError: true, displayMode: false }); ok = true; }
+      catch (e) { err.textContent = String(e && e.message || e).replace(/^Temml parse error:\s*/, '').split('\n')[0]; }
+    }
+    const b = primary(); if (b) b.disabled = !ok;
+  };
+  const paint = () => {
+    tabs.textContent = '';
+    EQ_PALETTE.forEach(([name], i) => tabs.append(h('button', { type: 'button', class: i === tab ? 'active' : '', 'aria-pressed': String(i === tab), onclick: () => { tab = i; paint(); } }, name)));
+    grid.textContent = '';
+    for (const [label, snip] of EQ_PALETTE[tab][1]) grid.append(h('button', { type: 'button', class: 'btn small eq-sym', title: snip.replace('¦', ''), onmousedown: e => e.preventDefault(), onclick: () => {
+      const a = input.selectionStart, b = input.selectionEnd, selTxt = input.value.slice(a, b), at = snip.indexOf('¦');
+      const text = snip.replace('¦', () => selTxt);
+      input.value = input.value.slice(0, a) + text + input.value.slice(b);
+      const caret = at >= 0 ? a + at + selTxt.length : a + text.length;
+      input.focus(); input.setSelectionRange(caret, caret); update();
+    } }, label));
+  };
+  input.addEventListener('input', update);
+  rawBox.addEventListener('change', update);
+  input.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); const b = primary(); if (b && !b.disabled) b.click(); } });
+  const body = h('div', { class: 'eq-dialog' },
+    h('p', { class: 'hint' }, 'Type it the way you would say it: ', h('code', null, '1/2'), ', ', h('code', null, 'x^2'), ', ', h('code', null, 'sqrt(x+1)'), ', ', h('code', null, 'pi r^2'), ', ', h('code', null, 'x <= 5'), ', ', h('code', null, '2 1/3'), ', ', h('code', null, 'ce(H2O)'), '. Or use the buttons below.'),
+    input, preview, err,
+    h('div', { class: 'hint' }, 'LaTeX: ', texOut),
+    h('label', { class: 'check', style: 'margin:8px 0' }, rawBox, 'This is LaTeX: use it exactly as typed'),
+    tabs, grid);
+  const p = modal({ title: editing ? 'Edit equation' : 'Equation', body, actions: [{ label: 'Cancel', value: null }, { label: editing ? 'Update' : 'Insert', value: 'ok', kind: 'primary' }], dismissValue: null });
+  paint(); update(); input.focus();
+  const res = await p;
+  if (res !== 'ok' || !ok) return;
+  const text = '\\(' + tex + '\\)';
+  const cur = f.value;
+  f.value = cur.slice(0, range[0]) + text + cur.slice(range[1]);
+  f.focus();
+  f.setSelectionRange(range[0] + text.length, range[0] + text.length);
+  f.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+const mathbar = getField => h('div', { class: 'mathbar', role: 'toolbar', 'aria-label': 'Insert math' },
+  h('span', { class: 'lab' }, 'Insert'),
+  h('button', { class: 'btn small eqbtn', type: 'button', id: 'btn-equation', title: 'Type an equation naturally, with a symbol palette (shortcut: type it between backticks)', onmousedown: e => e.preventDefault(), onclick: () => openEquationDialog(getField()) }, 'Σ Equation'),
+  MATH_BUTTONS.map(b => h('button', { class: 'btn small', type: 'button', title: b.title, 'aria-label': b.title, onmousedown: e => e.preventDefault(), onclick: () => insertSnippet(getField(), b) }, b.label)));
+
+// Typing `1/2` between backticks turns into \(\frac{1}{2}\) as soon as the closing backtick is typed.
+function wireBackticks(node) {
+  node.addEventListener('input', e => {
+    const f = e.target;
+    if (e.inputType !== 'insertText' || e.data !== '`' || !f.dataset || f.dataset.math === undefined) return;
+    const r = convertBackticksAt(f.value, f.selectionStart);
+    if (r) { f.value = r.text; f.setSelectionRange(r.caret, r.caret); f.dispatchEvent(new Event('input', { bubbles: true })); }
   });
 }
 
-function makeEditor(kind, draft, isNew) {
-  const ed = { kind, draft, original: clone(draft), isNew, dirty: false, pending: new Map(), answers: {}, lastNote: '' };
-  if (kind === 'question') ed.answers[draft.type] = draft.answer;
-  return ed;
+function problemsList(host, problems, okText, note) {
+  host.textContent = '';
+  if (note && problems.length) host.append(h('div', { class: 'note-box' }, note));
+  if (!problems.length) host.append(h('p', { class: 'ok-line' }, h('b', null, '✓ '), okText));
+  else host.append(h('ul', { class: 'problems' }, problems.map(p => h('li', null, h('span', { class: 'kind' }, p.kind === 'math' ? 'MATHS' : 'MISSING'), ' · ', h('b', null, p.field), ' ', p.message))));
 }
 
-async function newItem() {
-  if (!(await guardDirty())) return;
-  const t = nowIso();
-  let kind, d;
-  if (state.mode === 'questions') { kind = 'question'; d = emptyQuestion('mc'); }
-  else if (state.mode === 'stimuli') { kind = 'stimulus'; d = { id: uuid(), title: '', text: '', imageIds: [], table: null, created: t, updated: t }; }
-  else { kind = 'test'; d = { id: uuid(), title: '', course: '', questionIds: [], seed: newSeed(), created: t, updated: t }; }
-  state.selectedId = null; lastField = null;
-  state.editor = makeEditor(kind, d, true);
-  renderPanel(); renderEditor();
-}
-async function openRecord(kind, id) {
-  if (state.editor && state.editor.draft.id === id) return;
-  if (!(await guardDirty())) return;
-  const rec = (kind === 'question' ? state.questions : kind === 'stimulus' ? state.stimuli : state.tests).find(x => x.id === id);
-  if (!rec) return;
-  state.selectedId = id; lastField = null;
-  state.editor = makeEditor(kind, clone(rec), false);
-  renderPanel(); renderEditor();
-}
-async function closeEditor() {
-  if (!(await guardDirty())) return;
-  state.editor = null; state.selectedId = null; lastField = null;
-  renderPanel(); renderEditor();
-}
-
-function field(label, control, id) { return h('div', { class: 'field' }, h('label', { for: id }, label), control); }
-const EMPTY_HINT = {
-  questions: ['Pick a question from the list to edit it, or choose “New question”. ', 'Your questions are stored in this browser. Use “Export bank” often: the exported PDF is your backup, and you can import it on any computer.'],
-  stimuli: ['A stimulus is a passage, data table or picture that several questions share. Pick one to edit it, or choose “New stimulus”. ', 'Attach it to questions from the question editor. Questions that share a stimulus always print together under it.'],
-  tests: ['Pick a test to edit it, or choose “New test”. ', 'A test is an ordered list of questions from your bank. Version B reprints in a shuffled order, and each test can be printed with its answer key.']
-};
-
-function renderEditor() {
-  const ed = state.editor;
-  el.stage.textContent = '';
-  if (!ed) { el.stage.append(h('div', { class: 'canvas-scroll' }, h('div', { class: 'empty', id: 'stage-empty' }, EMPTY_HINT[state.mode]))); return; }
-  el.titleBar = h('h2', null, (ed.isNew ? 'New ' : 'Edit ') + KIND_LABEL[ed.kind]);
-  el.dirtyFlag = h('span', { class: 'dirty-flag', id: 'dirty-flag' });
-  el.saveBtn = h('button', { class: 'btn primary', type: 'button', id: 'btn-save', onclick: () => saveCurrent() }, 'Save');
-  el.stage.append(h('div', { class: 'stage-bar' }, el.titleBar, el.dirtyFlag, h('div', { class: 'spacer' }), el.saveBtn,
-    h('button', { class: 'btn', type: 'button', id: 'btn-close', onclick: () => closeEditor() }, 'Close'),
-    ed.isNew ? null : h('button', { class: 'btn danger', type: 'button', id: 'btn-delete', onclick: () => deleteCurrent() }, 'Delete')));
-  const body = ed.kind === 'question' ? questionBody(ed) : ed.kind === 'stimulus' ? stimulusBody(ed) : testBody(ed);
-  el.stage.append(h('div', { class: 'canvas-scroll' }, body));
-  touch();
-}
-
-const mathbar = () => h('div', { class: 'mathbar', role: 'toolbar', 'aria-label': 'Insert math' }, h('span', { class: 'lab' }, 'Insert'),
-  MATH_BUTTONS.map(b => h('button', { class: 'btn small', type: 'button', title: b.title, 'aria-label': b.title, onmousedown: e => e.preventDefault(), onclick: () => insertSnippet(b) }, b.label)));
-
-function touch() {
-  const ed = state.editor;
-  if (!ed) return;
-  if (ed.kind === 'question') touchQuestion(); else if (ed.kind === 'stimulus') touchStimulus(); else touchTest();
-}
-
-/* --- editor pieces shared by questions and stimuli --- */
+/* === TABLE and IMAGE editors (used by the question and stimulus editors) === */
 function renderTableEditor(host, owner, onChange) {
   host.textContent = '';
   const t = owner.table;
@@ -2174,12 +2666,12 @@ function renderTableEditor(host, owner, onChange) {
       h('span', { class: 'spacer' }),
       h('button', { class: 'btn small danger', type: 'button', id: 'btn-remove-table', onclick: async () => {
         const any = t.caption || t.headers.some(Boolean) || t.rows.some(r => r.some(Boolean));
-        if (any && !(await modal({ title: 'Remove this table?', body: h('p', null, 'The table and everything typed in it will be removed from this ' + (state.editor ? KIND_LABEL[state.editor.kind] : 'item') + ' when you save.'), actions: [{ label: 'Keep it', value: false }, { label: 'Remove table', value: true, kind: 'danger' }], dismissValue: false }))) return;
+        if (any && !(await modal({ title: 'Remove this table?', body: h('p', null, 'The table and everything typed in it will be removed when you save.'), actions: [{ label: 'Keep it', value: false }, { label: 'Remove table', value: true, kind: 'danger' }], dismissValue: false }))) return;
         owner.table = null; rerender();
       } }, 'Remove table')));
 }
 
-function renderImageEditor(host, owner, ed, onChange) {
+function renderImageEditor(host, owner, pending, onChange) {
   host.textContent = '';
   const ids = owner.imageIds;
   const file = h('input', { type: 'file', accept: 'image/png,image/jpeg,image/svg+xml', style: 'display:none', id: 'f-image-file', multiple: true, onchange: async e => {
@@ -2189,178 +2681,66 @@ function renderImageEditor(host, owner, ed, onChange) {
       try {
         const blob = await processImageFile(f);
         const id = uuid();
-        ed.pending.set(id, blob);
-        await ensureImageUrls([id], ed.pending);
+        pending.set(id, blob);
+        await ensureImageUrls([id], pending);
         owner.imageIds.push(id);
       } catch (err) { toast(f.name + ': ' + (err && err.message || err), 'err'); }
     }
-    renderImageEditor(host, owner, ed, onChange); onChange();
+    renderImageEditor(host, owner, pending, onChange); onChange();
   } });
   host.append(
     ids.length ? h('div', { class: 'thumbs' }, ids.map((id, i) => h('div', { class: 'thumb' },
       imgUrls.has(id) ? h('img', { src: imgUrls.get(id), alt: 'Image ' + (i + 1) }) : h('span', { class: 'hint' }, '(not found)'),
-      h('button', { class: 'xbtn', type: 'button', title: 'Remove image', 'aria-label': 'Remove image ' + (i + 1), onclick: () => { owner.imageIds.splice(i, 1); ed.pending.delete(id); renderImageEditor(host, owner, ed, onChange); onChange(); } }, '×')))) : h('p', { class: 'hint' }, 'No images. PNG or JPEG (resized to fit about 1600 px) or SVG.'),
+      h('button', { class: 'xbtn', type: 'button', title: 'Remove image', 'aria-label': 'Remove image ' + (i + 1), onclick: () => { owner.imageIds.splice(i, 1); pending.delete(id); renderImageEditor(host, owner, pending, onChange); onChange(); } }, '×')))) : h('p', { class: 'hint' }, 'No images. PNG or JPEG (resized to fit about 1600 px) or SVG.'),
     h('div', { class: 'opt-row', style: 'margin-top:8px' }, h('button', { class: 'btn small', type: 'button', id: 'btn-add-image', disabled: ids.length >= MAX_IMAGES, onclick: () => file.click() }, '+ Add image'),
       h('span', { class: 'hint' }, plural(ids.length, 'image') + ' of ' + MAX_IMAGES)), file);
 }
 
-let previewSeq = 0;
-async function updatePreview() {
-  const ed = state.editor;
-  if (!ed || ed.kind === 'test' || !el.preview || !el.preview.isConnected) return;
-  const seq = ++previewSeq;
-  let lines, ids;
-  if (ed.kind === 'question') {
-    const stim = new Map(state.stimuli.map(s => [s.id, s]));
-    const s = ed.draft.stimulusId && stim.get(ed.draft.stimulusId);
-    ids = ed.draft.imageIds.concat(s ? s.imageIds : []);
-    lines = blockLines(ed.draft, '', { stim, rich: true }).filter(l => l.k !== 'title');
-  } else { ids = ed.draft.imageIds; lines = stimulusLines(ed.draft, true); }
-  await ensureImageUrls(ids, ed.pending);
-  if (seq !== previewSeq || !el.preview.isConnected) return;
-  el.preview.textContent = '';
-  el.preview.append(h('style', null, blockCss(4 / 3, '#preview .pb')), buildBlockDom(lines));
-  renderMath(el.preview);
-}
-let previewTimer = null;
-const schedulePreview = () => { clearTimeout(previewTimer); previewTimer = setTimeout(updatePreview, 90); };
-
-function problemsList(host, problems, okText, note) {
+/* === ANSWER EDITOR (a question's, or one part of a multipart question) === */
+// target = { type, answer, keepOrder? }. idp prefixes element ids ('' for the question itself), lab prefixes aria labels ('Part (a) ').
+function answerEditor(host, target, idp, lab, touch) {
   host.textContent = '';
-  if (note && problems.length) host.append(h('div', { class: 'note-box' }, note));
-  if (!problems.length) host.append(h('p', { class: 'ok-line' }, h('b', null, '✓ '), okText));
-  else host.append(h('ul', { class: 'problems' }, problems.map(p => h('li', null, h('span', { class: 'kind' }, p.kind === 'math' ? 'MATHS' : 'MISSING'), ' · ', h('b', null, p.field), ' ', p.message))));
-}
-
-/* --- question editor --- */
-function questionBody(ed) {
-  const d = ed.draft;
-  const typeSeg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Question type' }, TYPES.map(t =>
-    h('button', { type: 'button', class: d.type === t ? 'active' : '', 'data-type': t, 'aria-pressed': String(d.type === t), onclick: () => setType(t) }, TYPE_LABEL[t])));
-  el.prompt = h('textarea', { id: 'f-prompt', 'data-math': '', rows: '4', value: d.prompt, oninput: e => { d.prompt = e.target.value; touch(); } });
-  el.answerHost = h('div');
-  const coursesList = Array.from(new Set(state.questions.map(q => q.course).filter(Boolean)));
-  const unitsList = Array.from(new Set(state.questions.map(q => q.unit).filter(Boolean)));
-  el.difficulty = h('select', { id: 'f-difficulty', onchange: e => { d.difficulty = e.target.value; touch(); } }, DIFFICULTIES.map(x => h('option', { value: x }, cap(x))));
-  el.difficulty.value = d.difficulty;
-  el.statusSel = h('select', { id: 'f-status', onchange: e => { d.status = e.target.value; touch(); } }, STATUSES.map(x => h('option', { value: x }, STATUS_LABEL[x])));
-  el.statusSel.value = d.status;
-  const stims = state.stimuli.slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-  const stimSel = h('select', { id: 'f-stimulus', onchange: e => { d.stimulusId = e.target.value || null; touch(); } },
-    h('option', { value: '' }, 'None'), stims.map(s => h('option', { value: s.id }, s.title || 'Untitled stimulus')),
-    d.stimulusId && !stims.some(s => s.id === d.stimulusId) ? h('option', { value: d.stimulusId }, '(missing stimulus)') : null);
-  stimSel.value = d.stimulusId || '';
-  el.problems = h('div', { id: 'problems' });
-  el.preview = h('div', { class: 'paper', id: 'preview' });
-  el.tableHost = h('div', { id: 'table-host' });
-  el.imgHost = h('div', { id: 'img-host' });
-  renderTableEditor(el.tableHost, d, () => touch());
-  renderImageEditor(el.imgHost, d, ed, () => touch());
-
-  const details = h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Details'),
-    h('div', { class: 'row2' },
-      field('Course', h('input', { type: 'text', class: 'in', id: 'f-course', list: 'dl-courses', value: d.course, oninput: e => { d.course = e.target.value; touch(); } }), 'f-course'),
-      field('Unit', h('input', { type: 'text', class: 'in', id: 'f-unit', list: 'dl-units', value: d.unit, oninput: e => { d.unit = e.target.value; touch(); } }), 'f-unit')),
-    h('datalist', { id: 'dl-courses' }, coursesList.map(c => h('option', { value: c }))),
-    h('datalist', { id: 'dl-units' }, unitsList.map(c => h('option', { value: c }))),
-    field('Topics (separate with commas)', h('input', { type: 'text', class: 'in', id: 'f-tags', value: d.tags.join(', '), oninput: e => { d.tags = e.target.value.split(',').map(x => x.trim()).filter(Boolean); touch(); } }), 'f-tags'),
-    h('div', { class: 'row2' }, field('Difficulty', el.difficulty, 'f-difficulty'), field('Status', el.statusSel, 'f-status')),
-    h('p', { class: 'hint', style: 'margin:-4px 0 12px' }, '“Needs review” is for questions that still need a human check. A question can only be “Ready” when nothing is wrong with it (see Problems).'),
-    field('Notes (not shown to students)', h('textarea', { id: 'f-notes', 'data-math': '', rows: '3', value: d.notes, oninput: e => { d.notes = e.target.value; touch(); } }), 'f-notes'));
-
-  const grid = h('div', { class: 'editor-grid' },
-    h('div', { class: 'col-form' },
-      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Type'), typeSeg),
-      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Question'), field('Question text', el.prompt, 'f-prompt'),
-        h('p', { class: 'hint', style: 'margin:0 0 12px' }, 'Write maths between \\( and \\), for example \\(\\frac{3}{4}\\). Use the Insert buttons if you do not know LaTeX. Dollar signs are just money.'),
-        field('Shared stimulus (optional)', stimSel, 'f-stimulus')),
-      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Answer'), el.answerHost),
-      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Table (optional)'), el.tableHost),
-      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Images (optional)'), el.imgHost),
-      details),
-    h('div', { class: 'col-preview' },
-      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Problems'), el.problems),
-      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Preview'), el.preview)));
-  renderAnswer();
-  return [mathbar(), grid];
-}
-
-function setType(t) {
-  const ed = state.editor, d = ed.draft;
-  if (d.type === t) return;
-  ed.answers[d.type] = d.answer;          // keep what was typed for the old type, in case they switch back
-  d.type = t;
-  d.answer = ed.answers[t] || defaultAnswer(t);
-  ed.answers[t] = d.answer;
-  if (t !== 'mc') delete d.keepOrder;
-  document.querySelectorAll('.seg button[data-type]').forEach(b => { const on = b.dataset.type === t; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
-  renderAnswer(); touch();
-}
-
-function renderAnswer() {
-  const ed = state.editor, d = ed.draft, a = d.answer, host = el.answerHost;
-  host.textContent = '';
+  const a = target.answer, type = target.type;
+  const fid = name => (idp ? idp + name : 'f-' + name);
+  const again = () => answerEditor(host, target, idp, lab, touch);
   const textIn = (value, on, extra) => h('input', Object.assign({ type: 'text', class: 'in', 'data-math': '', value, oninput: e => { on(e.target.value); touch(); } }, extra || {}));
-  if (d.type === 'mc') {
+  if (type === 'mc') {
     a.options.forEach((o, i) => host.append(h('div', { class: 'opt-row' },
-      h('input', { type: 'radio', name: 'correct', 'aria-label': 'Option ' + letter(i) + ' is correct', checked: a.correct === i, onchange: () => { a.correct = i; touch(); } }),
+      h('input', { type: 'radio', name: 'correct' + idp, 'aria-label': lab + 'Option ' + letter(i) + ' is correct', checked: a.correct === i, onchange: () => { a.correct = i; touch(); } }),
       h('span', { class: 'letter' }, letter(i)),
-      textIn(o, v => { a.options[i] = v; }, { 'aria-label': 'Option ' + letter(i), placeholder: 'Option ' + letter(i) }),
-      a.options.length > 2 ? h('button', { class: 'xbtn', type: 'button', title: 'Remove option', 'aria-label': 'Remove option ' + letter(i), onclick: () => { a.options.splice(i, 1); if (a.correct >= a.options.length) a.correct = a.options.length - 1; else if (a.correct > i) a.correct--; renderAnswer(); touch(); } }, '×') : null)));
-    host.append(h('div', { class: 'opt-row' }, h('button', { class: 'btn small', type: 'button', disabled: a.options.length >= 8, onclick: () => { a.options.push(''); renderAnswer(); touch(); } }, '+ Add option'),
+      textIn(o, v => { a.options[i] = v; }, { 'aria-label': lab + 'Option ' + letter(i), placeholder: 'Option ' + letter(i) }),
+      a.options.length > 2 ? h('button', { class: 'xbtn', type: 'button', title: 'Remove option', 'aria-label': 'Remove ' + lab + 'option ' + letter(i), onclick: () => { a.options.splice(i, 1); if (a.correct >= a.options.length) a.correct = a.options.length - 1; else if (a.correct > i) a.correct--; again(); touch(); } }, '×') : null)));
+    host.append(h('div', { class: 'opt-row' }, h('button', { class: 'btn small', type: 'button', disabled: a.options.length >= 8, onclick: () => { a.options.push(''); again(); touch(); } }, '+ Add option'),
       h('span', { class: 'hint' }, 'Select the round button beside the correct option.')),
-      h('label', { class: 'check', style: 'margin:10px 0 0' }, h('input', { type: 'checkbox', id: 'f-keeporder', checked: d.keepOrder === true, onchange: e => { if (e.target.checked) d.keepOrder = true; else delete d.keepOrder; touch(); } }),
+      h('label', { class: 'check', style: 'margin:10px 0 0' }, h('input', { type: 'checkbox', id: fid('keeporder'), checked: target.keepOrder === true, onchange: e => { if (e.target.checked) target.keepOrder = true; else delete target.keepOrder; touch(); } }),
         'Keep these options in this order in Version B (use for “All of the above” or “Both A and B”)'));
-  } else if (d.type === 'tf') {
-    host.append(h('div', { class: 'seg', role: 'group', 'aria-label': 'Correct answer' }, [[true, 'True'], [false, 'False']].map(([v, l]) =>
+  } else if (type === 'tf') {
+    host.append(h('div', { class: 'seg', role: 'group', 'aria-label': lab + 'Correct answer' }, [[true, 'True'], [false, 'False']].map(([v, l]) =>
       h('button', { type: 'button', class: a.correct === v ? 'active' : '', 'aria-pressed': String(a.correct === v), onclick: e => { a.correct = v; host.querySelectorAll('.seg button').forEach(b => { const on = b === e.currentTarget; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); }); touch(); } }, l))));
-  } else if (d.type === 'numeric') {
+  } else if (type === 'numeric') {
     host.append(h('div', { class: 'row2' },
-      field('Answer value (typed exactly, so significant figures survive)', textIn(a.value, v => { a.value = v; }, { id: 'f-value' }), 'f-value'),
-      field('Units (optional)', textIn(a.units, v => { a.units = v; }, { id: 'f-units' }), 'f-units')),
-      field('Tolerance (±, 0 for exact)', h('input', { type: 'number', id: 'f-tol', min: '0', step: 'any', value: String(a.tolerance), oninput: e => { const n = parseFloat(e.target.value); a.tolerance = isNaN(n) ? -1 : n; touch(); } }), 'f-tol'));
-  } else if (d.type === 'short') {
-    host.append(field('Answer lines on the printed test', h('input', { type: 'number', id: 'f-lines', min: '1', max: '40', value: String(a.lines), oninput: e => { const n = parseInt(e.target.value, 10); a.lines = isNaN(n) ? 0 : n; touch(); } }), 'f-lines'),
-      field('Marking guide (optional)', h('textarea', { id: 'f-rubric', 'data-math': '', rows: '3', value: a.rubric, oninput: e => { a.rubric = e.target.value; touch(); } }), 'f-rubric'));
-  } else if (d.type === 'matching') {
+      field('Answer value (typed exactly, so significant figures survive)', textIn(a.value, v => { a.value = v; }, { id: fid('value') }), fid('value')),
+      field('Units (optional)', textIn(a.units, v => { a.units = v; }, { id: fid('units') }), fid('units'))),
+      field('Tolerance (±, 0 for exact)', h('input', { type: 'number', id: fid('tol'), min: '0', step: 'any', value: String(a.tolerance), oninput: e => { const n = parseFloat(e.target.value); a.tolerance = isNaN(n) ? -1 : n; touch(); } }), fid('tol')));
+  } else if (type === 'short') {
+    host.append(field('Answer lines on the printed test', h('input', { type: 'number', id: fid('lines'), min: '1', max: '40', value: String(a.lines), oninput: e => { const n = parseInt(e.target.value, 10); a.lines = isNaN(n) ? 0 : n; touch(); } }), fid('lines')),
+      field('Marking guide (optional)', h('textarea', { id: fid('rubric'), 'data-math': '', rows: '3', value: a.rubric, oninput: e => { a.rubric = e.target.value; touch(); } }), fid('rubric')));
+  } else if (type === 'matching') {
     a.pairs.forEach((p, i) => host.append(h('div', { class: 'opt-row' }, h('span', { class: 'letter' }, String(i + 1)),
-      textIn(p.left, v => { p.left = v; }, { 'aria-label': 'Pair ' + (i + 1) + ' left', placeholder: 'Left' }),
+      textIn(p.left, v => { p.left = v; }, { 'aria-label': lab + 'Pair ' + (i + 1) + ' left', placeholder: 'Left' }),
       h('span', { class: 'hint' }, '='),
-      textIn(p.right, v => { p.right = v; }, { 'aria-label': 'Pair ' + (i + 1) + ' right', placeholder: 'Matches' }),
-      a.pairs.length > 2 ? h('button', { class: 'xbtn', type: 'button', title: 'Remove pair', 'aria-label': 'Remove pair ' + (i + 1), onclick: () => { a.pairs.splice(i, 1); renderAnswer(); touch(); } }, '×') : null)));
-    host.append(h('div', { class: 'opt-row' }, h('button', { class: 'btn small', type: 'button', disabled: a.pairs.length >= 12, onclick: () => { a.pairs.push({ left: '', right: '' }); renderAnswer(); touch(); } }, '+ Add pair'),
+      textIn(p.right, v => { p.right = v; }, { 'aria-label': lab + 'Pair ' + (i + 1) + ' right', placeholder: 'Matches' }),
+      a.pairs.length > 2 ? h('button', { class: 'xbtn', type: 'button', title: 'Remove pair', 'aria-label': 'Remove ' + lab + 'pair ' + (i + 1), onclick: () => { a.pairs.splice(i, 1); again(); touch(); } }, '×') : null)));
+    host.append(h('div', { class: 'opt-row' }, h('button', { class: 'btn small', type: 'button', disabled: a.pairs.length >= 12, onclick: () => { a.pairs.push({ left: '', right: '' }); again(); touch(); } }, '+ Add pair'),
       h('span', { class: 'hint' }, 'Enter the true pairs. They are shuffled when a test is printed.')));
   }
 }
 
-function touchQuestion() {
-  const ed = state.editor, d = ed.draft;
-  ed.dirty = stable(d) !== stable(ed.original);
-  const problems = checkQuestion(d);
-  // "ready" is only allowed when nothing is wrong
-  if (problems.length && d.status === 'ready') {
-    d.status = 'review'; el.statusSel.value = 'review';
-    ed.lastNote = 'Status was set to “Needs review” because of the problems below. Fix them to mark this question Ready.';
-    ed.dirty = stable(d) !== stable(ed.original);
-  }
-  for (const o of el.statusSel.options) if (o.value === 'ready') o.disabled = problems.length > 0;
-  el.dirtyFlag.textContent = ed.dirty ? '● Unsaved changes' : '';
-  el.saveBtn.disabled = !ed.dirty;
-  if (!problems.length) ed.lastNote = '';
-  problemsList(el.problems, problems, 'No problems. This question can be marked Ready.', ed.lastNote);
-  schedulePreview();
-}
-
-function normalizeQuestion(d) {
-  d.prompt = d.prompt.trim(); d.course = d.course.trim(); d.unit = d.unit.trim(); d.notes = d.notes.trim();
-  d.tags = Array.from(new Set(d.tags));
-  const a = d.answer;
-  if (d.type === 'mc') a.options = a.options.map(o => o.trim());
-  if (d.type === 'numeric') { a.value = a.value.trim(); a.units = a.units.trim(); }
-  if (d.type === 'short') a.rubric = a.rubric.trim();
-  if (d.type === 'matching') a.pairs = a.pairs.map(p => ({ left: p.left.trim(), right: p.right.trim() }));
-  if (d.type !== 'mc' || d.keepOrder !== true) delete d.keepOrder;
-  normalizeTable(d);
+function normalizeAnswer(type, a) {
+  if (type === 'mc') a.options = a.options.map(o => o.trim());
+  if (type === 'numeric') { a.value = a.value.trim(); a.units = a.units.trim(); }
+  if (type === 'short') a.rubric = a.rubric.trim();
+  if (type === 'matching') a.pairs = a.pairs.map(p => ({ left: p.left.trim(), right: p.right.trim() }));
 }
 function normalizeTable(d) {
   if (!d.table) return;
@@ -2368,31 +2748,221 @@ function normalizeTable(d) {
   d.table.headers = d.table.headers.map(x => x.trim());
   d.table.rows = d.table.rows.map(r => r.map(x => x.trim()));
 }
-
-/* --- stimulus editor --- */
-function stimulusBody(ed) {
-  const d = ed.draft;
-  el.stimTitle = h('input', { type: 'text', class: 'in', id: 'f-title', value: d.title, oninput: e => { d.title = e.target.value; touch(); } });
-  el.stimText = h('textarea', { id: 'f-stim-text', 'data-math': '', rows: '6', value: d.text, oninput: e => { d.text = e.target.value; touch(); } });
-  el.problems = h('div', { id: 'problems' });
-  el.preview = h('div', { class: 'paper', id: 'preview' });
-  el.tableHost = h('div', { id: 'table-host' });
-  el.imgHost = h('div', { id: 'img-host' });
-  renderTableEditor(el.tableHost, d, () => touch());
-  renderImageEditor(el.imgHost, d, ed, () => touch());
-  return [mathbar(), h('div', { class: 'editor-grid' },
-    h('div', { class: 'col-form' },
-      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Stimulus'),
-        field('Title (so you can find it)', el.stimTitle, 'f-title'),
-        field('Text (a passage, a description of a diagram, instructions…)', el.stimText, 'f-stim-text'),
-        h('p', { class: 'hint', style: 'margin:0' }, 'Questions that use this stimulus are printed together directly after it. Maths works here too.')),
-      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Table (optional)'), el.tableHost),
-      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Images (optional)'), el.imgHost)),
-    h('div', { class: 'col-preview' },
-      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Problems'), el.problems),
-      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Preview'), el.preview)))];
+function normalizeQuestion(d) {
+  d.prompt = d.prompt.trim(); d.course = d.course.trim(); d.unit = d.unit.trim(); d.notes = d.notes.trim();
+  d.tags = Array.from(new Set(d.tags));
+  if (d.type === 'multipart') d.answer.parts.forEach(p => { p.prompt = p.prompt.trim(); normalizeAnswer(p.type, p.answer); if (p.type !== 'mc' || p.keepOrder !== true) delete p.keepOrder; });
+  else normalizeAnswer(d.type, d.answer);
+  if (d.type !== 'mc' || d.keepOrder !== true) delete d.keepOrder;
+  normalizeTable(d);
 }
 
+/* === QUESTION EDITOR (a component: one per open question) === */
+// opts: { draft, isNew, compact, onSaved(q), onClose(), onDeleted(), addToTest: {label, run(q)} }
+function createQuestionEditor(opts) {
+  const d = opts.draft;
+  let original = clone(d), dirty = false, isNew = !!opts.isNew;
+  const pending = new Map(), partCache = new WeakMap();
+  let addPartType = 'mc';                    // the type the "Add part" menu offers: remembered while the editor is open
+  let answers = {}; answers[d.type] = d.answer;
+  let lastNote = '', lastField = null, previewTimer = null, previewSeq = 0;
+  const R = {};
+  const node = h('div', { class: 'editor' + (opts.compact ? ' compact' : ''), 'data-kind': 'question' });
+  node.addEventListener('focusin', e => { if (e.target.dataset && e.target.dataset.math !== undefined) lastField = e.target; });
+  wireBackticks(node);
+  const api = { kind: 'question', node, pending, isDirty: () => dirty, getDraft: () => d, save: () => save(), destroy() { clearTimeout(previewTimer); previewSeq++; } };
+
+  function touch() {
+    dirty = stable(d) !== stable(original);
+    const problems = checkQuestion(d);
+    if (problems.length && d.status === 'ready') {      // "ready" is only allowed when nothing is wrong
+      d.status = 'review'; R.statusSel.value = 'review';
+      lastNote = 'Status was set to “Needs review” because of the problems below. Fix them to mark this question Ready.';
+      dirty = stable(d) !== stable(original);
+    }
+    for (const o of R.statusSel.options) if (o.value === 'ready') o.disabled = problems.length > 0;
+    R.dirtyFlag.textContent = dirty ? '● Unsaved changes' : '';
+    R.saveBtn.disabled = !dirty;
+    if (R.addBtn) R.addBtn.disabled = !dirty && !isNew;
+    if (!problems.length) lastNote = '';
+    problemsList(R.problems, problems, 'No problems. This question can be marked Ready.', lastNote);
+    clearTimeout(previewTimer); previewTimer = setTimeout(updatePreview, 90);
+  }
+
+  async function updatePreview() {
+    if (!R.preview || !R.preview.isConnected) return;
+    const seq = ++previewSeq;
+    const stim = new Map(state.stimuli.map(s => [s.id, s]));
+    const s = d.stimulusId && stim.get(d.stimulusId);
+    const ids = d.imageIds.concat(s ? s.imageIds : []);
+    const lines = blockLines(d, '', { stim, rich: true }).filter(l => l.k !== 'title');
+    await ensureImageUrls(ids, pending);
+    if (seq !== previewSeq || !R.preview.isConnected) return;
+    R.preview.textContent = '';
+    R.preview.append(h('style', null, blockCss(4 / 3, '.editor .paper .pb')), buildBlockDom(lines));
+    renderMath(R.preview);
+  }
+
+  function setType(t) {
+    if (d.type === t) return;
+    answers[d.type] = d.answer;                // keep what was typed for the old type, in case they switch back
+    d.type = t;
+    d.answer = answers[t] || defaultAnswer(t);
+    answers[t] = d.answer;
+    if (t !== 'mc') delete d.keepOrder;
+    node.querySelectorAll('.typeseg button[data-type]').forEach(b => { const on = b.dataset.type === t; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
+    renderAnswerArea(); touch();
+  }
+
+  function renderParts() {
+    const host = R.answerHost, parts = d.answer.parts;
+    parts.forEach((p, i) => {
+      const lab = partLabel(i), idp = 'p' + i + '-';
+      const body = h('div');
+      const typeSel = h('select', { id: idp + 'type', 'aria-label': 'Part (' + lab + ') type', onchange: e => {
+        const pc = partCache.get(p) || {}; pc[p.type] = p.answer; partCache.set(p, pc);
+        p.type = e.target.value; p.answer = pc[p.type] || defaultAnswer(p.type);
+        if (p.type !== 'mc') delete p.keepOrder;
+        answerEditor(body, p, idp, 'Part (' + lab + ') ', touch); touch();
+      } }, PART_TYPES.map(t => h('option', { value: t }, TYPE_LABEL[t])));
+      typeSel.value = p.type;
+      const move = dir => { const j = i + dir; if (j < 0 || j >= parts.length) return; const t = parts[i]; parts[i] = parts[j]; parts[j] = t; renderAnswerArea(); touch(); };
+      answerEditor(body, p, idp, 'Part (' + lab + ') ', touch);
+      host.append(h('div', { class: 'part-card', 'data-part': String(i) },
+        h('div', { class: 'part-head' }, h('b', null, '(' + lab + ')'), typeSel, h('span', { class: 'spacer' }),
+          h('button', { class: 'xbtn', type: 'button', title: 'Move part up', 'aria-label': 'Move part (' + lab + ') up', disabled: i === 0, onclick: () => move(-1) }, '↑'),
+          h('button', { class: 'xbtn', type: 'button', title: 'Move part down', 'aria-label': 'Move part (' + lab + ') down', disabled: i === parts.length - 1, onclick: () => move(1) }, '↓'),
+          parts.length > 1 ? h('button', { class: 'xbtn', type: 'button', title: 'Remove part', 'aria-label': 'Remove part (' + lab + ')', onclick: () => { parts.splice(i, 1); renderAnswerArea(); touch(); } }, '×') : null),
+        field('Part (' + lab + ') question text', h('textarea', { id: idp + 'prompt', 'data-math': '', rows: '2', value: p.prompt, oninput: e => { p.prompt = e.target.value; touch(); } }), idp + 'prompt'),
+        body));
+    });
+    const addType = h('select', { id: 'add-part-type', 'aria-label': 'Type of the new part', onchange: e => { addPartType = e.target.value; } }, PART_TYPES.map(t => h('option', { value: t }, TYPE_LABEL[t])));
+    addType.value = addPartType;
+    host.append(h('div', { class: 'opt-row' }, addType,
+      h('button', { class: 'btn small', type: 'button', id: 'btn-add-part', disabled: parts.length >= MAX_PARTS, onclick: () => { parts.push(newPart(addType.value)); renderAnswerArea(); touch(); } }, '+ Add part'),
+      h('span', { class: 'hint' }, 'Each part has its own question and answer. Parts print as (a), (b), (c) in order.')));
+  }
+
+  function renderAnswerArea() {
+    R.answerHost.textContent = '';
+    R.answerTitle.textContent = d.type === 'multipart' ? 'Parts' : 'Answer';
+    R.promptLabel.textContent = d.type === 'multipart' ? 'Shared introduction (optional)' : 'Question text';
+    if (d.type === 'multipart') renderParts(); else answerEditor(R.answerHost, d, '', '', touch);
+  }
+
+  function build() {
+    node.textContent = '';
+    R.dirtyFlag = h('span', { class: 'dirty-flag', id: 'dirty-flag' });
+    R.saveBtn = h('button', { class: 'btn primary', type: 'button', id: 'btn-save', onclick: () => save() }, 'Save');
+    R.addBtn = opts.addToTest && isNew ? h('button', { class: 'btn primary', type: 'button', id: 'btn-save-add', onclick: async () => { const q = await save(); if (q) opts.addToTest.run(q); } }, opts.addToTest.label) : null;
+    node.append(h('div', { class: 'stage-bar' }, h('h2', null, (isNew ? 'New ' : 'Edit ') + 'question'), R.dirtyFlag, h('div', { class: 'spacer' }), R.addBtn, R.saveBtn,
+      h('button', { class: 'btn', type: 'button', id: 'btn-close', onclick: () => opts.onClose && opts.onClose() }, opts.compact ? '← Back' : 'Close'),
+      isNew ? null : h('button', { class: 'btn danger', type: 'button', id: 'btn-delete', onclick: () => remove() }, 'Delete')));
+    const typeSeg = h('div', { class: 'seg typeseg', role: 'group', 'aria-label': 'Question type' }, TYPES.map(t =>
+      h('button', { type: 'button', class: d.type === t ? 'active' : '', 'data-type': t, 'aria-pressed': String(d.type === t), onclick: () => setType(t) }, TYPE_LABEL[t])));
+    R.promptLabel = h('label', { for: 'f-prompt' }, 'Question text');
+    const prompt = h('textarea', { id: 'f-prompt', 'data-math': '', rows: '4', value: d.prompt, oninput: e => { d.prompt = e.target.value; touch(); } });
+    R.answerHost = h('div'); R.answerTitle = h('h3', { class: 'section-title' }, 'Answer');
+    const coursesList = Array.from(new Set(state.questions.map(q => q.course).filter(Boolean)));
+    const unitsList = Array.from(new Set(state.questions.map(q => q.unit).filter(Boolean)));
+    const diff = h('select', { id: 'f-difficulty', onchange: e => { d.difficulty = e.target.value; touch(); } }, DIFFICULTIES.map(x => h('option', { value: x }, cap(x)))); diff.value = d.difficulty;
+    R.statusSel = h('select', { id: 'f-status', onchange: e => { d.status = e.target.value; touch(); } }, STATUSES.map(x => h('option', { value: x }, STATUS_LABEL[x]))); R.statusSel.value = d.status;
+    const bankSel = h('select', { id: 'f-bank', onchange: e => {
+      d.bankId = e.target.value;
+      if (d.stimulusId) { const s = state.stimuli.find(x => x.id === d.stimulusId); if (!s || s.bankId !== d.bankId) { d.stimulusId = null; stimSel.value = ''; toast('The shared stimulus belongs to the previous bank, so it was removed from this question.', 'warn'); } }
+      fillStimulusOptions(); touch();
+    } }, sortedBanks().map(b => h('option', { value: b.id }, b.name))); bankSel.value = d.bankId;
+    const stimSel = h('select', { id: 'f-stimulus', onchange: e => { d.stimulusId = e.target.value || null; touch(); } });
+    const fillStimulusOptions = () => {
+      const list = state.stimuli.filter(s => s.bankId === d.bankId).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+      stimSel.textContent = '';
+      stimSel.append(h('option', { value: '' }, 'None'), ...list.map(s => h('option', { value: s.id }, s.title || 'Untitled stimulus')));
+      if (d.stimulusId && !list.some(s => s.id === d.stimulusId)) stimSel.append(h('option', { value: d.stimulusId }, '(missing stimulus)'));
+      stimSel.value = d.stimulusId || '';
+    };
+    fillStimulusOptions();
+    R.problems = h('div', { id: 'problems' });
+    R.preview = h('div', { class: 'paper', id: 'preview' });
+    const tableHost = h('div', { id: 'table-host' }), imgHost = h('div', { id: 'img-host' });
+    renderTableEditor(tableHost, d, touch);
+    renderImageEditor(imgHost, d, pending, touch);
+    const details = h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Details'),
+      field('Question bank', bankSel, 'f-bank'),
+      h('div', { class: 'row2' },
+        field('Course', h('input', { type: 'text', class: 'in', id: 'f-course', list: 'dl-courses', value: d.course, oninput: e => { d.course = e.target.value; touch(); } }), 'f-course'),
+        field('Unit', h('input', { type: 'text', class: 'in', id: 'f-unit', list: 'dl-units', value: d.unit, oninput: e => { d.unit = e.target.value; touch(); } }), 'f-unit')),
+      h('datalist', { id: 'dl-courses' }, coursesList.map(c => h('option', { value: c }))),
+      h('datalist', { id: 'dl-units' }, unitsList.map(c => h('option', { value: c }))),
+      field('Topics (separate with commas)', h('input', { type: 'text', class: 'in', id: 'f-tags', value: d.tags.join(', '), oninput: e => { d.tags = e.target.value.split(',').map(x => x.trim()).filter(Boolean); touch(); } }), 'f-tags'),
+      h('div', { class: 'row2' }, field('Difficulty', diff, 'f-difficulty'), field('Status', R.statusSel, 'f-status')),
+      h('p', { class: 'hint', style: 'margin:-4px 0 12px' }, '“Needs review” is for questions that still need a human check. A question can only be “Ready” when nothing is wrong with it (see Problems).'),
+      field('Notes (not shown to students)', h('textarea', { id: 'f-notes', 'data-math': '', rows: '3', value: d.notes, oninput: e => { d.notes = e.target.value; touch(); } }), 'f-notes'));
+    const grid = h('div', { class: 'editor-grid' },
+      h('div', { class: 'col-form' },
+        h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Type'), typeSeg),
+        h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Question'), h('div', { class: 'field' }, R.promptLabel, prompt),
+          h('p', { class: 'hint', style: 'margin:0 0 12px' }, 'Maths: press Σ Equation above, or type it between backticks, like `x^2/3`. Dollar signs are just money.'),
+          field('Shared stimulus (optional)', stimSel, 'f-stimulus')),
+        h('div', { class: 'card' }, R.answerTitle, R.answerHost),
+        h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Table (optional)'), tableHost),
+        h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Images (optional)'), imgHost),
+        details),
+      h('div', { class: 'col-preview' },
+        h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Problems'), R.problems),
+        h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Preview'), R.preview)));
+    node.append(h('div', { class: 'canvas-scroll' }, mathbar(() => lastField), grid));
+    renderAnswerArea();
+    touch();
+  }
+
+  async function save() {
+    if (!dirty) return null;
+    const c = clone(d);
+    normalizeQuestion(c);
+    const problems = checkQuestion(c);
+    if (c.status === 'ready' && problems.length) { toast('Fix the problems first, or set the status to “Needs review”.', 'err'); return null; }
+    c.updated = nowIso();
+    const batch = { questions: [c] };
+    const imgs = c.imageIds.filter(id => pending.has(id)).map(id => ({ id, blob: pending.get(id) }));
+    if (imgs.length) batch.images = imgs;
+    try { await ensurePersist(); await db.applyBatch(batch); }
+    catch (e) { toast('Could not save: ' + (e && e.message || e) + ' Your edits are still on screen. Export what you have, then try again.', 'err'); return null; }
+    for (const im of imgs) pending.delete(im.id);
+    for (const k of Object.keys(d)) delete d[k];
+    Object.assign(d, clone(c));
+    original = clone(d); dirty = false; const wasNew = isNew; isNew = false; answers = {}; answers[d.type] = d.answer;
+    await loadAll();
+    build();
+    toast('Saved.', 'ok');
+    if (opts.onSaved) opts.onSaved(d, wasNew);
+    return d;
+  }
+
+  async function remove() {
+    if (isNew) return;
+    const inTests = state.tests.filter(t => t.questionIds.includes(d.id));
+    const ok = await modal({
+      title: 'Delete this question?',
+      body: h('div', null, h('p', null, snippet(original.prompt)),
+        inTests.length ? h('p', null, 'It is in ' + plural(inTests.length, 'saved test') + ' (' + inTests.map(t => t.title || 'Untitled').join(', ') + ') and will be removed from ' + (inTests.length === 1 ? 'it' : 'them') + '.') : null,
+        h('p', { class: 'hint' }, 'It will be removed from this browser. If you have not exported a recent backup, it cannot be recovered.')),
+      actions: [{ label: 'Cancel', value: false }, { label: 'Delete question', value: true, kind: 'danger' }], dismissValue: false
+    });
+    if (!ok) return;
+    const t = nowIso();
+    try { await db.applyBatch({ deletes: { questions: [d.id] }, tests: inTests.map(x => Object.assign({}, x, { questionIds: x.questionIds.filter(q => q !== d.id), updated: t })) }); }
+    catch (e) { toast('Could not delete: ' + (e && e.message || e), 'err'); return; }
+    await loadAll();
+    dirty = false;
+    toast('Question deleted.', 'ok');
+    if (opts.onDeleted) opts.onDeleted();
+  }
+
+  build();
+  return api;
+}
+
+/* === STIMULUS EDITOR (a component) === */
 function checkStimulus(s) {
   const out = [];
   if (!String(s.title || '').trim()) out.push({ kind: 'incomplete', field: 'Title', message: 'is empty. Give it a title so you can find it' });
@@ -2400,192 +2970,295 @@ function checkStimulus(s) {
   for (const x of f) for (const m of mathErrors(String(x.text))) out.push({ kind: 'math', field: x.field, message: m });
   return out;
 }
-function touchStimulus() {
-  const ed = state.editor, d = ed.draft;
-  ed.dirty = stable(d) !== stable(ed.original);
-  el.dirtyFlag.textContent = ed.dirty ? '● Unsaved changes' : '';
-  el.saveBtn.disabled = !ed.dirty || !d.title.trim();
-  problemsList(el.problems, checkStimulus(d), 'No problems.');
-  schedulePreview();
+
+function createStimulusEditor(opts) {
+  const d = opts.draft;
+  let original = clone(d), dirty = false, isNew = !!opts.isNew, lastField = null, previewTimer = null, previewSeq = 0;
+  const pending = new Map(), R = {};
+  const node = h('div', { class: 'editor', 'data-kind': 'stimulus' });
+  node.addEventListener('focusin', e => { if (e.target.dataset && e.target.dataset.math !== undefined) lastField = e.target; });
+  wireBackticks(node);
+  const api = { kind: 'stimulus', node, pending, isDirty: () => dirty, getDraft: () => d, save: () => save(), destroy() { clearTimeout(previewTimer); previewSeq++; } };
+
+  function touch() {
+    dirty = stable(d) !== stable(original);
+    R.dirtyFlag.textContent = dirty ? '● Unsaved changes' : '';
+    R.saveBtn.disabled = !dirty || !d.title.trim();
+    problemsList(R.problems, checkStimulus(d), 'No problems.');
+    clearTimeout(previewTimer); previewTimer = setTimeout(updatePreview, 90);
+  }
+  async function updatePreview() {
+    if (!R.preview || !R.preview.isConnected) return;
+    const seq = ++previewSeq;
+    await ensureImageUrls(d.imageIds, pending);
+    if (seq !== previewSeq || !R.preview.isConnected) return;
+    R.preview.textContent = '';
+    R.preview.append(h('style', null, blockCss(4 / 3, '.editor .paper .pb')), buildBlockDom(stimulusLines(d, true)));
+    renderMath(R.preview);
+  }
+  function build() {
+    node.textContent = '';
+    R.dirtyFlag = h('span', { class: 'dirty-flag', id: 'dirty-flag' });
+    R.saveBtn = h('button', { class: 'btn primary', type: 'button', id: 'btn-save', onclick: () => save() }, 'Save');
+    node.append(h('div', { class: 'stage-bar' }, h('h2', null, (isNew ? 'New ' : 'Edit ') + 'stimulus'), R.dirtyFlag, h('div', { class: 'spacer' }), R.saveBtn,
+      h('button', { class: 'btn', type: 'button', id: 'btn-close', onclick: () => opts.onClose && opts.onClose() }, 'Close'),
+      isNew ? null : h('button', { class: 'btn danger', type: 'button', id: 'btn-delete', onclick: () => remove() }, 'Delete')));
+    const title = h('input', { type: 'text', class: 'in', id: 'f-title', value: d.title, oninput: e => { d.title = e.target.value; touch(); } });
+    const text = h('textarea', { id: 'f-stim-text', 'data-math': '', rows: '6', value: d.text, oninput: e => { d.text = e.target.value; touch(); } });
+    R.problems = h('div', { id: 'problems' }); R.preview = h('div', { class: 'paper', id: 'preview' });
+    const tableHost = h('div', { id: 'table-host' }), imgHost = h('div', { id: 'img-host' });
+    renderTableEditor(tableHost, d, touch); renderImageEditor(imgHost, d, pending, touch);
+    node.append(h('div', { class: 'canvas-scroll' }, mathbar(() => lastField), h('div', { class: 'editor-grid' },
+      h('div', { class: 'col-form' },
+        h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Stimulus'),
+          field('Title (so you can find it)', title, 'f-title'),
+          field('Text (a passage, a description of a diagram, instructions…)', text, 'f-stim-text'),
+          h('p', { class: 'hint', style: 'margin:0' }, 'Questions that use this stimulus are printed together directly after it. Maths works here too.')),
+        h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Table (optional)'), tableHost),
+        h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Images (optional)'), imgHost)),
+      h('div', { class: 'col-preview' },
+        h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Problems'), R.problems),
+        h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Preview'), R.preview)))));
+    touch();
+  }
+  async function save() {
+    if (!dirty) return null;
+    const c = clone(d);
+    c.title = c.title.trim(); c.text = c.text.trim(); normalizeTable(c);
+    if (!c.title) { toast('Give the stimulus a title first.', 'err'); return null; }
+    c.updated = nowIso();
+    const batch = { stimuli: [c] };
+    const imgs = c.imageIds.filter(id => pending.has(id)).map(id => ({ id, blob: pending.get(id) }));
+    if (imgs.length) batch.images = imgs;
+    try { await ensurePersist(); await db.applyBatch(batch); }
+    catch (e) { toast('Could not save: ' + (e && e.message || e) + ' Your edits are still on screen. Export what you have, then try again.', 'err'); return null; }
+    for (const im of imgs) pending.delete(im.id);
+    for (const k of Object.keys(d)) delete d[k];
+    Object.assign(d, clone(c));
+    original = clone(d); dirty = false; const wasNew = isNew; isNew = false;
+    await loadAll();
+    build();
+    toast('Saved.', 'ok');
+    if (opts.onSaved) opts.onSaved(d, wasNew);
+    return d;
+  }
+  async function remove() {
+    if (isNew) return;
+    const users = state.questions.filter(q => q.stimulusId === d.id);
+    const ok = await modal({
+      title: 'Delete this stimulus?',
+      body: h('div', null, h('p', null, original.title || 'Untitled stimulus'),
+        users.length ? h('p', null, plural(users.length, 'question') + ' use' + (users.length === 1 ? 's' : '') + ' it. They stay in your bank but will no longer have a stimulus.') : null,
+        h('p', { class: 'hint' }, 'If you have not exported a recent backup, it cannot be recovered.')),
+      actions: [{ label: 'Cancel', value: false }, { label: 'Delete stimulus', value: true, kind: 'danger' }], dismissValue: false
+    });
+    if (!ok) return;
+    const t = nowIso();
+    try { await db.applyBatch({ deletes: { stimuli: [d.id] }, questions: users.map(q => Object.assign({}, q, { stimulusId: null, updated: t })) }); }
+    catch (e) { toast('Could not delete: ' + (e && e.message || e), 'err'); return; }
+    await loadAll();
+    dirty = false;
+    toast('Stimulus deleted.', 'ok');
+    if (opts.onDeleted) opts.onDeleted();
+  }
+  build();
+  return api;
 }
 
-/* --- test editor --- */
-const PICK_MAX = 200;
-function testBody(ed) {
-  const d = ed.draft;
-  ed.pickText = ''; ed.pickType = ''; ed.pv = 'A';
-  const paper = ls.get('paper') in PAPERS ? ls.get('paper') : 'letter';
-  const coursesList = Array.from(new Set(state.questions.map(q => q.course).filter(Boolean)));
-  el.testList = h('div', { id: 'test-list' });
-  el.picker = h('div', { id: 'picker' });
-  el.testWarn = h('div', { id: 'test-warn' });
-  el.sheetHost = h('div', { id: 'sheet-preview', class: 'paper-sheet' });
-  el.seedVal = h('span', { class: 'mono', id: 'seed-val' }, String(d.seed));
-  el.printBtns = ['A', 'B', 'KA', 'KB'].map(v => h('button', { class: 'btn' + (v === 'A' ? ' primary' : ''), type: 'button', id: 'btn-print-' + v.toLowerCase(), onclick: () => printSheet(v[0] === 'K' ? 'key' : 'test', v.slice(-1)) },
-    v === 'A' ? 'Print Version A' : v === 'B' ? 'Print Version B' : 'Answer key ' + v[1]));
-  el.pvSeg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Preview' }, [['A', 'Test A'], ['B', 'Test B'], ['KA', 'Key A'], ['KB', 'Key B']].map(([v, l]) =>
-    h('button', { type: 'button', id: 'pv-' + v.toLowerCase(), class: v === 'A' ? 'active' : '', 'data-pv': v, 'aria-pressed': String(v === 'A'), onclick: () => { ed.pv = v; el.pvSeg.querySelectorAll('button').forEach(b => { const on = b.dataset.pv === v; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); }); updateSheetPreview(); } }, l)));
-  const paperSel = h('select', { id: 'f-paper', 'aria-label': 'Paper size', onchange: e => { ls.set('paper', e.target.value); } }, Object.keys(PAPERS).map(k => h('option', { value: k }, PAPERS[k].label)));
-  paperSel.value = paper;
-  renderTestLists();
-  return [h('div', { class: 'editor-grid' },
-    h('div', { class: 'col-form' },
-      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Test'),
-        h('div', { class: 'row2' },
-          field('Title', h('input', { type: 'text', class: 'in', id: 'f-test-title', value: d.title, oninput: e => { d.title = e.target.value; touch(); } }), 'f-test-title'),
-          field('Course', h('input', { type: 'text', class: 'in', id: 'f-test-course', list: 'dl-tcourses', value: d.course, oninput: e => { d.course = e.target.value; touch(); } }), 'f-test-course')),
-        h('datalist', { id: 'dl-tcourses' }, coursesList.map(c => h('option', { value: c })))),
-      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'In this test'),
-        h('p', { class: 'hint', style: 'margin-top:0' }, 'The order you set here is Version A. Questions that share a stimulus always print together under it, at the place of the first one.'),
-        el.testList),
-      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Add from your question bank'), el.picker)),
-    h('div', { class: 'col-preview' },
-      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Print'),
-        h('div', { class: 'print-grid' }, el.printBtns),
-        h('div', { class: 'row2', style: 'margin-top:12px' }, field('Paper', paperSel, 'f-paper'),
-          h('div', { class: 'field' }, h('label', null, 'Version B shuffle'), h('div', { class: 'opt-row', style: 'margin:0' }, el.seedVal,
-            h('button', { class: 'btn small', type: 'button', id: 'btn-reseed', onclick: async () => {
-              if (!ed.isNew && !(await modal({ title: 'Reshuffle Version B?', body: h('p', null, 'Version B will print in a different order than any copies you have already printed. Version A is not affected.'), actions: [{ label: 'Keep current shuffle', value: false }, { label: 'Reshuffle', value: true, kind: 'danger' }], dismissValue: false }))) return;
-              d.seed = newSeed(); el.seedVal.textContent = String(d.seed); touch();
-            } }, 'New shuffle')))),
-        h('p', { class: 'hint', style: 'margin:8px 0 0' }, 'Print opens your browser’s print dialog. Choose “Save as PDF” there to make a file.')),
-      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Check'), el.testWarn))),
-  h('div', { class: 'card' }, h('div', { class: 'opt-row', style: 'justify-content:space-between;margin-bottom:12px' }, h('h3', { class: 'section-title', style: 'margin:0' }, 'Preview'), el.pvSeg), el.sheetHost)];
+/* === BANK WORKSPACE: a bank's questions and stimuli, with the editor beside the list === */
+const SORTS = { newest: 'Newest', oldest: 'Oldest', az: 'A to Z' };
+function sortQuestions(list, how) {
+  const l = list.slice();
+  if (how === 'oldest') l.sort((a, b) => Date.parse(a.created) - Date.parse(b.created));
+  else if (how === 'az') l.sort((a, b) => snippet(a.prompt).localeCompare(snippet(b.prompt)));
+  else l.sort((a, b) => Date.parse(b.updated) - Date.parse(a.updated));
+  return l;
 }
+function filterQuestions(list, f) {
+  const t = (f.search || '').trim().toLowerCase();
+  return list.filter(q => (!f.type || q.type === f.type) && (!f.status || q.status === f.status) && (!t || searchText(q).includes(t)));
+}
+function searchText(q) { return textFields(q).map(f => f.text).concat([q.course, q.unit, q.tags.join(' ')]).join('\n').toLowerCase(); }
+const EMPTY_STAGE = {
+  questions: 'Pick a question from the list to edit it, or use “New” to add one. Your questions are stored in this browser. Use “Export everything” often: the exported PDF is your backup.',
+  stimuli: 'A stimulus is a passage, data table or picture that several questions share. Pick one to edit it, or choose “New stimulus”. Questions that share a stimulus always print together under it.'
+};
 
-// Rebuild the "In this test" list and the picker (after any change to which questions are in the test).
-function renderTestLists() {
-  const ed = state.editor, d = ed.draft;
-  const qById = new Map(state.questions.map(q => [q.id, q]));
-  const sById = new Map(state.stimuli.map(s => [s.id, s]));
-  const move = (i, dir) => { const j = i + dir; if (j < 0 || j >= d.questionIds.length) return; const t = d.questionIds[i]; d.questionIds[i] = d.questionIds[j]; d.questionIds[j] = t; renderTestLists(); touch(); };
-  el.testList.textContent = '';
-  if (!d.questionIds.length) el.testList.append(h('div', { class: 'empty' }, 'No questions yet. Add some from the list below.'));
-  d.questionIds.forEach((id, i) => {
-    const q = qById.get(id);
-    el.testList.append(h('div', { class: 'trow' + (q ? '' : ' missing'), 'data-id': id },
-      h('span', { class: 'num' }, String(i + 1)),
-      h('span', { class: 'tmain' },
-        q ? h('span', { class: 'top' }, h('span', { class: 'badge' }, TYPE_SHORT[q.type]), q.status === 'review' ? h('span', { class: 'badge review' }, 'REVIEW') : null,
-          q.stimulusId && sById.has(q.stimulusId) ? h('span', { class: 'badge' }, 'STIMULUS: ' + (sById.get(q.stimulusId).title || 'Untitled')) : null,
-          q.keepOrder ? h('span', { class: 'badge' }, 'OPTIONS KEPT IN ORDER') : null) : null,
-        h('span', { class: 'snip' }, q ? snippet(q.prompt) : '(This question is no longer in the bank. It will be skipped.)')),
-      h('span', { class: 'tbtns' },
-        h('button', { class: 'xbtn', type: 'button', title: 'Move up', 'aria-label': 'Move question ' + (i + 1) + ' up', disabled: i === 0, onclick: () => move(i, -1) }, '↑'),
-        h('button', { class: 'xbtn', type: 'button', title: 'Move down', 'aria-label': 'Move question ' + (i + 1) + ' down', disabled: i === d.questionIds.length - 1, onclick: () => move(i, 1) }, '↓'),
-        h('button', { class: 'xbtn', type: 'button', title: 'Remove from test', 'aria-label': 'Remove question ' + (i + 1) + ' from the test', onclick: () => { d.questionIds.splice(i, 1); renderTestLists(); touch(); } }, '×'))));
-  });
-  // picker: questions not in the test yet
-  const inTest = new Set(d.questionIds);
-  const t = ed.pickText.trim().toLowerCase();
-  const avail = state.questions.filter(q => !inTest.has(q.id) && (!ed.pickType || q.type === ed.pickType) && (!t || searchText(q).includes(t))).sort((a, b) => Date.parse(b.updated) - Date.parse(a.updated));
-  el.picker.textContent = '';
-  el.picker.append(h('div', { class: 'opt-row' },
-    h('input', { type: 'text', class: 'in', id: 'f-pick', placeholder: 'Search the bank…', 'aria-label': 'Search the bank', value: ed.pickText, oninput: e => { ed.pickText = e.target.value; renderTestLists(); const f = document.getElementById('f-pick'); if (f) { f.focus(); f.setSelectionRange(f.value.length, f.value.length); } } }),
-    (() => { const s = h('select', { id: 'f-picktype', 'aria-label': 'Filter by type', onchange: e => { ed.pickType = e.target.value; renderTestLists(); } }, h('option', { value: '' }, 'All types'), TYPES.map(x => h('option', { value: x }, TYPE_LABEL[x]))); s.value = ed.pickType; return s; })()));
-  if (!avail.length) el.picker.append(h('div', { class: 'empty' }, state.questions.length ? (inTest.size === state.questions.length ? 'Every question in your bank is already in this test.' : 'No questions match.') : 'Your bank is empty. Add questions in the Questions tab first.'));
-  else {
-    el.picker.append(h('div', { class: 'opt-row' }, h('span', { class: 'hint' }, plural(avail.length, 'question') + (avail.length > PICK_MAX ? ' (showing the first ' + PICK_MAX + ')' : '')), h('span', { class: 'spacer' }),
-      h('button', { class: 'btn small', type: 'button', id: 'btn-add-all', onclick: () => { for (const q of avail.slice(0, PICK_MAX)) d.questionIds.push(q.id); renderTestLists(); touch(); } }, 'Add all shown')));
-    for (const q of avail.slice(0, PICK_MAX)) {
-      el.picker.append(h('div', { class: 'trow', 'data-id': q.id },
-        h('span', { class: 'tmain' }, h('span', { class: 'top' }, h('span', { class: 'badge' }, TYPE_SHORT[q.type]), q.status === 'review' ? h('span', { class: 'badge review' }, 'REVIEW') : null, q.course ? h('span', { class: 'badge' }, q.course) : null),
-          h('span', { class: 'snip' }, snippet(q.prompt))),
-        h('button', { class: 'btn small', type: 'button', 'aria-label': 'Add to test: ' + snippet(q.prompt), onclick: () => { d.questionIds.push(q.id); renderTestLists(); touch(); } }, '+ Add')));
+VIEWS.bank = v => {
+  const bank = bankById(v.id);
+  if (!bank) { el.view.append(h('div', { class: 'page' }, topbar('Question bank'), h('div', { class: 'empty' }, 'That question bank no longer exists.'))); return; }
+  const bw = { tab: v.tab || 'questions', search: '', type: '', status: '', sort: 'newest', selectedId: null };
+  const listHost = h('ul', { class: 'qlist' }), stage = h('div', { class: 'stage' }), count = h('span', { class: 'count-pill' }, '0');
+  const search = h('input', { type: 'text', class: 'in', id: 'bank-search', placeholder: 'Search questions…', 'aria-label': 'Search questions', oninput: e => { bw.search = e.target.value; paintList(); } });
+  const typeSel = h('select', { id: 'bank-type', 'aria-label': 'Filter by type', onchange: e => { bw.type = e.target.value; paintList(); } }, h('option', { value: '' }, 'All types'), TYPES.map(t => h('option', { value: t }, TYPE_LABEL[t])));
+  const sortSel = h('select', { id: 'bank-sort', 'aria-label': 'Sort', onchange: e => { bw.sort = e.target.value; paintList(); } }, Object.keys(SORTS).map(k => h('option', { value: k }, SORTS[k])));
+  const statusSel = h('select', { id: 'bank-status', 'aria-label': 'Filter by status', onchange: e => { bw.status = e.target.value; paintList(); } }, h('option', { value: '' }, 'Any status'), STATUSES.map(x => h('option', { value: x }, STATUS_LABEL[x])));
+  const filters = h('div', { class: 'filters' }, typeSel, statusSel, sortSel);
+  const tabBtn = (name, label) => h('button', { type: 'button', id: 'tab-' + name, 'data-tab': name, onclick: () => switchTab(name) }, label);
+  const tabs = h('div', { class: 'seg', role: 'group', 'aria-label': 'Bank contents' }, tabBtn('questions', 'Questions'), tabBtn('stimuli', 'Stimuli'));
+  const newBtn = h('button', { class: 'btn primary', type: 'button', id: 'btn-new', onclick: e => {
+    if (bw.tab === 'stimuli') newStimulus();
+    else openMenu(e.currentTarget, TYPES.map(t => ({ label: TYPE_LABEL[t], id: 'new-' + t, onclick: () => newQuestion(t) })));
+  } });
+  const nameEl = h('h2', { id: 'bank-name' }, bank.name);
+
+  function unmount() { for (const k of ['qed', 'sed']) { if (active[k]) active[k].destroy(); active[k] = null; } }
+  function showEmpty() { stage.textContent = ''; stage.append(h('div', { class: 'canvas-scroll' }, h('div', { class: 'empty', id: 'stage-empty' }, EMPTY_STAGE[bw.tab]))); }
+  function chrome() {
+    tabs.querySelectorAll('button').forEach(b => { const on = b.dataset.tab === bw.tab; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
+    search.placeholder = bw.tab === 'stimuli' ? 'Search stimuli…' : 'Search questions…';
+    search.setAttribute('aria-label', search.placeholder.replace('…', ''));
+    filters.style.display = bw.tab === 'questions' ? '' : 'none';
+    newBtn.textContent = bw.tab === 'stimuli' ? '+ New stimulus' : '+ New question ▾';
+  }
+  function paintList() {
+    listHost.textContent = '';
+    if (bw.tab === 'questions') {
+      const all = state.questions.filter(q => q.bankId === bank.id);
+      const rows = sortQuestions(filterQuestions(all, bw), bw.sort);
+      count.textContent = rows.length === all.length ? String(rows.length) : rows.length + ' of ' + all.length;
+      if (!rows.length) listHost.append(h('li', { class: 'empty' }, all.length ? 'No questions match these filters.' : 'No questions in this bank yet. Choose “New question”.'));
+      for (const q of rows) listHost.append(h('li', null, h('button', { type: 'button', class: 'qrow' + (q.id === bw.selectedId ? ' sel' : ''), 'data-id': q.id, onclick: () => openQuestion(q.id) },
+        h('span', { class: 'top' }, h('span', { class: 'badge' }, TYPE_SHORT[q.type]), q.status === 'review' ? h('span', { class: 'badge review' }, 'REVIEW') : null, h('span', { class: 'badge' }, cap(q.difficulty))),
+        h('span', { class: 'snip' }, snippet(q.prompt)),
+        (q.course || q.unit) ? h('span', { class: 'sub' }, [q.course, q.unit].filter(Boolean).join(' · ')) : null)));
+    } else {
+      const t = bw.search.trim().toLowerCase();
+      const all = state.stimuli.filter(s => s.bankId === bank.id);
+      const rows = all.filter(s => !t || (s.title + '\n' + s.text).toLowerCase().includes(t)).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+      count.textContent = rows.length === all.length ? String(rows.length) : rows.length + ' of ' + all.length;
+      if (!rows.length) listHost.append(h('li', { class: 'empty' }, all.length ? 'No stimuli match this search.' : 'No stimuli yet. A stimulus is a passage, data table or picture that several questions share.'));
+      for (const s of rows) {
+        const n = state.questions.filter(q => q.stimulusId === s.id).length;
+        listHost.append(h('li', null, h('button', { type: 'button', class: 'qrow' + (s.id === bw.selectedId ? ' sel' : ''), 'data-id': s.id, onclick: () => openStimulus(s.id) },
+          h('span', { class: 'snip' }, h('b', null, s.title || 'Untitled stimulus')),
+          h('span', { class: 'sub' }, plural(n, 'question') + ' use it' + (s.table ? ' · table' : '') + (s.imageIds.length ? ' · ' + plural(s.imageIds.length, 'image') : '')))));
+      }
     }
   }
-}
+  async function switchTab(name) {
+    if (name === bw.tab) return;
+    if (!(await guardDirty())) return;
+    unmount(); bw.tab = name; bw.selectedId = null; bw.search = ''; search.value = '';
+    chrome(); paintList(); showEmpty();
+  }
+  const afterSave = (rec) => { bw.selectedId = rec.id; paintList(); renderStatus(); };
+  const afterDelete = () => { unmount(); bw.selectedId = null; showEmpty(); paintList(); renderStatus(); };
+  async function openQuestion(id) {
+    if (active.qed && active.qed.getDraft().id === id) return;
+    if (!(await guardDirty())) return;
+    const q = state.questions.find(x => x.id === id); if (!q) return;
+    unmount(); bw.selectedId = id;
+    active.qed = createQuestionEditor({ draft: clone(q), isNew: false, onSaved: afterSave, onClose: closeEditor, onDeleted: afterDelete });
+    stage.textContent = ''; stage.append(active.qed.node); paintList();
+  }
+  async function newQuestion(type) {
+    if (!(await guardDirty())) return;
+    unmount(); bw.selectedId = null;
+    active.qed = createQuestionEditor({ draft: emptyQuestion(type, bank.id), isNew: true, onSaved: afterSave, onClose: closeEditor, onDeleted: afterDelete });
+    stage.textContent = ''; stage.append(active.qed.node); paintList();
+  }
+  async function openStimulus(id) {
+    if (active.sed && active.sed.getDraft().id === id) return;
+    if (!(await guardDirty())) return;
+    const s = state.stimuli.find(x => x.id === id); if (!s) return;
+    unmount(); bw.selectedId = id;
+    active.sed = createStimulusEditor({ draft: clone(s), isNew: false, onSaved: afterSave, onClose: closeEditor, onDeleted: afterDelete });
+    stage.textContent = ''; stage.append(active.sed.node); paintList();
+  }
+  async function newStimulus() {
+    if (!(await guardDirty())) return;
+    unmount(); bw.selectedId = null;
+    const t = nowIso();
+    active.sed = createStimulusEditor({ draft: { id: uuid(), bankId: bank.id, title: '', text: '', imageIds: [], table: null, created: t, updated: t }, isNew: true, onSaved: afterSave, onClose: closeEditor, onDeleted: afterDelete });
+    stage.textContent = ''; stage.append(active.sed.node); paintList();
+  }
+  async function closeEditor() { if (!(await guardDirty())) return; unmount(); bw.selectedId = null; showEmpty(); paintList(); }
 
-// "Does this question have problems?" is slow (it renders every maths snippet), so remember it per saved version of a question.
-const problemCache = new Map();
-function hasProblems(q) {
-  const k = q.id + '|' + q.updated;
-  let v = problemCache.get(k);
-  if (v === undefined) { v = checkQuestion(q).length > 0; problemCache.set(k, v); }
-  return v;
-}
-
-function touchTest() {
-  const ed = state.editor, d = ed.draft;
-  ed.dirty = stable(d) !== stable(ed.original);
-  el.dirtyFlag.textContent = ed.dirty ? '● Unsaved changes' : '';
-  el.saveBtn.disabled = !ed.dirty || !d.title.trim();
-  const qById = new Map(state.questions.map(q => [q.id, q]));
-  const present = d.questionIds.map(id => qById.get(id)).filter(Boolean);
-  const missing = d.questionIds.length - present.length;
-  const review = present.filter(q => q.status === 'review').length;
-  const bad = present.filter(hasProblems).length;
-  const hinty = present.filter(q => q.type === 'mc' && !q.keepOrder && q.answer.options.some(o => /\b(all|none)\s+of\s+the\s+above\b/i.test(o)));
-  const items = [];
-  if (!d.title.trim()) items.push(['warn', 'Give the test a title to save it.']);
-  if (!d.questionIds.length) items.push(['warn', 'Add questions to enable printing.']);
-  if (missing) items.push(['warn', plural(missing, 'question') + ' in this test ' + (missing === 1 ? 'is' : 'are') + ' no longer in the bank and will be skipped.']);
-  if (review) items.push(['warn', plural(review, 'question') + ' ' + (review === 1 ? 'is' : 'are') + ' marked “Needs review”.']);
-  if (bad) items.push(['warn', plural(bad, 'question') + ' ' + (bad === 1 ? 'has' : 'have') + ' problems (missing answers or broken maths). Open them in the Questions tab.']);
-  for (const q of hinty) items.push(['warn', 'Version B will shuffle the options of “' + snippet(q.prompt).slice(0, 50) + '”, which has an “all/none of the above” option. Open it and tick “Keep these options in this order”.']);
-  el.testWarn.textContent = '';
-  el.testWarn.append(items.length ? h('ul', { class: 'problems' }, items.map(([, m]) => h('li', null, m))) : h('p', { class: 'ok-line' }, h('b', null, '✓ '), 'Ready to print: ' + plural(present.length, 'question') + '.'));
-  for (const b of el.printBtns) b.disabled = !present.length;
-  clearTimeout(previewTimer);
-  previewTimer = setTimeout(updateSheetPreview, 120);
-}
-
-async function updateSheetPreview() {
-  const ed = state.editor;
-  if (!ed || ed.kind !== 'test' || !el.sheetHost || !el.sheetHost.isConnected) return;
-  const seq = ++previewSeq;
-  const kind = ed.pv[0] === 'K' ? 'key' : 'test', version = ed.pv.slice(-1);
-  const plan = planTest(ed.draft, state.questions, state.stimuli, version);
-  await ensureImageUrls(planImageIds(plan), null);
-  if (seq !== previewSeq || !el.sheetHost.isConnected) return;
-  el.sheetHost.textContent = '';
-  if (!plan.total) { el.sheetHost.append(h('div', { class: 'empty' }, 'Add questions to see the test here.')); return; }
-  const sheet = buildSheet(plan, kind);
-  el.sheetHost.append(sheet);
-  renderMath(sheet);
-}
+  el.view.append(h('div', { class: 'page bankpage', id: 'page-bank' },
+    h('div', { class: 'topbar2' },
+      h('button', { class: 'btn small', type: 'button', id: 'btn-back-banks', onclick: () => navigate({ name: 'banks' }) }, '← Question Banks'),
+      nameEl, h('button', { class: 'xbtn', type: 'button', id: 'btn-rename-bank', title: 'Rename this bank', 'aria-label': 'Rename this bank', onclick: async () => { await renameBank(bank); const b = bankById(bank.id); if (b) { bank.name = b.name; nameEl.textContent = b.name; } } }, '✎'),
+      tabs, h('div', { class: 'spacer' }), newBtn,
+      h('button', { class: 'btn', type: 'button', id: 'btn-export-bank', title: 'Save this bank as a PDF', onclick: () => exportBank({ bankId: bank.id }) }, 'Export this bank')),
+    h('div', { class: 'main' },
+      h('aside', { class: 'panel' }, h('div', { class: 'panel-head' }, search, filters, h('div', { class: 'panel-meta' }, h('h3', { class: 'section-title', style: 'margin:0' }, 'In this bank'), count)), listHost),
+      stage)));
+  chrome(); paintList(); showEmpty();
+};
 
 /* === PRINT: the test paper and the answer key (same DOM for preview and print) === */
 const planImageIds = plan => plan.blocks.flatMap(b => (b.stimulus ? b.stimulus.imageIds : []).concat(...b.items.map(i => i.q.imageIds)));
 
-function buildQuestionDom(it) {
-  const q = it.q, v = it.view;
-  const body = h('div', { class: 'tp-body' }, h('div', { class: 'tp-text tp-prompt' }, q.prompt));
-  if (q.table) body.append(buildTableDom(q.table));
-  if (q.imageIds.length) body.append(buildImgsDom(q.imageIds, 'tp-imgs'));
-  if (v.type === 'mc') body.append(h('div', { class: 'tp-opts' }, v.options.map((o, i) => h('div', { class: 'tp-opt' }, h('span', { class: 'tp-let' }, letter(i) + '.'), h('span', { class: 'tp-text' }, o.text)))));
-  else if (v.type === 'tf') body.append(h('div', { class: 'tp-tf' }, 'Circle one:', h('span', { class: 'tp-tfopt' }, 'True'), h('span', { class: 'tp-tfopt' }, 'False')));
-  else if (v.type === 'numeric') body.append(h('div', { class: 'tp-numeric' }, 'Answer:', h('span', { class: 'tp-blankline' })));
-  else if (v.type === 'short') body.append(h('div', { class: 'tp-rules' }, Array.from({ length: v.lines }, () => h('div', { class: 'tp-rule' }))));
-  else body.append(h('div', { class: 'tp-match' },
+// What a student writes on, for one question or one part of a multipart question (v = a questionView)
+function answerAreaDom(v) {
+  if (v.type === 'mc') return h('div', { class: 'tp-opts' }, v.options.map((o, i) => h('div', { class: 'tp-opt' }, h('span', { class: 'tp-let' }, letter(i) + '.'), h('span', { class: 'tp-text' }, o.text))));
+  if (v.type === 'tf') return h('div', { class: 'tp-tf' }, 'Circle one:', h('span', { class: 'tp-tfopt' }, 'True'), h('span', { class: 'tp-tfopt' }, 'False'));
+  if (v.type === 'numeric') return h('div', { class: 'tp-numeric' }, 'Answer:', h('span', { class: 'tp-blankline' }));
+  if (v.type === 'short') return h('div', { class: 'tp-rules' }, Array.from({ length: v.lines }, () => h('div', { class: 'tp-rule' })));
+  return h('div', { class: 'tp-match' },
     h('div', { class: 'tp-mcol' }, v.left.map((l, i) => h('div', { class: 'tp-mrow l' }, h('span', { class: 'tp-mblank' }), h('span', { class: 'tp-let' }, (i + 1) + '.'), h('span', { class: 'tp-text' }, l)))),
-    h('div', { class: 'tp-mcol' }, v.right.map((r, i) => h('div', { class: 'tp-mrow r' }, h('span', { class: 'tp-let' }, letter(i) + '.'), h('span', { class: 'tp-text' }, r))))));
-  return h('div', { class: 'tp-q', 'data-n': String(it.number) }, h('span', { class: 'tp-num' }, it.number + '.'), body);
+    h('div', { class: 'tp-mcol' }, v.right.map((r, i) => h('div', { class: 'tp-mrow r' }, h('span', { class: 'tp-let' }, letter(i) + '.'), h('span', { class: 'tp-text' }, r)))));
 }
 
-function buildSheet(plan, kind) {
-  const root = h('div', { class: 'sheet' });
-  const head = h('div', { class: 'tp-head' },
-    h('div', { class: 'tp-version' }, kind === 'key' ? 'Answer Key · Version ' + plan.version : 'Version ' + plan.version),
-    h('h1', null, plan.title || 'Untitled test'), plan.course ? h('div', { class: 'tp-sub' }, plan.course) : null);
-  if (kind === 'test') head.append(h('div', { class: 'tp-lines' }, h('div', { class: 'tp-line' }, 'Name:'), h('div', { class: 'tp-line tp-short' }, 'Date:')));
+function buildQuestionDom(it) {
+  const q = it.q, v = it.view;
+  const body = h('div', { class: 'tp-body' });
+  if (q.type !== 'multipart' || q.prompt.trim()) body.append(h('div', { class: 'tp-text tp-prompt' }, q.prompt));
+  if (q.table) body.append(buildTableDom(q.table));
+  if (q.imageIds.length) body.append(buildImgsDom(q.imageIds, 'tp-imgs'));
+  if (v.type === 'multipart') v.parts.forEach((p, i) => body.append(h('div', { class: 'tp-part' }, h('span', { class: 'tp-plab' }, '(' + partLabel(i) + ')'),
+    h('div', { class: 'tp-pbody' }, p.prompt ? h('div', { class: 'tp-text' }, p.prompt) : null, answerAreaDom(p)))));
+  else body.append(answerAreaDom(v));
+  return h('div', { class: 'tp-q', 'data-n': String(it.number), 'data-qid': q.id }, h('span', { class: 'tp-num' }, it.number + '.'), body);
+}
+
+function stimulusDom(b) {
+  const st = h('div', { class: 'tp-stim' });
+  if (b.stimulus.title) st.append(h('div', { class: 'tp-stim-title' }, b.stimulus.title));
+  if (b.stimulus.text) st.append(h('div', { class: 'tp-text' }, b.stimulus.text));
+  if (b.stimulus.table) st.append(buildTableDom(b.stimulus.table));
+  if (b.stimulus.imageIds.length) st.append(buildImgsDom(b.stimulus.imageIds, 'tp-imgs'));
+  return st;
+}
+
+// ed (optional) makes the paper editable on screen: { setTitle, setCourse, setInstructions, toggleLine(k), addInstructions(),
+// tools(kind, blockIndex, item) -> node }. Printing never passes it, so the printed paper has none of those controls.
+function buildSheet(plan, kind, ed) {
+  const root = h('div', { class: 'sheet' + (ed ? ' editing' : '') + ' paper-' + (PAPERS[plan.paper] ? plan.paper : 'letter') });
+  const head = h('div', { class: 'tp-head' }, h('div', { class: 'tp-version' }, kind === 'key' ? 'Answer Key · Version ' + plan.version : 'Version ' + plan.version));
+  if (ed) head.append(
+    h('input', { type: 'text', class: 'tp-edit tp-title', id: 'f-test-title', value: plan.title, placeholder: 'Untitled Test', 'aria-label': 'Test title', oninput: e => ed.setTitle(e.target.value) }),
+    h('input', { type: 'text', class: 'tp-edit tp-subin', id: 'f-test-course', value: plan.course, placeholder: 'Course (optional)', 'aria-label': 'Course', oninput: e => ed.setCourse(e.target.value) }));
+  else { head.append(h('h1', null, plan.title || 'Untitled test')); if (plan.course) head.append(h('div', { class: 'tp-sub' }, plan.course)); }
+  if (kind === 'test') {
+    if (ed) {
+      if (ed.hasInstructions()) head.append(h('textarea', { class: 'tp-edit tp-instr', id: 'f-test-instructions', rows: '2', maxlength: '5000', placeholder: 'Instructions for students (optional)', 'aria-label': 'Instructions', oninput: e => { ed.setInstructions(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; } }, plan.instructions));
+      else head.append(h('button', { type: 'button', class: 'ed-only tp-addinstr', id: 'btn-add-instructions', onclick: () => ed.addInstructions() }, '+ Add instructions'));
+    } else if (plan.instructions.trim()) head.append(h('div', { class: 'tp-instr' }, plan.instructions));
+    const lines = [['name', 'Name:', 'tp-long'], ['class', 'Class:', 'tp-mid'], ['date', 'Date:', 'tp-mid']].filter(([k]) => ed || plan.header[k]);
+    if (lines.length) head.append(h('div', { class: 'tp-lines' }, lines.map(([k, label, cls]) => ed
+      ? h('button', { type: 'button', class: 'tp-line ' + cls + (plan.header[k] ? '' : ' off'), 'data-line': k, 'aria-pressed': String(!!plan.header[k]), title: plan.header[k] ? 'Click to remove this line' : 'Click to print this line', onclick: () => ed.toggleLine(k) }, label)
+      : h('div', { class: 'tp-line ' + cls, 'data-line': k }, label))));
+  }
   root.append(head);
   if (kind === 'test') {
-    for (const b of plan.blocks) {
-      const wrap = h('section', { class: 'tp-block' });
+    plan.blocks.forEach((b, bi) => {
+      const wrap = h('section', { class: 'tp-block', 'data-bi': String(bi), 'data-stim': b.stimulus ? b.stimulus.id : null });
       if (b.stimulus) {
         const nums = b.items.map(i => i.number);
         wrap.append(h('div', { class: 'tp-intro' }, 'Use the information below to answer ' + (nums.length > 1 ? 'questions ' + nums[0] + ' to ' + nums[nums.length - 1] : 'question ' + nums[0]) + '.'));
-        const st = h('div', { class: 'tp-stim' });
-        if (b.stimulus.title) st.append(h('div', { class: 'tp-stim-title' }, b.stimulus.title));
-        if (b.stimulus.text) st.append(h('div', { class: 'tp-text' }, b.stimulus.text));
-        if (b.stimulus.table) st.append(buildTableDom(b.stimulus.table));
-        if (b.stimulus.imageIds.length) st.append(buildImgsDom(b.stimulus.imageIds, 'tp-imgs'));
+        const st = stimulusDom(b);
+        if (ed) st.append(ed.tools('block', bi, null));
         wrap.append(st);
       }
-      for (const it of b.items) wrap.append(buildQuestionDom(it));
+      for (const it of b.items) {
+        const qd = buildQuestionDom(it);
+        if (ed) qd.append(ed.tools('question', bi, it));
+        wrap.append(qd);
+      }
       root.append(wrap);
-    }
+    });
   } else {
     const B = plan.version === 'B';
     root.append(h('table', { class: 'tp-key' },
@@ -2599,114 +3272,520 @@ function buildSheet(plan, kind) {
 async function preparePrint(kind, version, test) {
   const plan = planTest(test, state.questions, state.stimuli, version);
   await ensureImageUrls(planImageIds(plan), null);
+  plan.paper = effectivePaper(test);
   const sheet = buildSheet(plan, kind);
   el.printRoot.textContent = '';
   el.printRoot.append(sheet);
   renderMath(sheet);
-  const paper = ls.get('paper') in PAPERS ? ls.get('paper') : 'letter';
-  el.pageStyle.textContent = '@page{size:' + PAPERS[paper].css + ' portrait;margin:16mm 14mm 18mm;}';
+  el.pageStyle.textContent = '@page{size:' + PAPERS[effectivePaper(test)].css + ' portrait;margin:16mm 14mm 18mm;}';
   await Promise.all(Array.from(sheet.querySelectorAll('img')).map(i => (i.decode ? i.decode().catch(() => {}) : Promise.resolve())));
   return plan;
 }
-async function printSheet(kind, version) {
-  const ed = state.editor;
-  if (!ed || ed.kind !== 'test') return;
-  const plan = await preparePrint(kind, version, ed.draft);
+async function printTest(kind, version, test) {
+  const plan = await preparePrint(kind, version, test);
   if (!plan.total) { toast('Add questions first.', 'warn'); return; }
   const prev = document.title;
-  document.title = (ed.draft.title || 'Test') + ' - ' + (kind === 'key' ? 'Answer key ' : 'Version ') + version;
+  document.title = (test.title || 'Test') + ' - ' + (kind === 'key' ? 'Answer key ' : 'Version ') + version;
   const restore = () => { document.title = prev; };
   window.addEventListener('afterprint', restore, { once: true });
   window.print();
   restore();
 }
 
-/* === SAVE and DELETE === */
-async function saveCurrent() {
-  const ed = state.editor;
-  if (!ed || !ed.dirty) return;
-  const d = clone(ed.draft);
-  const batch = {};
-  let coll, list;
-  if (ed.kind === 'question') {
-    normalizeQuestion(d);
-    const problems = checkQuestion(d);
-    if (d.status === 'ready' && problems.length) { toast('Fix the problems first, or set the status to “Needs review”.', 'err'); return; }
-    coll = 'questions'; list = state.questions;
-  } else if (ed.kind === 'stimulus') {
-    d.title = d.title.trim(); d.text = d.text.trim(); normalizeTable(d);
-    if (!d.title) { toast('Give the stimulus a title first.', 'err'); return; }
-    coll = 'stimuli'; list = state.stimuli;
-  } else {
-    d.title = d.title.trim(); d.course = d.course.trim();
-    if (!d.title) { toast('Give the test a title first.', 'err'); return; }
-    coll = 'tests'; list = state.tests;
-  }
-  d.updated = nowIso();
-  batch[coll] = [d];
-  const newImages = (d.imageIds || []).filter(id => ed.pending.has(id)).map(id => ({ id, blob: ed.pending.get(id) }));
-  if (newImages.length) batch.images = newImages;
-  try {
-    await ensurePersist();
-    await db.applyBatch(batch);
-  } catch (e) { toast('Could not save: ' + (e && e.message || e) + ' Your edits are still on screen. Export what you have, then try again.', 'err'); return; }
-  const i = list.findIndex(x => x.id === d.id);
-  if (i >= 0) list[i] = d; else list.push(d);
-  for (const im of newImages) { state.imageIds.add(im.id); ed.pending.delete(im.id); }
-  state.selectedId = d.id;
-  const pend = ed.pending;
-  state.editor = makeEditor(ed.kind, clone(d), false);
-  state.editor.pending = pend;
-  if (ed.kind === 'test') { state.editor.pv = ed.pv; }
-  renderPanel(); renderEditor(); renderStatus();
-  toast('Saved.', 'ok');
+/* === TEST EDITOR: the paper on the left, your question banks on the right === */
+const HISTORY_MAX = 50;      // saved versions kept per test
+const PICK_MAX = 200;        // cards shown at once in the bank panel
+function newTestDraft() { const t = nowIso(); return { id: uuid(), title: '', course: '', questionIds: [], seed: newSeed(), created: t, updated: t }; }
+
+// "Does this question have problems?" is slow (it renders every maths snippet), so remember it per saved version of a question.
+const problemCache = new Map();
+function hasProblems(q) {
+  const k = q.id + '|' + q.updated;
+  let v = problemCache.get(k);
+  if (v === undefined) { v = checkQuestion(q).length > 0; problemCache.set(k, v); }
+  return v;
 }
 
-async function deleteCurrent() {
-  const ed = state.editor;
-  if (!ed || ed.isNew) return;
-  const id = ed.draft.id;
-  let title, body, batch;
-  if (ed.kind === 'question') {
-    const inTests = state.tests.filter(t => t.questionIds.includes(id));
-    title = 'Delete this question?';
-    body = h('div', null, h('p', null, snippet(ed.original.prompt)),
-      inTests.length ? h('p', null, 'It is in ' + plural(inTests.length, 'saved test') + ' (' + inTests.map(t => t.title || 'Untitled').join(', ') + ') and will be removed from ' + (inTests.length === 1 ? 'it' : 'them') + '.') : null,
-      h('p', { class: 'hint' }, 'It will be removed from this browser. If you have not exported a recent backup, it cannot be recovered.'));
-    const t = nowIso();
-    batch = { deletes: { questions: [id] }, tests: inTests.map(x => Object.assign({}, x, { questionIds: x.questionIds.filter(q => q !== id), updated: t })) };
-  } else if (ed.kind === 'stimulus') {
-    const users = state.questions.filter(q => q.stimulusId === id);
-    title = 'Delete this stimulus?';
-    body = h('div', null, h('p', null, ed.original.title || 'Untitled stimulus'),
-      users.length ? h('p', null, plural(users.length, 'question') + ' use' + (users.length === 1 ? 's' : '') + ' it. They stay in your bank but will no longer have a stimulus.') : null,
-      h('p', { class: 'hint' }, 'If you have not exported a recent backup, it cannot be recovered.'));
-    const t = nowIso();
-    batch = { deletes: { stimuli: [id] }, questions: users.map(q => Object.assign({}, q, { stimulusId: null, updated: t })) };
-  } else {
-    title = 'Delete this test?';
-    body = h('div', null, h('p', null, ed.original.title || 'Untitled test'), h('p', { class: 'hint' }, 'The questions stay in your bank. Only the saved test is removed. If you have not exported a recent backup, it cannot be recovered.'));
-    batch = { deletes: { tests: [id] } };
-  }
-  const ok = await modal({ title, body, actions: [{ label: 'Cancel', value: false }, { label: 'Delete ' + KIND_LABEL[ed.kind], value: true, kind: 'danger' }], dismissValue: false });
-  if (!ok) return;
-  try { await db.applyBatch(batch); } catch (e) { toast('Could not delete: ' + (e && e.message || e), 'err'); return; }
-  await loadAll();
-  state.editor = null; state.selectedId = null; lastField = null;
-  renderPanel(); renderEditor(); renderStatus();
-  toast(cap(KIND_LABEL[ed.kind]) + ' deleted.', 'ok');
+// Things worth a look before printing. Returns [{ text, fix? }].
+function checkTest(d) {
+  const qById = new Map(state.questions.map(q => [q.id, q]));
+  const present = d.questionIds.map(id => qById.get(id)).filter(Boolean);
+  const missing = d.questionIds.length - present.length;
+  const review = present.filter(q => q.status === 'review').length;
+  const bad = present.filter(hasProblems).length;
+  const hinty = present.filter(q => q.type === 'mc' && !q.keepOrder && q.answer.options.some(o => /\b(all|none)\s+of\s+the\s+above\b/i.test(o)));
+  const items = [];
+  if (!d.questionIds.length) items.push({ text: 'There are no questions on the paper yet.' });
+  if (missing) items.push({ text: plural(missing, 'question') + ' in this test ' + (missing === 1 ? 'is' : 'are') + ' no longer in any bank and will be skipped.', fix: 'missing' });
+  if (review) items.push({ text: plural(review, 'question') + ' ' + (review === 1 ? 'is' : 'are') + ' marked “Needs review”.' });
+  if (bad) items.push({ text: plural(bad, 'question') + ' ' + (bad === 1 ? 'has' : 'have') + ' problems (missing answers or broken maths). Open them from the paper to fix them.' });
+  for (const q of hinty) items.push({ text: 'Version B will shuffle the options of “' + snippet(q.prompt).slice(0, 50) + '”, which has an “all/none of the above” option. Edit it and tick “Keep these options in this order”.' });
+  return items;
 }
+
+function createExam(opts) {
+  const d = opts.draft;
+  let original = clone(d), isNew = !!opts.isNew, dirty = false;
+  const undo = [], redo = [];
+  let lastKey = null, lastAt = 0, paintSeq = 0, checkTimer = null, paintIds = [];
+  const ui = { pv: 'A', panel: 'bank', bankTabs: [], bankId: null, search: '', type: '', sort: 'newest', drag: null };
+  const R = {};
+  const node = h('div', { class: 'exam', 'data-kind': 'test' });
+  const api = {
+    kind: 'test', node, isDirty: () => dirty, getDraft: () => d, save: () => save(),
+    destroy() { clearTimeout(checkTimer); paintSeq++; document.removeEventListener('keydown', onKey); closeMenu(); }
+  };
+  const hdr = () => Object.assign({}, HEADER_DEFAULT, d.header || {});
+  const qById = id => state.questions.find(q => q.id === id);
+  const snap = () => JSON.stringify(d);
+  const replaceDraft = s => { for (const k of Object.keys(d)) delete d[k]; Object.assign(d, JSON.parse(s)); };
+
+  /* ---- editing with undo and redo ---- */
+  // fn changes the draft. key (optional) merges quick successive edits of the same thing (typing) into one undo step.
+  function mutate(fn, o) {
+    o = o || {};
+    const before = snap();
+    fn();
+    if (before === snap()) return false;
+    const now = Date.now();
+    if (!(o.key && o.key === lastKey && now - lastAt < 1200)) { undo.push(before); if (undo.length > 300) undo.shift(); }
+    lastKey = o.key || null; lastAt = now; redo.length = 0;
+    changed(!o.key);
+    return true;
+  }
+  function stepHistory(from, to) {
+    if (!from.length) return;
+    to.push(snap());
+    replaceDraft(from.pop());
+    lastKey = null;
+    changed(true);
+  }
+  const doUndo = () => stepHistory(undo, redo), doRedo = () => stepHistory(redo, undo);
+
+  function changed(repaint) {
+    dirty = stable(d) !== stable(original);
+    R.dirtyFlag.textContent = dirty ? '● Unsaved changes' : '';
+    R.saveBtn.disabled = !dirty;
+    R.undoBtn.disabled = !undo.length; R.redoBtn.disabled = !redo.length;
+    R.name.textContent = d.title.trim() || 'Untitled Test';
+    clearTimeout(checkTimer); checkTimer = setTimeout(paintCheck, 150);
+    if (repaint) { paintPaper(); if (ui.panel === 'bank' && R.paintCards) R.paintCards(); else if (ui.panel === 'history') paintHistory(); }
+    const noq = !d.questionIds.length;
+    for (const b of R.printItems) b.disabled = noq;
+  }
+  function paintCheck() {
+    const n = checkTest(d).length;
+    R.checkBtn.classList.toggle('warn', n > 0);
+    R.checkBadge.textContent = n ? String(n) : '✓';
+  }
+
+  /* ---- the questions on the paper ---- */
+  const groups = () => { const p = planTest(d, state.questions, state.stimuli, 'A'); return { plan: p, ids: p.blocks.map(b => b.items.map(i => i.q.id)) }; };
+  function addQuestion(id, at) {
+    if (d.questionIds.includes(id)) { toast('That question is already in this test.', 'warn'); return false; }
+    const q = qById(id); if (!q) return false;
+    const { plan, ids } = groups();
+    const join = q.stimulusId ? plan.blocks.findIndex(b => b.stimulus && b.stimulus.id === q.stimulusId) : -1;
+    if (join >= 0) { ids[join].push(id); toast('Added with the other questions that share its stimulus.', 'ok'); }
+    else ids.splice(at == null ? ids.length : Math.max(0, Math.min(at, ids.length)), 0, [id]);
+    mutate(() => { d.questionIds = ids.flat().concat(plan.missing); });
+    return true;
+  }
+  function moveBlock(from, to) {
+    const { plan, ids } = groups();
+    if (from < 0 || from >= ids.length) return;
+    const [b] = ids.splice(from, 1);
+    if (to > from) to--;
+    ids.splice(Math.max(0, Math.min(to, ids.length)), 0, b);
+    mutate(() => { d.questionIds = ids.flat().concat(plan.missing); });
+  }
+  function moveInBlock(bi, qi, dir) {
+    const { plan, ids } = groups();
+    const g = ids[bi], j = qi + dir;
+    if (!g || j < 0 || j >= g.length) return;
+    const t = g[qi]; g[qi] = g[j]; g[j] = t;
+    mutate(() => { d.questionIds = ids.flat().concat(plan.missing); });
+  }
+  const removeQuestion = id => mutate(() => { d.questionIds = d.questionIds.filter(x => x !== id); });
+
+  /* ---- the paper ---- */
+  const edApi = {
+    setTitle: v => mutate(() => { d.title = v; }, { key: 'title' }),
+    setCourse: v => mutate(() => { d.course = v; }, { key: 'course' }),
+    setInstructions: v => mutate(() => { d.instructions = v; }, { key: 'instructions' }),
+    hasInstructions: () => typeof d.instructions === 'string',
+    addInstructions: () => { mutate(() => { d.instructions = ''; }); const f = document.getElementById('f-test-instructions'); if (f) f.focus(); },
+    toggleLine: k => mutate(() => { const x = hdr(); x[k] = !x[k]; d.header = x; }),
+    tools(kind, bi, it) {
+      const ids = paintIds, n = ids.length;
+      const inGroup = kind === 'question' && ids[bi].length > 1;
+      const qi = it ? ids[bi].indexOf(it.q.id) : 0;
+      const handle = h('span', { class: 'ed-handle', draggable: 'true', title: 'Drag to move', 'aria-hidden': 'true',
+        ondragstart: e => {
+          ui.drag = { kind: 'block', bi };
+          e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', 'block ' + bi);
+          const blk = e.currentTarget.closest('.tp-block'); if (blk && e.dataTransfer.setDragImage) e.dataTransfer.setDragImage(blk, 12, 12);
+          blk.classList.add('dragging');
+        },
+        ondragend: () => endDrag() }, '⠿');
+      const label = it ? 'question ' + it.number : 'the stimulus group';
+      const btn = (cls, text, title, fn, disabled) => h('button', { type: 'button', class: 'xbtn ' + cls, title, 'aria-label': title, disabled: !!disabled, onclick: fn }, text);
+      const kids = [handle];
+      if (inGroup) kids.push(btn('t-up', '▲', 'Move ' + label + ' up', () => moveInBlock(bi, qi, -1), qi === 0), btn('t-down', '▼', 'Move ' + label + ' down', () => moveInBlock(bi, qi, 1), qi === ids[bi].length - 1));
+      else kids.push(btn('t-up', '▲', 'Move ' + label + ' up', () => moveBlock(bi, bi - 1), bi === 0), btn('t-down', '▼', 'Move ' + label + ' down', () => moveBlock(bi, bi + 2), bi === n - 1));
+      if (it) kids.push(btn('t-edit', '✎', 'Edit ' + label, () => editQuestion(it.q.id)), btn('t-remove', '×', 'Remove ' + label + ' from the test', () => removeQuestion(it.q.id)));
+      return h('div', { class: 'ed-tools' + (kind === 'block' ? ' for-stim' : '') }, kids);
+    }
+  };
+
+  async function paintPaper() {
+    if (!R.sheetHost) return;
+    const seq = ++paintSeq;
+    node.dataset.busy = '1';                   // "0" again when the paper on screen matches the draft (tests wait on this)
+    const edit = ui.pv === 'A';
+    const kind = ui.pv[0] === 'K' ? 'key' : 'test', version = ui.pv.slice(-1);
+    const plan = planTest(d, state.questions, state.stimuli, version);
+    plan.paper = effectivePaper(d);
+    const wanted = planImageIds(plan);
+    if (wanted.some(id => !imgUrls.has(id))) {   // only wait when an image still has to be read; otherwise the paper is drawn at once
+      await ensureImageUrls(wanted, null);
+      if (seq !== paintSeq || !R.sheetHost.isConnected) return;
+    }
+    paintIds = plan.blocks.map(b => b.items.map(i => i.q.id));
+    const active0 = document.activeElement && R.sheetHost.contains(document.activeElement) ? document.activeElement.id : null;
+    const sheet = buildSheet(plan, kind, edit ? edApi : null);
+    if (edit && !plan.total) sheet.append(h('div', { class: 'tp-empty', id: 'tp-empty' }, 'Drag questions here from your question bank, or press “Add” on a question.'));
+    if (!edit && !plan.total) sheet.append(h('div', { class: 'tp-empty' }, 'Add questions to see this version.'));
+    R.sheetHost.textContent = '';
+    R.sheetHost.append(sheet, R.dropLine);
+    renderMath(sheet);
+    R.versionNote.textContent = ui.pv === 'A' ? '' : ui.pv === 'B' ? 'Version B shuffle ' + d.seed + '. Switch to Version A to edit.' : ui.pv === 'KB' ? 'The key for Version B. Switch to Version A to edit.' : 'The key for Version A. Switch to Version A to edit.';
+    const instr = document.getElementById('f-test-instructions'); if (instr) { instr.style.height = 'auto'; instr.style.height = instr.scrollHeight + 'px'; }
+    if (active0) { const f = document.getElementById(active0); if (f && f.focus) f.focus(); }
+    node.dataset.busy = '0';
+  }
+
+  /* ---- drag and drop (HTML5): question cards from the panel and blocks on the paper ---- */
+  const blockEls = () => Array.from(R.sheetHost.querySelectorAll('.tp-block'));
+  function dropIndex(e) {
+    const bl = blockEls();
+    for (let i = 0; i < bl.length; i++) { const r = bl[i].getBoundingClientRect(); if (e.clientY < r.top + r.height / 2) return i; }
+    return bl.length;
+  }
+  // the block a dragged question would join (it shares a stimulus that is already on the paper), or -1
+  function joinTarget() {
+    if (!ui.drag || ui.drag.kind !== 'question') return -1;
+    const q = qById(ui.drag.id);
+    if (!q || !q.stimulusId) return -1;
+    return blockEls().findIndex(b => b.dataset.stim === q.stimulusId);
+  }
+  function endDrag() {
+    ui.drag = null;
+    R.dropLine.style.display = 'none';
+    R.sheetHost.querySelectorAll('.dragging,.join-target').forEach(x => x.classList.remove('dragging', 'join-target'));
+    node.classList.remove('is-dragging');
+  }
+  function wireDrop() {
+    const h0 = R.paperScroll;
+    h0.addEventListener('dragover', e => {
+      if (!ui.drag || ui.pv !== 'A') return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = ui.drag.kind === 'block' ? 'move' : 'copy';
+      const r = h0.getBoundingClientRect();
+      if (e.clientY < r.top + 50) h0.scrollTop -= 14; else if (e.clientY > r.bottom - 50) h0.scrollTop += 14;
+      const jt = joinTarget(), bl = blockEls();
+      bl.forEach((b, i) => b.classList.toggle('join-target', i === jt));
+      if (jt >= 0) { R.dropLine.style.display = 'none'; return; }
+      const idx = dropIndex(e), hostR = R.sheetHost.getBoundingClientRect();
+      let y;
+      if (!bl.length) { const ph = R.sheetHost.querySelector('.tp-empty'); y = ph ? ph.getBoundingClientRect().top - hostR.top : 0; }
+      else if (idx < bl.length) y = bl[idx].getBoundingClientRect().top - hostR.top - 6;
+      else y = bl[bl.length - 1].getBoundingClientRect().bottom - hostR.top + 6;
+      R.dropLine.style.top = y + 'px'; R.dropLine.style.display = 'block';
+    });
+    h0.addEventListener('drop', e => {
+      if (!ui.drag || ui.pv !== 'A') return;
+      e.preventDefault();
+      const drag = ui.drag, idx = dropIndex(e);
+      endDrag();
+      if (drag.kind === 'question') addQuestion(drag.id, idx);
+      else moveBlock(drag.bi, idx);
+    });
+    h0.addEventListener('dragleave', e => { if (!e.relatedTarget || !h0.contains(e.relatedTarget)) { R.dropLine.style.display = 'none'; R.sheetHost.querySelectorAll('.join-target').forEach(x => x.classList.remove('join-target')); } });
+  }
+
+  /* ---- the right-hand panel: banks, question editor, history ---- */
+  async function guardQed() { return guardDirty(['qed']); }
+  function paintPanelHead() {
+    R.panelHead.textContent = '';
+    if (ui.panel === 'history') { R.panelHead.append(h('div', { class: 'ep-title' }, 'Version history'), h('button', { class: 'btn small', type: 'button', id: 'btn-history-close', onclick: () => showPanel('bank') }, 'Done')); return; }
+    if (ui.panel === 'question') return;
+    ui.bankTabs = ui.bankTabs.filter(id => bankById(id));
+    if (!ui.bankTabs.length) ui.bankTabs = sortedBanks().slice(0, 1).map(b => b.id);
+    if (!bankById(ui.bankId) || !ui.bankTabs.includes(ui.bankId)) ui.bankId = ui.bankTabs[0];
+    const closed = sortedBanks().filter(b => !ui.bankTabs.includes(b.id));
+    R.panelHead.append(h('div', { class: 'ep-tabs', role: 'tablist' },
+      ui.bankTabs.map(id => { const b = bankById(id); return h('span', { class: 'ep-tab' + (id === ui.bankId ? ' active' : ''), 'data-bank': id },
+        h('button', { type: 'button', role: 'tab', 'aria-selected': String(id === ui.bankId), onclick: () => { ui.bankId = id; paintPanelHead(); paintBank(); } }, b.name),
+        ui.bankTabs.length > 1 ? h('button', { type: 'button', class: 'ep-x', 'aria-label': 'Close ' + b.name, title: 'Close this tab', onclick: () => { ui.bankTabs = ui.bankTabs.filter(x => x !== id); paintPanelHead(); paintBank(); } }, '×') : null); }),
+      h('button', { type: 'button', class: 'ep-plus', id: 'btn-open-bank', title: 'Open another question bank', 'aria-label': 'Open another question bank', onclick: e => openMenu(e.currentTarget, closed.map(b => ({ label: b.name, onclick: () => { ui.bankTabs.push(b.id); ui.bankId = b.id; paintPanelHead(); paintBank(); } }))
+        .concat(closed.length ? [{ hr: true }] : []).concat([{ label: 'New question bank…', id: 'mi-new-bank', onclick: createBankHere }])) }, '+')));
+  }
+  async function createBankHere() {
+    const name = await promptDialog({ title: 'New question bank', label: 'Name', value: '', confirm: 'Create' });
+    if (!name) return;
+    const t = nowIso(), b = { id: uuid(), name: name.slice(0, 200), created: t, updated: t };
+    try { await ensurePersist(); await db.applyBatch({ banks: [b] }); } catch (e) { toast('Could not create the bank: ' + (e && e.message || e), 'err'); return; }
+    await loadAll();
+    ui.bankTabs.push(b.id); ui.bankId = b.id; paintPanelHead(); paintBank();
+  }
+  async function showPanel(name) {
+    if (name !== 'question' && ui.panel === 'question') { if (!(await guardQed())) return; if (active.qed) { active.qed.destroy(); active.qed = null; } }
+    ui.panel = name;
+    R.historyBtn.classList.toggle('active', name === 'history');
+    paintPanelHead();
+    if (name === 'bank') paintBank(); else if (name === 'history') paintHistory();
+  }
+
+  function paintBank() {
+    const host = R.panelBody;
+    host.textContent = '';
+    host.classList.remove('is-editor');
+    const bank = bankById(ui.bankId);
+    if (!bank) { host.append(h('div', { class: 'empty' }, 'No question banks yet. Use + to make one.')); return; }
+    const search = h('input', { type: 'text', class: 'in', id: 'panel-search', placeholder: 'Search this bank…', 'aria-label': 'Search this bank', value: ui.search, oninput: e => { ui.search = e.target.value; paintCards(); } });
+    const typeSel = h('select', { id: 'panel-type', 'aria-label': 'Filter by type', onchange: e => { ui.type = e.target.value; paintCards(); } }, h('option', { value: '' }, 'All types'), TYPES.map(t => h('option', { value: t }, TYPE_LABEL[t])));
+    typeSel.value = ui.type;
+    const sortSel = h('select', { id: 'panel-sort', 'aria-label': 'Sort', onchange: e => { ui.sort = e.target.value; paintCards(); } }, Object.keys(SORTS).map(k => h('option', { value: k }, SORTS[k])));
+    sortSel.value = ui.sort;
+    const list = h('div', { class: 'ep-list', id: 'panel-list' });
+    host.append(h('div', { class: 'ep-tools' }, search,
+      h('div', { class: 'filters' }, typeSel, sortSel, h('button', { class: 'btn small primary', type: 'button', id: 'panel-new', onclick: e => openMenu(e.currentTarget, TYPES.map(t => ({ label: TYPE_LABEL[t], id: 'pnew-' + t, onclick: () => newQuestionHere(t) })), { right: true }) }, '+ New ▾'))), list);
+    function paintCards() {
+      const keep = list.scrollTop;
+      list.textContent = '';
+      const inTest = new Set(d.questionIds);
+      const all = state.questions.filter(q => q.bankId === bank.id);
+      const rows = sortQuestions(filterQuestions(all, { search: ui.search, type: ui.type }), ui.sort);
+      if (!rows.length) list.append(h('div', { class: 'empty' }, all.length ? 'No questions match.' : 'This bank has no questions yet. Choose “New” to write one.'));
+      else if (rows.length > PICK_MAX) list.append(h('p', { class: 'hint' }, 'Showing the first ' + PICK_MAX + ' of ' + rows.length + '. Search to narrow the list.'));
+      const sById = new Map(state.stimuli.map(s => [s.id, s]));
+      for (const q of rows.slice(0, PICK_MAX)) {
+        const used = inTest.has(q.id);
+        list.append(h('div', { class: 'qcard' + (used ? ' used' : ''), 'data-id': q.id, draggable: used ? null : 'true',
+          ondragstart: e => { ui.drag = { kind: 'question', id: q.id }; e.dataTransfer.effectAllowed = 'copy'; e.dataTransfer.setData('text/plain', q.id); node.classList.add('is-dragging'); },
+          ondragend: () => endDrag() },
+          h('div', { class: 'top' }, h('span', { class: 'badge' }, TYPE_SHORT[q.type]), q.status === 'review' ? h('span', { class: 'badge review' }, 'REVIEW') : null, h('span', { class: 'badge' }, cap(q.difficulty)),
+            q.stimulusId && sById.has(q.stimulusId) ? h('span', { class: 'badge' }, 'STIMULUS') : null),
+          h('div', { class: 'snip' }, snippet(q.prompt)),
+          h('div', { class: 'acts' },
+            h('button', { class: 'btn small' + (used ? '' : ' primary'), type: 'button', disabled: used, 'aria-label': (used ? 'Already added: ' : 'Add to test: ') + snippet(q.prompt), onclick: () => addQuestion(q.id) }, used ? '✓ Added' : '+ Add'),
+            h('button', { class: 'btn small', type: 'button', 'aria-label': 'Edit: ' + snippet(q.prompt), onclick: () => editQuestion(q.id) }, 'Edit'))));
+      }
+      list.scrollTop = keep;
+    }
+    R.paintCards = paintCards;
+    paintCards();
+  }
+
+  async function mountEditor(draft, isNewQ) {
+    if (!(await guardQed())) return;
+    if (active.qed) { active.qed.destroy(); active.qed = null; }
+    ui.panel = 'question';
+    R.historyBtn.classList.remove('active');
+    paintPanelHead();
+    const ed = createQuestionEditor({
+      draft, isNew: isNewQ, compact: true,
+      addToTest: { label: 'Save & add to test', run: q => addQuestion(q.id) },
+      onSaved: () => { paintPaper(); paintCheck(); renderStatus(); },
+      onClose: () => showPanel('bank'),
+      onDeleted: () => {
+        const drop = x => x.filter(id => id !== draft.id);
+        d.questionIds = drop(d.questionIds); original.questionIds = drop(original.questionIds);
+        undo.length = 0; redo.length = 0;
+        changed(true);
+        showPanel('bank');
+      }
+    });
+    active.qed = ed;
+    R.panelBody.textContent = '';
+    R.panelBody.classList.add('is-editor');
+    R.panelBody.append(ed.node);
+  }
+  function editQuestion(id) { const q = qById(id); if (q) mountEditor(clone(q), false); }
+  function newQuestionHere(type) { mountEditor(emptyQuestion(type, ui.bankId), true); }
+
+  /* ---- history ---- */
+  async function paintHistory() {
+    const host = R.panelBody;
+    host.textContent = ''; host.classList.remove('is-editor');
+    let list = [];
+    try { list = (await db.getAll('testVersions')).filter(v => v.testId === d.id).sort((a, b) => Date.parse(b.savedAt) - Date.parse(a.savedAt)); }
+    catch (e) { host.append(h('div', { class: 'empty' }, 'The history could not be read: ' + (e && e.message || e))); return; }
+    if (ui.panel !== 'history') return;
+    host.textContent = '';
+    host.append(h('p', { class: 'hint', style: 'margin:0 0 10px' }, 'Every time you save, a copy is kept here (the latest ' + HISTORY_MAX + '). Restoring one puts it on the paper as an unsaved change, so you can still undo it. History stays on this device and is not in the exported PDF.'));
+    const box = h('div', { class: 'ep-list' });
+    host.append(box);
+    if (!list.length) { box.append(h('div', { class: 'empty', id: 'history-empty' }, isNew ? 'Nothing saved yet. Save the test to start its history.' : 'No saved versions yet.')); return; }
+    const cur = new Set(d.questionIds);
+    list.forEach((v, i) => {
+      const s = v.snapshot, ids = new Set(s.questionIds);
+      const added = d.questionIds.filter(x => !ids.has(x)).length, removed = s.questionIds.filter(x => !cur.has(x)).length;
+      const same = stable(Object.assign({}, s, { updated: 0 })) === stable(Object.assign({}, d, { updated: 0 }));
+      box.append(h('div', { class: 'vcard', 'data-id': v.id },
+        h('div', { class: 'vtitle' }, h('b', null, relTime(v.savedAt)), i === 0 ? h('span', { class: 'badge' }, 'LATEST SAVE') : null),
+        h('div', { class: 'hint', title: new Date(v.savedAt).toLocaleString() }, (s.title || 'Untitled Test') + ' · ' + plural(s.questionIds.length, 'question') + ' · ' + new Date(v.savedAt).toLocaleString()),
+        h('div', { class: 'hint' }, same ? 'Same as what is on the paper now.' : (added || removed ? 'Compared with the paper now: ' + (removed ? plural(removed, 'question') + ' not on the paper now' : '') + (added && removed ? ', ' : '') + (added ? plural(added, 'question') + ' only on the paper now' : '') + '.' : 'Same questions; wording, order or options differ.')),
+        h('div', { class: 'acts' }, h('button', { class: 'btn small', type: 'button', disabled: same, onclick: () => restoreVersion(v) }, 'Restore this version'))));
+    });
+  }
+  function restoreVersion(v) {
+    mutate(() => { const s = clone(v.snapshot); s.id = d.id; s.created = d.created; s.updated = d.updated; replaceDraft(JSON.stringify(s)); });
+    toast('Restored the version from ' + relTime(v.savedAt) + '. Save to keep it, or undo.', 'ok');
+  }
+
+  /* ---- save, delete, print ---- */
+  async function save() {
+    if (!dirty) return null;
+    const c = clone(d);
+    c.title = c.title.trim() || 'Untitled Test'; c.course = c.course.trim();
+    if (typeof c.instructions === 'string') { c.instructions = c.instructions.trim(); if (!c.instructions) delete c.instructions; }
+    c.updated = nowIso();
+    try {
+      await ensurePersist();
+      const old = (await db.getAll('testVersions')).filter(x => x.testId === c.id).sort((a, b) => Date.parse(b.savedAt) - Date.parse(a.savedAt));
+      await db.applyBatch({ tests: [c], testVersions: [{ id: uuid(), testId: c.id, savedAt: c.updated, snapshot: clone(c) }], deletes: { testVersions: old.slice(HISTORY_MAX - 1).map(x => x.id) } });
+    } catch (e) { toast('Could not save: ' + (e && e.message || e) + ' Your edits are still on screen. Export what you have, then try again.', 'err'); return null; }
+    replaceDraft(JSON.stringify(c));
+    original = clone(d); isNew = false; lastKey = null;
+    state.view = { name: 'test', id: d.id };
+    await loadAll();
+    const f = document.getElementById('f-test-title'); if (f && f.value !== d.title) f.value = d.title;
+    changed(false);
+    if (ui.panel === 'history') paintHistory();
+    toast('Saved.', 'ok');
+    return d;
+  }
+  async function reseed() {
+    if (!isNew && !(await modal({ title: 'Reshuffle Version B?', body: h('p', null, 'Version B will print in a different order than any copies you have already printed. Version A is not affected.'), actions: [{ label: 'Keep current shuffle', value: false }, { label: 'Reshuffle', value: true, kind: 'danger' }], dismissValue: false }))) return;
+    mutate(() => { d.seed = newSeed(); });
+    toast('Version B has a new shuffle.', 'ok');
+  }
+  const print = (kind, version) => printTest(kind, version, d);
+
+  /* ---- menus and buttons ---- */
+  const menuBtn = (label, id, items) => h('button', { type: 'button', class: 'btn menubtn', id, onclick: e => openMenu(e.currentTarget, items()) }, label);
+  const hasQ = () => d.questionIds.length > 0;
+  const fileItems = () => [
+    { label: 'Save', id: 'mi-save', disabled: !dirty, onclick: () => save() },
+    { hr: true },
+    { label: 'Print Version A…', id: 'mi-print-a', disabled: !hasQ(), onclick: () => print('test', 'A') },
+    { label: 'Print Version B…', id: 'mi-print-b', disabled: !hasQ(), onclick: () => print('test', 'B') },
+    { label: 'Print answer key A…', id: 'mi-print-ka', disabled: !hasQ(), onclick: () => print('key', 'A') },
+    { label: 'Print answer key B…', id: 'mi-print-kb', disabled: !hasQ(), onclick: () => print('key', 'B') },
+    { hr: true },
+    isNew ? { label: 'Close without saving', id: 'mi-close', onclick: () => navigate({ name: 'tests' }) } : { label: 'Delete this test…', id: 'mi-delete', onclick: () => { const t = state.tests.find(x => x.id === d.id); if (t) deleteTestFlow(t); } }
+  ];
+  const editItems = () => [
+    { label: 'Undo', id: 'mi-undo', disabled: !undo.length, onclick: doUndo },
+    { label: 'Redo', id: 'mi-redo', disabled: !redo.length, onclick: doRedo },
+    { hr: true },
+    { label: 'New shuffle for Version B…', id: 'mi-reseed', onclick: reseed }
+  ];
+  const formatItems = () => {
+    const x = hdr(), p = effectivePaper(d);
+    return Object.keys(PAPERS).map(k => ({ label: 'Paper: ' + PAPERS[k].label, id: 'mi-paper-' + k, checked: p === k, onclick: () => { ls.set('paper', k); mutate(() => { d.paper = k; }); } }))
+      .concat([{ hr: true },
+        { label: 'Name line', id: 'mi-line-name', checked: x.name, onclick: () => edApi.toggleLine('name') },
+        { label: 'Class line', id: 'mi-line-class', checked: x.class, onclick: () => edApi.toggleLine('class') },
+        { label: 'Date line', id: 'mi-line-date', checked: x.date, onclick: () => edApi.toggleLine('date') },
+        { hr: true },
+        { label: 'Instructions for students', id: 'mi-instructions', checked: edApi.hasInstructions(), onclick: () => { if (edApi.hasInstructions()) mutate(() => { delete d.instructions; }); else edApi.addInstructions(); } }]);
+  };
+  const printItems = () => [['Version A', 'test', 'A', 'a'], ['Version B', 'test', 'B', 'b'], ['Answer key A', 'key', 'A', 'ka'], ['Answer key B', 'key', 'B', 'kb']]
+    .map(([l, k, v, id]) => ({ label: l, id: 'pi-' + id, disabled: !hasQ(), onclick: () => print(k, v) }));
+
+  async function openCheck() {
+    const items = checkTest(d);
+    const fix = items.some(i => i.fix === 'missing');
+    const r = await modal({
+      title: 'Check this test',
+      body: items.length ? h('ul', { class: 'problems', id: 'check-list' }, items.map(i => h('li', null, i.text))) : h('p', { class: 'ok-line', id: 'check-ok' }, h('b', null, '✓ '), 'Ready to print: ' + plural(d.questionIds.length, 'question') + '.'),
+      actions: [{ label: 'Close', value: 'close' }].concat(fix ? [{ label: 'Remove the missing questions', value: 'fix', kind: 'primary' }] : []), dismissValue: 'close'
+    });
+    if (r === 'fix') { const ids = new Set(state.questions.map(q => q.id)); mutate(() => { d.questionIds = d.questionIds.filter(id => ids.has(id)); }); }
+  }
+
+  function onKey(e) {
+    if (!node.isConnected) return;
+    const mod = e.ctrlKey || e.metaKey;
+    if (mod && e.key.toLowerCase() === 's') { e.preventDefault(); if (active.qed && R.panelBody.contains(e.target)) active.qed.save(); else save(); return; }
+    const inField = e.target && e.target.closest && e.target.closest('input,textarea,select,[contenteditable]');
+    if (mod && !inField && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? doRedo() : doUndo(); }
+    else if (mod && !inField && e.key.toLowerCase() === 'y') { e.preventDefault(); doRedo(); }
+  }
+
+  /* ---- build ---- */
+  R.dirtyFlag = h('span', { class: 'dirty-flag', id: 'dirty-flag' });
+  R.saveBtn = h('button', { class: 'btn primary', type: 'button', id: 'btn-save', onclick: () => save() }, 'Save');
+  R.undoBtn = h('button', { class: 'btn icon', type: 'button', id: 'btn-undo', title: 'Undo (Ctrl+Z)', 'aria-label': 'Undo', onclick: doUndo }, '↶');
+  R.redoBtn = h('button', { class: 'btn icon', type: 'button', id: 'btn-redo', title: 'Redo (Ctrl+Y)', 'aria-label': 'Redo', onclick: doRedo }, '↷');
+  R.checkBadge = h('span', { class: 'chk-badge' }, '✓');
+  R.checkBtn = h('button', { class: 'btn', type: 'button', id: 'btn-check', title: 'Look for problems before you print', onclick: openCheck }, 'Check ', R.checkBadge);
+  R.historyBtn = h('button', { class: 'btn', type: 'button', id: 'btn-history', onclick: () => showPanel(ui.panel === 'history' ? 'bank' : 'history') }, 'History');
+  R.name = h('span', { class: 'exam-name', id: 'exam-name' }, d.title.trim() || 'Untitled Test');
+  R.printBtn = h('button', { class: 'btn', type: 'button', id: 'btn-print', onclick: e => openMenu(e.currentTarget, printItems(), { right: true }) }, 'Print ▾');
+  R.printItems = [R.printBtn];
+  R.versionNote = h('span', { class: 'hint', id: 'version-note' });
+  R.dropLine = h('div', { class: 'drop-line', id: 'drop-line' });
+  R.sheetHost = h('div', { class: 'paper-sheet', id: 'sheet-preview' });
+  R.pvSeg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Which page to show' }, [['A', 'Test A'], ['B', 'Test B'], ['KA', 'Key A'], ['KB', 'Key B']].map(([v, l]) =>
+    h('button', { type: 'button', id: 'pv-' + v.toLowerCase(), class: v === 'A' ? 'active' : '', 'data-pv': v, 'aria-pressed': String(v === 'A'), onclick: () => {
+      ui.pv = v; R.pvSeg.querySelectorAll('button').forEach(b => { const on = b.dataset.pv === v; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); }); paintPaper();
+    } }, l)));
+  R.paperScroll = h('div', { class: 'exam-paper' }, h('div', { class: 'pv-bar' }, R.pvSeg, R.versionNote), R.sheetHost);
+  R.panelHead = h('div', { class: 'ep-head' });
+  R.panelBody = h('div', { class: 'ep-body', id: 'panel-body' });
+  node.append(
+    h('div', { class: 'exam-top' },
+      h('button', { class: 'btn small', type: 'button', id: 'btn-back-tests', onclick: () => navigate({ name: 'tests' }) }, '← Tests'),
+      R.name,
+      menuBtn('File', 'menu-file', fileItems), menuBtn('Edit', 'menu-edit', editItems), menuBtn('Format', 'menu-format', formatItems),
+      R.undoBtn, R.redoBtn, R.checkBtn, R.historyBtn,
+      h('div', { class: 'spacer' }), R.dirtyFlag, R.printBtn, R.saveBtn),
+    h('div', { class: 'exam-main' }, R.paperScroll, h('aside', { class: 'exam-panel', 'aria-label': 'Question banks' }, R.panelHead, R.panelBody)));
+  wireDrop();
+  document.addEventListener('keydown', onKey);
+  // open the banks that the test already uses, else the first bank
+  ui.bankTabs = Array.from(new Set(d.questionIds.map(id => { const q = qById(id); return q && q.bankId; }).filter(id => id && bankById(id))));
+  if (!ui.bankTabs.length) ui.bankTabs = sortedBanks().slice(0, 1).map(b => b.id);
+  ui.bankId = ui.bankTabs[0];
+  api.start = () => { changed(false); paintPaper(); paintPanelHead(); paintBank(); };
+  return api;
+}
+
+VIEWS.test = v => {
+  const saved = v.id ? state.tests.find(t => t.id === v.id) : null;
+  if (v.id && !saved) { el.view.append(h('div', { class: 'page' }, topbar('Test'), h('div', { class: 'empty' }, 'That test no longer exists.'))); return; }
+  const ex = createExam({ draft: saved ? clone(saved) : newTestDraft(), isNew: !saved });
+  active.exam = ex;
+  el.view.append(ex.node);
+  ex.start();
+};
 
 /* === UI: export / import === */
-async function collectPayload() {
-  const [questions, stimuli, tests, imgs] = await Promise.all([db.getAll('questions'), db.getAll('stimuli'), db.getAll('tests'), db.getImages()]);
+// opts.bankId: only that bank (its questions, stimuli and the images they use; no tests). Otherwise everything.
+async function collectPayload(opts) {
+  const [banks, questions, stimuli, tests, imgs] = await Promise.all([db.getAll('banks'), db.getAll('questions'), db.getAll('stimuli'), db.getAll('tests'), db.getImages()]);
+  let wanted = null;
+  if (opts && opts.bankId) {
+    wanted = new Set();
+    for (const r of questions.concat(stimuli)) if (r.bankId === opts.bankId) for (const id of r.imageIds) wanted.add(id);
+  }
   const images = Object.create(null);
-  for (const im of imgs.sort((a, b) => String(a.id).localeCompare(String(b.id)))) images[im.id] = await blobToDataUrl(im.blob);
-  const order = (a, b) => a.created.localeCompare(b.created) || a.id.localeCompare(b.id);
-  return {
-    format: FORMAT, schemaVersion: SCHEMA_VERSION, appVersion: APP_VERSION, requiredFeatures: [], exportedAt: nowIso(),
-    questions: questions.sort(order), stimuli: stimuli.sort(order), tests: tests.sort(order), images
-  };
+  for (const im of imgs.sort((a, b) => String(a.id).localeCompare(String(b.id)))) if (!wanted || wanted.has(im.id)) images[im.id] = await blobToDataUrl(im.blob);
+  return buildPayload({ banks, questions, stimuli, tests, images }, opts);
 }
 
 function downloadBytes(bytes, name) {
@@ -2716,25 +3795,27 @@ function downloadBytes(bytes, name) {
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 const localDate = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const fileSlug = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
 
 let exporting = false;
-async function exportBank() {
+async function exportBank(opts) {
   if (exporting) return;
   exporting = true;
   const pm = progressModal('Building your bank PDF');
   try {
     pm.update(0, 0, 'Collecting questions…');
-    const payload = await collectPayload();
+    const payload = await collectPayload(opts);
     const { bytes, report } = await buildBankPdf(payload, { renderBlockImage, onProgress: (d, t) => pm.update(d, t, 'Drawing page content: ' + d + ' of ' + t) });
     // self-check: read the file back before offering it. A backup that cannot be read back is worse than none.
     pm.update(1, 1, 'Checking the file…');
     const back = await readPdfPayload(bytes);
     if (stable(back) !== stable(payload)) throw new Error('The finished PDF did not match your data, so it was not saved.');
-    downloadBytes(bytes, 'prime-questions-' + localDate() + '.pdf');
-    ls.set('lastBackup', nowIso());
+    const one = opts && opts.bankId ? payload.banks[0] : null;
+    downloadBytes(bytes, 'prime-questions-' + (one ? (fileSlug(one.name) || 'bank') + '-' : '') + localDate() + '.pdf');
+    if (!one) ls.set('lastBackup', nowIso());          // only a full export counts as "your last backup"
     renderStatus();
     pm.close();
-    toast('Exported ' + payload.questions.length + ' question' + (payload.questions.length === 1 ? '' : 's') + ' to a ' + report.pages + '-page PDF. Keep this file somewhere safe.' +
+    toast('Exported ' + (one ? '“' + one.name + '”: ' : '') + plural(payload.questions.length, 'question') + ' to a ' + report.pages + '-page PDF. Keep this file somewhere safe.' +
       (report.fallbacks ? ' ' + report.fallbacks + ' maths question' + (report.fallbacks === 1 ? ' is' : 's are') + ' shown as plain text on the pages (all data is intact).' : ''), 'ok');
   } catch (e) {
     pm.close();
@@ -2742,10 +3823,10 @@ async function exportBank() {
   } finally { exporting = false; }
 }
 
-const labelRecord = (c, r) => c === 'questions' ? snippet(r.prompt) : (r.title || 'Untitled');
+const labelRecord = (c, r) => c === 'questions' ? snippet(r.prompt) : c === 'banks' ? r.name : (r.title || 'Untitled');
 
 function summaryBody(plan, payload) {
-  const rows = [['Questions', 'questions'], ['Shared stimuli', 'stimuli'], ['Saved tests', 'tests']];
+  const rows = [['Question banks', 'banks'], ['Questions', 'questions'], ['Shared stimuli', 'stimuli'], ['Saved tests', 'tests']];
   const tbody = rows.map(([lab, c]) => {
     const r = plan.collections[c];
     return h('tr', null, h('td', null, lab), h('td', null, String(r.new.length)), h('td', null, String(r.changed.filter(x => x.winner === 'incoming').length)),
@@ -2770,10 +3851,10 @@ async function importFile(file) {
   catch (e) { await info('Could not import this file', String(e && e.message || e), 'Nothing was changed.'); return; }
   const parsed = parsePayload(raw);
   if (!parsed.ok) { await modal({ title: 'Could not import this file', body: h('div', null, parsed.errors.map(m => h('p', null, m))), actions: [{ label: 'OK', value: true, kind: 'primary' }], dismissValue: true }); return; }
-  if (state.editor && state.editor.dirty && !(await guardDirty())) return;
+  if (!(await guardDirty())) return;
   try { await loadAll(); } catch (e) { toast('Could not read your current bank: ' + (e && e.message || e), 'err'); return; }
   const payload = parsed.payload;
-  const plan = planMerge({ questions: state.questions, stimuli: state.stimuli, tests: state.tests, imageIds: state.imageIds }, payload);
+  const plan = planMerge({ banks: state.banks, questions: state.questions, stimuli: state.stimuli, tests: state.tests, imageIds: state.imageIds }, payload);
   if (planIsNoop(plan)) { await info('Nothing to import', 'Everything in this file is already in your bank, or your copies are newer. Nothing was changed.'); return; }
   const { body, overwrites } = summaryBody(plan, payload);
   for (;;) {
@@ -2787,21 +3868,19 @@ async function importFile(file) {
     if (choice !== 'apply') return;
     break;
   }
+  const w = recordsToWrite(plan);
   try {
-    const w = recordsToWrite(plan);
     const images = plan.images.new.map(id => ({ id, blob: dataUrlToBlob(payload.images[id]) }));   // convert first, so a bad image stops everything before any write
     await ensurePersist();
-    await db.applyBatch({ questions: w.questions, stimuli: w.stimuli, tests: w.tests, images });
+    await db.applyBatch({ banks: w.banks, questions: w.questions, stimuli: w.stimuli, tests: w.tests, images });
   } catch (e) { toast('Import failed and nothing was changed: ' + (e && e.message || e), 'err'); return; }
   await loadAll();
-  if (state.editor && !state.editor.isNew) {                       // the open record may have just been replaced: reload it
-    const list = { question: state.questions, stimulus: state.stimuli, test: state.tests }[state.editor.kind];
-    const fresh = list.find(x => x.id === state.editor.draft.id);
-    if (fresh) { const old = state.editor; state.editor = makeEditor(old.kind, clone(fresh), false); state.editor.pending = old.pending; state.editor.pv = old.pv; renderEditor(); }
-  }
-  renderPanel(); renderStatus();
-  const wrote = recordsToWrite(plan);
-  toast('Imported: ' + [plural(wrote.questions.length, 'question'), wrote.stimuli.length ? plural(wrote.stimuli.length, 'stimulus', 'stimuli') : null, wrote.tests.length ? plural(wrote.tests.length, 'test') : null, plan.images.new.length ? plural(plan.images.new.length, 'image') : null].filter(Boolean).join(', ') + ' added or updated.', 'ok');
+  const done = [w.banks.length ? plural(w.banks.length, 'bank') : null, plural(w.questions.length, 'question'), w.stimuli.length ? plural(w.stimuli.length, 'stimulus', 'stimuli') : null,
+    w.tests.length ? plural(w.tests.length, 'test') : null, plan.images.new.length ? plural(plan.images.new.length, 'image') : null].filter(Boolean).join(', ');
+  logImport({ name: file.name, at: nowIso(), summary: done + ' added or updated' });
+  teardown();                    // whatever is on screen is redrawn from the stored data (nothing unsaved is left: guardDirty asked)
+  render();
+  toast('Imported: ' + done + ' added or updated.', 'ok');
 }
 
 /* === PUBLIC (pure logic, for tests and debugging) === */
@@ -2809,23 +3888,25 @@ window.PQ = {
   APP_VERSION, SCHEMA_VERSION, FORMAT, MIGRATIONS,
   uuid, stable, splitMath, mathErrors, defaultAnswer, emptyQuestion, textFields, checkQuestion,
   migrate, parsePayload, planMerge, recordsToWrite, planIsNoop,
-  buildPayload, defaultBank, DEFAULT_BANK_ID, TYPES, PART_TYPES, partLabel, newPart, answerLines,
+  asciiToTex, convertBackticksAt, buildPayload, defaultBank, DEFAULT_BANK_ID, TYPES, PART_TYPES, partLabel, newPart, answerLines,
   hashSeed, mulberry32, shuffled, newSeed, formBlocks, questionView, planTest, keyText, keyEntries,
   isTextSafe, needsImage, textWidth, wrapText, blockLines, layoutText,
   buildBankPdf, readPdfPayload, renderBlockImage, buildSheet, preparePrint, processImageFile, ensureImageUrls,
-  dataUrlToBlob, blobToDataUrl, db, collectPayload, loadAll, state
+  dataUrlToBlob, blobToDataUrl, db, collectPayload, loadAll, state, active, navigate, render, checkTest
 };
 
 /* === START === */
 (async () => {
   buildShell();
+  let failed = null;
   try {
     await loadAll();
     if (navigator.storage && navigator.storage.persisted) state.persisted = await navigator.storage.persisted().catch(() => null);
-  } catch (e) {
-    el.stage.append(h('div', { class: 'canvas-scroll' }, h('div', { class: 'empty' }, 'Storage is not available in this browser, so Prime Questions cannot save anything here. ' + (e && e.message || e))));
-  }
-  renderPanel(); renderEditor(); renderStatus();
+  } catch (e) { failed = e; }
+  if (failed) {
+    el.view.append(h('div', { class: 'page' }, h('div', { class: 'empty' }, 'Storage is not available in this browser, so Prime Questions cannot save anything here. ' + (failed && failed.message || failed))));
+    renderStatus();
+  } else render();
   window.PQ.ready = true;
 })();
 });

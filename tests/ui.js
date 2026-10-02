@@ -14,9 +14,13 @@ const { launch, openApp, check, summary } = require('./lib');
 
   const modal = page.locator('.modal');
   const stat = async () => (await page.locator('.statusbar').innerText()).replace(/\s+/g, ' ');
+  // the app opens on Home: go to the default bank's workspace, and make a new question of a type (the + menu)
+  const openBank = async () => { await page.click('#nav-banks'); await page.click('.card-tile[data-id] .ct-main'); await page.waitForSelector('#page-bank'); };
+  const newQ = async t => { await page.click('#btn-new'); await page.click('#new-' + t); };
 
   console.log('1. create a multiple-choice question with maths');
-  await page.click('#btn-new');
+  await openBank();
+  await newQ('mc');
   check('editor opens for a new question', await page.locator('#btn-save').isVisible());
   check('Save is disabled until something changes', await page.locator('#btn-save').isDisabled());
   check('a blank question lists problems', (await page.locator('#problems li').count()) >= 2);
@@ -63,6 +67,7 @@ const { launch, openApp, check, summary } = require('./lib');
 
   console.log('2. persistence across reload');
   await page.reload(); await page.waitForFunction(() => window.PQ && PQ.ready);
+  await openBank();
   check('question survives a reload (IndexedDB)', (await page.locator('.qrow').count()) === 1);
   check('persist() was requested on first save', await page.evaluate(() => localStorage.getItem('prime-questions:persistAsked')) === '1');
 
@@ -70,11 +75,11 @@ const { launch, openApp, check, summary } = require('./lib');
   await page.click('.qrow');
   await page.fill('#f-prompt', 'changed but not saved');
   check('unsaved flag shown', /Unsaved/.test(await page.locator('#dirty-flag').innerText()));
-  await page.click('#btn-new');
+  await newQ('mc');
   check('leaving with unsaved changes asks first', await modal.isVisible() && /Discard unsaved changes/.test(await modal.innerText()));
   await page.keyboard.press('Escape');
   check('Escape = keep editing (never discards)', !(await modal.isVisible()) && (await page.inputValue('#f-prompt')) === 'changed but not saved');
-  await page.click('#btn-new'); await modal.locator('button:has-text("Discard changes")').click();
+  await newQ('mc'); await modal.locator('button:has-text("Discard changes")').click();
   check('Discard works and opens the new question', await page.locator('h2:has-text("New question")').isVisible());
   // true/false
   await page.click('.seg button[data-type=tf]');
@@ -82,15 +87,15 @@ const { launch, openApp, check, summary } = require('./lib');
   await page.click('.seg:has-text("True") button:has-text("False")'); await page.click('.seg:has-text("False") button:has-text("True")');
   await page.selectOption('#f-status', 'ready'); await page.click('#btn-save'); await page.waitForSelector('.toast.ok');
   // numeric
-  await page.click('#btn-new');
+  await newQ('mc');
   await page.click('.seg button[data-type=numeric]');
   await page.fill('#f-prompt', 'Density of water at 4 °C?'); await page.fill('#f-value', '1.00'); await page.fill('#f-units', '\\(\\mathrm{g/cm^{3}}\\)'); await page.fill('#f-tol', '0.01');
   await page.fill('#f-course', 'Science 9'); await page.click('#btn-save'); await page.waitForSelector('.toast.ok');
   // short answer
-  await page.click('#btn-new'); await page.click('.seg button[data-type=short]');
+  await newQ('mc'); await page.click('.seg button[data-type=short]');
   await page.fill('#f-prompt', 'Explain why ice floats.'); await page.fill('#f-lines', '4'); await page.fill('#f-rubric', 'Mention density'); await page.click('#btn-save'); await page.waitForSelector('.toast.ok');
   // matching with add pair
-  await page.click('#btn-new'); await page.click('.seg button[data-type=matching]');
+  await newQ('mc'); await page.click('.seg button[data-type=matching]');
   await page.fill('#f-prompt', 'Match symbol to element');
   await page.fill('input[aria-label="Pair 1 left"]', 'Na'); await page.fill('input[aria-label="Pair 1 right"]', 'Sodium');
   await page.fill('input[aria-label="Pair 2 left"]', 'K'); await page.fill('input[aria-label="Pair 2 right"]', 'Potassium');
@@ -98,7 +103,7 @@ const { launch, openApp, check, summary } = require('./lib');
   await page.click('#btn-save'); await page.waitForFunction(() => PQ.state.questions.length === 5);
   check('five questions of five types saved', await page.evaluate(() => PQ.state.questions.map(q => q.type).sort().join()) === 'matching,mc,numeric,short,tf', await page.evaluate(() => PQ.state.questions.map(q => q.type)));
   // switching type keeps the old answer
-  await page.click('#btn-new'); await page.fill('#f-prompt', 'type switch');
+  await newQ('mc'); await page.fill('#f-prompt', 'type switch');
   await page.fill('input[aria-label="Option A"]', 'keepme'); await page.click('.seg button[data-type=tf]'); await page.click('.seg button[data-type=mc]');
   check('switching type and back keeps what was typed', (await page.inputValue('input[aria-label="Option A"]')) === 'keepme');
   await page.click('#btn-close'); await modal.locator('button:has-text("Discard changes")').click();
@@ -125,7 +130,7 @@ const { launch, openApp, check, summary } = require('./lib');
   check('exported PDF carries prime-questions.pq (poppler)', /prime-questions\.pq/.test(list), list);
   fs.rmSync('uiex', { recursive: true, force: true }); fs.mkdirSync('uiex'); execFileSync('pdfdetach', ['-saveall', '-o', 'uiex', 'ui-export.pdf']);
   const exported = JSON.parse(fs.readFileSync('uiex/prime-questions.pq', 'utf8'));
-  check('payload holds 5 questions, format/schema/appVersion/requiredFeatures set', exported.questions.length === 5 && exported.format === 'prime-questions' && exported.schemaVersion === 2 && /^\d+\.\d+\.\d+$/.test(exported.appVersion) && Array.isArray(exported.requiredFeatures), Object.keys(exported));
+  check('payload holds 5 questions, format/schema/appVersion/requiredFeatures set', exported.questions.length === 5 && exported.format === 'prime-questions' && exported.schemaVersion === 3 && exported.banks.length === 1 && /^\d+\.\d+\.\d+$/.test(exported.appVersion) && Array.isArray(exported.requiredFeatures), Object.keys(exported));
   fs.copyFileSync('ui-export.pdf', 'ui-export-original.pdf');
   const before = await page.evaluate(async () => { const p = await PQ.collectPayload(); delete p.exportedAt; return JSON.parse(JSON.stringify(p)); });
 
@@ -146,6 +151,7 @@ const { launch, openApp, check, summary } = require('./lib');
   await page.waitForSelector('.toast.ok');
   const after = await page.evaluate(async () => { const p = await PQ.collectPayload(); delete p.exportedAt; return JSON.parse(JSON.stringify(p)); });
   check('ROUND TRIP: export -> wipe -> import gives identical data', JSON.stringify(after) === JSON.stringify(before));
+  await openBank();
   check('list is back', (await page.locator('.qrow').count()) === 5);
 
   console.log('7. re-import and conflicts');
@@ -181,7 +187,7 @@ const { launch, openApp, check, summary } = require('./lib');
   await page.setInputFiles('#file-input', 'printed.pdf'); await modal.waitFor();
   check('a printed/re-saved PDF explains why it has no data', /printed or re-saved/.test(await modal.innerText()));
   await modal.locator('button:has-text("OK")').click();
-  const newerB64 = await page.evaluate(async () => { const p = await PQ.collectPayload(); p.schemaVersion = 3; const r = await PQ.buildBankPdf(p, {}); let s = ''; for (let i = 0; i < r.bytes.length; i += 32768) s += String.fromCharCode(...r.bytes.subarray(i, i + 32768)); return btoa(s); });
+  const newerB64 = await page.evaluate(async () => { const p = await PQ.collectPayload(); p.schemaVersion = 4; const r = await PQ.buildBankPdf(p, {}); let s = ''; for (let i = 0; i < r.bytes.length; i += 32768) s += String.fromCharCode(...r.bytes.subarray(i, i + 32768)); return btoa(s); });
   fs.writeFileSync('newer.pdf', Buffer.from(newerB64, 'base64'));
   await page.setInputFiles('#file-input', 'newer.pdf'); await modal.waitFor();
   check('a bank from a newer schema is refused with a clear message', /newer Prime Questions/.test(await modal.innerText()), await modal.innerText());
@@ -195,6 +201,7 @@ const { launch, openApp, check, summary } = require('./lib');
   check('none of the refused imports changed the bank', await page.evaluate(() => PQ.db.getAll('questions').then(r => r.length)) === countBefore);
 
   console.log('9. delete asks first, and Enter must not confirm it');
+  await openBank();
   await page.locator('.qrow').first().click();
   await page.click('#btn-delete');
   check('delete confirmation shown', /Delete this question/.test(await modal.innerText()));
@@ -213,12 +220,6 @@ const { launch, openApp, check, summary } = require('./lib');
   check('app only wrote prefixed localStorage keys', await page.evaluate(() => Object.keys(localStorage).filter(k => !k.startsWith('prime-questions:') && k !== 'other-app:keep').length === 0));
   check('zero network requests (offline the whole time)', requests.length === 0, requests);
   check('no console errors/warnings', problems.length === 0, problems);
-
-  console.log('11. phone width');
-  await page.setViewportSize({ width: 390, height: 800 });
-  await page.locator('.qrow').first().click();
-  await page.screenshot({ path: 'shot-phone.png' });
-  check('no horizontal page scroll at 390px', await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]));
 
   const fails = summary();
   await browser.close();

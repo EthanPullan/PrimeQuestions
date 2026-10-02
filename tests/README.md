@@ -16,7 +16,7 @@ inside the repo.
 ## Run
 ```
 node tests/run.js          # everything
-node tests/run.js unit     # one script (smoke, unit, ui or phase2)
+node tests/run.js unit     # one script (smoke, unit, ui, phase2 or phase3)
 ```
 Output files (exported PDFs, screenshots) go to a temporary folder. Set
 `PQ_TEST_OUT` to choose where, for example to look at the rendered pages. They are
@@ -33,7 +33,7 @@ never written into the repo.
 - `ui.js`: the app end to end with the network off: create and edit questions of
   every type, insert buttons, the unsaved-changes guard, export, wipe the
   database, import (the round trip), conflicts, refused files, delete
-  confirmation, other apps' storage left alone, and the phone layout.
+  confirmation, and other apps' storage left alone.
 
 - `phase2.js`: stimuli (text, tables, images), image resizing and refusal of bad
   files, the question editor's stimulus/table/keep-order controls, the test builder,
@@ -42,9 +42,20 @@ never written into the repo.
   greyscale only, and a property test over many layouts asserting that no question,
   and no stimulus group that fits on a page, is ever split across pages. It also
   checks that deletes keep tests and questions in step, imports the real schema-1
-  bank in `fixtures/` (written by app v0.1.0), and runs a full round trip.
+  bank in `fixtures/` (written by app v0.1.0), and runs a full round trip. These
+checks were written for the Phase 2 interface and now drive the Phase 3 one.
 
-`fixtures/bank-schema1-v0.1.0.pdf` was produced by the v0.1.0 app before schema 2
-existed. Do not regenerate it with a newer app: its job is to be an old file.
+- `phase3.js`: question banks (create, rename, move a question, delete), the Home,
+  Tests, Question Banks and Imports pages, per-bank export and importing a bank
+  written by app v0.2.0, the Multipart question type, the equation dialog and typing
+  between backticks, and the test editor: building the paper by button and by drag
+  and drop (including joining a stimulus group), moving blocks, undo and redo,
+  editing the title, instructions, Name/Class/Date lines and paper size on the paper,
+  printing those options, version history (including the 50-save cap), the Check
+  list, editing a question from the paper and the unsaved-changes guard.
+
+`fixtures/bank-schema1-v0.1.0.pdf` (app v0.1.0) and `fixtures/bank-schema2-v0.2.0.pdf`
+(app v0.2.0) were produced by those versions before the schema moved on. Do not
+regenerate them with a newer app: their job is to be old files.
 
 These run in headless Chromium only. Firefox, Safari and iPad are not covered.

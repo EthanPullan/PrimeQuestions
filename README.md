@@ -6,40 +6,54 @@ or use the hosted copy at <https://ethanpullan.github.io/PrimeQuestions/>.
 
 There are no accounts and no server. Your questions are stored in your browser.
 
-## What it does today (v0.2.0)
+## What it does today (v0.3.0)
 
-**Questions**
-- Multiple-choice, true/false, numeric, short-answer and matching questions, with
-  a live preview.
-- Maths is written as LaTeX between `\(` and `\)`, for example `\(\frac{3}{4}\)`,
-  and chemistry with `\ce{…}`, for example `\(\ce{2H2 + O2 -> 2H2O}\)`. Insert
-  buttons are there for anyone who does not know LaTeX.
+The sidebar has four places, like Test Parrot: **Home**, **Tests**,
+**Question Banks** and **Imports**.
+
+**Question banks**
+- A bank is a named collection of questions and stimuli, for example
+  “Science 9 Matter”. Make as many as you like; open one to write and organise its
+  questions. Your earlier questions are in a bank called “My Questions”.
+- Multiple-choice, true/false, numeric, short-answer, matching and **multipart**
+  questions (one question with parts (a), (b), (c), each with its own answer type).
+- **Equations are easy to type.** Press *Σ Equation* and type it the way you would
+  say it (`(x+1)/(x-2) = sqrt(3)`, `x^2`, `pi r^2`, `x <= 5`, `60 km/h`) and see it
+  drawn as you type, with a palette of symbols. Or type between backticks in any
+  text box: `1/2` becomes a fraction when you type the closing backtick. LaTeX
+  (`\(\frac{3}{4}\)`) and chemistry (`\(\ce{2H2 + O2 -> 2H2O}\)`) still work.
 - Tables (cells can hold maths) and images (PNG, JPEG or SVG; large photos are
   resized to about 1600 px) on a question.
 - **Stimuli**: a passage, data table or picture that several questions share.
-- Search and filter by type, course and status.
+- Search by text, type and status.
 
 **Tests**
-- Build a test from your bank: pick questions, put them in order.
+- The test editor is the paper itself, with your question banks beside it. Drag
+  questions from the bank onto the paper (or press *Add*), drag blocks to reorder
+  them, and click the title, course, instructions and the Name / Class / Date lines
+  to edit them where they are. Questions that share a stimulus always print
+  together under it. Undo and redo, a *Check* list of things to look at before
+  printing, and **History**: every save is kept (the latest 50) and can be
+  restored.
 - **Version A** is the order you chose. **Version B** shuffles the question order
   and each multiple-choice question's options, the same way every time you print
-  it (the shuffle is saved with the test). Questions that share a stimulus always
-  print together under it.
-- A multiple-choice question can be set to keep its options in order in Version B
-  (for “All of the above”).
-- Print the test or the answer key for either version, on Letter, Legal or A4.
-  The page is plain black on white so it copies cleanly, and no question is split
-  across pages. There are blank Name and Date lines; nothing about students is
-  stored.
+  it (the shuffle is saved with the test). A multiple-choice question can be set
+  to keep its options in order in Version B (for “All of the above”).
+- Print the test or the answer key for either version, on Letter, Legal or A4. The
+  page is plain black on white so it copies cleanly, and no question is split
+  across pages. Nothing about students is stored.
 - The Version B answer key says which Version A question each one is and shows the
   correct answer as printed on Version B.
 
 **Backup**
-- **Export bank** saves the whole bank as one PDF. The PDF is readable (cover
-  page, questions, answers) and also carries the full data inside it.
-- **Import bank** reads that PDF back in. It shows what is new, what changed and
-  what is already there, and nothing is applied until you confirm. Banks saved by
-  earlier versions import too.
+- **Export everything** (bottom of the sidebar) saves all banks, stimuli, images
+  and tests as one PDF. A bank page also has **Export this bank**. The PDF is
+  readable (cover page, questions, answers) and also carries the full data inside
+  it.
+- **Import** reads that PDF back in (use the Import button on Home, the Imports
+  page, or drop the file anywhere on the page). It shows what is new, what changed
+  and what is already there, and nothing is applied until you confirm. Files saved
+  by earlier versions import too.
 
 ## Looking after your questions
 
@@ -49,11 +63,13 @@ There are no accounts and no server. Your questions are stored in your browser.
   file: printing it, scanning it, or saving it again as a PDF removes the data
   Prime Questions reads.
 - The file contains the answers, so keep it private.
+- Version history stays in this browser. It is not part of the exported file.
 - The copy you open from a file on your computer and the copy on the website
   are separate stores. If your questions look missing, check which one you are on
   (the status bar says).
 - On the exported PDF's readable pages, tables and images appear only as a short
   note. Everything is in the data inside the file, and the app shows it all.
+- Prime Questions is built for a computer with a mouse or trackpad.
 
 ## Files
 

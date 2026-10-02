@@ -6,7 +6,7 @@ const { launch, openApp, check, summary } = require('./lib');
   check('app loads and PQ.ready', true);
   check('no console errors/warnings', problems.length === 0, problems);
   check('no non-file network requests', requests.length === 0, requests);
-  check('toolbar buttons present', await page.locator('#btn-new, #btn-import, #btn-export').count() === 3);
+  check('sidebar has Home, Tests, Question Banks, Imports and Export', await page.locator('#nav-home, #nav-tests, #nav-banks, #nav-imports, #btn-export').count() === 5);
   const r = await page.evaluate(() => ({
     temml: typeof temml, ce: (() => { try { return temml.renderToString('\\ce{H2O}').length > 0; } catch (e) { return String(e); } })(),
     status: document.querySelector('.statusbar').textContent,
