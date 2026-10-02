@@ -16,7 +16,7 @@ inside the repo.
 ## Run
 ```
 node tests/run.js          # everything
-node tests/run.js unit     # one script (smoke, unit, ui, phase2, phase3 or format)
+node tests/run.js unit     # one script (smoke, unit, ui, phase2, phase3, format or ai)
 ```
 Output files (exported PDFs, screenshots) go to a temporary folder. Set
 `PQ_TEST_OUT` to choose where, for example to look at the rendered pages. They are
@@ -60,6 +60,12 @@ checks were written for the Phase 2 interface and now drive the Phase 3 one.
   text sizes scale, Classic and Condensed layouts, an untouched test printing exactly
   as before, plain black only, and a property test that no question or stimulus group
   splits across pages in any style, size and paper.
+
+- `ai.js`: `ai-instructions.md` and the JSON draft import. It extracts the example from
+  the document and imports it for real (pasted, as a file, dropped, and through
+  `tools/draft_to_bank_pdf.py`), checks the converter's refusals and leniencies, that a
+  single-backslash LaTeX slip is repaired or refused (never silently corrupted), and that
+  the script and the app convert a draft to the same content. Needs Python 3.
 
 `fixtures/bank-schema1-v0.1.0.pdf` (app v0.1.0), `fixtures/bank-schema2-v0.2.0.pdf`
 (app v0.2.0) and `fixtures/bank-schema3-v0.3.0.pdf` (app v0.3.0) were produced by those versions before the schema moved on. Do not

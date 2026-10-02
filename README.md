@@ -6,7 +6,7 @@ or use the hosted copy at <https://ethanpullan.github.io/PrimeQuestions/>.
 
 There are no accounts and no server. Your questions are stored in your browser.
 
-## What it does today (v0.4.0)
+## What it does today (v0.5.0)
 
 The sidebar has four places, like Test Parrot: **Home**, **Tests**,
 **Question Banks** and **Imports**.
@@ -52,6 +52,17 @@ The sidebar has four places, like Test Parrot: **Home**, **Tests**,
 - The Version B answer key says which Version A question each one is and shows the
   correct answer as printed on Version B.
 
+**Questions from an AI**
+- Give an AI the file [`ai-instructions.md`](ai-instructions.md) (live copy:
+  <https://ethanpullan.github.io/PrimeQuestions/ai-instructions.md>) together with your
+  questions. It replies with a block of JSON in a simple format (no ids, dates or marks to
+  get right). On the **Imports** page paste it under “Questions written by an AI” (or
+  drop a `.json` file). You see a summary first, and every question arrives marked
+  “Needs review”, so you check each one before using it.
+- Images and graphs cannot come in this way; add them in the editor afterwards.
+- For an AI that can run Python and a teacher who wants a PDF file,
+  `tools/draft_to_bank_pdf.py` turns the same JSON into a bank PDF (standard library only).
+
 **Backup**
 - **Export everything** (bottom of the sidebar) saves all banks, stimuli, images
   and tests as one PDF. A bank page also has **Export this bank**. The PDF is
@@ -81,6 +92,8 @@ The sidebar has four places, like Test Parrot: **Home**, **Tests**,
 ## Files
 
 - `index.html`: the whole app.
+- `ai-instructions.md`: instructions for an AI that formats a teacher's questions for import.
+- `tools/draft_to_bank_pdf.py`: optional script that turns that JSON into a bank PDF.
 - `STYLE_GUIDE.md`: the design system shared with the other Teaching Tools.
 - `tests/`: browser tests (see `tests/README.md`).
 - `.nojekyll`: tells GitHub Pages to serve files as they are.

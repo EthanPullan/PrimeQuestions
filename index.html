@@ -799,7 +799,7 @@ document.addEventListener('DOMContentLoaded', () => {
 'use strict';
 
 /* === CONSTANTS === */
-const APP_VERSION = '0.4.0';
+const APP_VERSION = '0.5.0';
 const SCHEMA_VERSION = 4;
 const DB_VERSION = 2;                      // IndexedDB version (2 adds banks and test version history)
 const FORMAT = 'prime-questions';
@@ -1466,6 +1466,162 @@ function buildPayload(data, opts) {
     format: FORMAT, schemaVersion: SCHEMA_VERSION, appVersion: APP_VERSION, requiredFeatures: [], exportedAt: opts.exportedAt || nowIso(),
     banks: banks.slice().sort(order), questions: questions.slice().sort(order), stimuli: stimuli.slice().sort(order), tests: tests.slice().sort(order), images
   };
+}
+
+/* === DRAFTS: questions written by hand or by an AI as plain JSON (pure, no DOM) === */
+// A draft is the easy way in: no ids, dates, bank records or marks to get right. draftToPayload turns it into the same payload a
+// bank PDF carries, with new ids, status "review" (a person still checks AI-written answers) and the questions in one bank. The
+// result then goes through parsePayload and the usual summary-and-confirm step like any other import. Never throws:
+// returns { ok:true, payload, count } or { ok:false, errors:[...] } with messages that name the item, so they can be pasted back to an AI.
+const DRAFT_FORMAT = 'prime-questions-draft';
+function extractJson(text) {
+  let t = String(text == null ? '' : text).replace(/^﻿/, '').trim();
+  const fence = /```(?:json)?\s*([\s\S]*?)```/i.exec(t);       // an AI often wraps the JSON in a code fence and adds a sentence around it
+  if (fence) t = fence[1].trim();
+  const attempt = x => {
+    try { return { ok: true, value: JSON.parse(x) }; } catch (e) { /* repair below */ }
+    // a LaTeX command with one backslash (\( \alpha) is not valid JSON: double the backslashes that start no valid JSON escape
+    try { return { ok: true, value: JSON.parse(x.replace(/\\(?!["\\\/bfnrtu])/g, '\\\\')) }; } catch (e) { return null; }
+  };
+  let r = attempt(t);
+  if (r) return r;
+  const a = t.search(/[\[{]/), b = Math.max(t.lastIndexOf('}'), t.lastIndexOf(']'));
+  if (a >= 0 && b > a && (r = attempt(t.slice(a, b + 1)))) return r;
+  return { ok: false, error: 'This is not valid JSON. Ask the AI to return only the JSON, with straight quotes and no comments.' };
+}
+
+function draftToPayload(input, opts) {
+  opts = opts || {};
+  const errors = [], now = opts.now || nowIso(), uid = opts.uuid || uuid;
+  const err = (path, msg) => { if (errors.length < 40) errors.push(path + ' ' + msg); };
+  let d = input;
+  if (Array.isArray(d)) d = { questions: d };
+  if (!d || typeof d !== 'object') return { ok: false, errors: ['The draft must be an object with a "questions" list.'] };
+  if (d.format !== undefined && d.format !== DRAFT_FORMAT) return { ok: false, errors: ['"format" is "' + d.format + '"; a draft uses "' + DRAFT_FORMAT + '" (or leave it out).'] };
+  if (!Array.isArray(d.questions) || !d.questions.length) return { ok: false, errors: ['"questions" must be a list with at least one question.'] };
+  if (d.questions.length > 500) return { ok: false, errors: ['At most 500 questions per draft. Split it into several files.'] };
+  // JSON reads \frac, \times, \beta and \rho as a form feed, tab, backspace and carriage return followed by letters, silently. Refuse those.
+  const scan = (v, path) => {
+    if (typeof v === 'string') { if (/[\x08\x0c\t\r]/.test(v)) err(path, 'contains a control character. A LaTeX command such as \\frac was probably written with one backslash. In JSON every backslash must be doubled: \\\\frac.'); }
+    else if (Array.isArray(v)) v.forEach((x, i) => scan(x, path + '[' + i + ']'));
+    else if (v && typeof v === 'object') for (const k of Object.keys(v)) scan(v[k], path ? path + '.' + k : k);
+  };
+  scan(d, '');
+  if (errors.length) return { ok: false, errors };
+  const str = (v, path, dflt, max) => { if (v === undefined || v === null) return dflt; if (typeof v === 'number' && isFinite(v)) v = String(v); if (typeof v !== 'string') { err(path, 'must be text.'); return dflt; } if (v.length > (max || 20000)) { err(path, 'is too long.'); return dflt; } return v; };
+  const table = (t, path) => {
+    if (t === undefined || t === null) return null;
+    if (!t || typeof t !== 'object' || !Array.isArray(t.headers) || !Array.isArray(t.rows)) { err(path, 'must be { "headers": [...], "rows": [[...]], "caption": "" }.'); return null; }
+    const cell = x => (typeof x === 'number' && isFinite(x) ? String(x) : x);
+    const headers = t.headers.map(cell), rows = t.rows.map(r => (Array.isArray(r) ? r.map(cell) : r));
+    if (!headers.every(isStr) || !headers.length || headers.length > 8) { err(path + '.headers', 'must be 1 to 8 pieces of text.'); return null; }
+    if (!rows.length || rows.length > 40 || !rows.every(r => Array.isArray(r) && r.length === headers.length && r.every(isStr))) { err(path + '.rows', 'must be 1 to 40 rows, each with exactly ' + headers.length + ' pieces of text (one per header).'); return null; }
+    return { headers, rows, caption: str(t.caption, path + '.caption', '', 500) };
+  };
+  const answer = (type, a, path) => {
+    if (!a || typeof a !== 'object' || Array.isArray(a)) { err(path, 'must be an object for a "' + type + '" question.'); return null; }
+    if (type === 'mc') {
+      const options = Array.isArray(a.options) ? a.options.map(o => (typeof o === 'number' ? String(o) : o)) : null;
+      if (!options || options.length < 2 || options.length > 8 || !options.every(isStr)) { err(path + '.options', 'must be 2 to 8 pieces of text.'); return null; }
+      let c = a.correct;
+      if (typeof c === 'string' && /^[A-Za-z]$/.test(c.trim())) c = c.trim().toUpperCase().charCodeAt(0) - 65;      // "B" -> 1
+      if (!Number.isInteger(c) || c < 0 || c >= options.length) { err(path + '.correct', 'must be the letter of the correct option, for example "B" (options are lettered A, B, C... in order).'); return null; }
+      return { options, correct: c };
+    }
+    if (type === 'tf') {
+      let c = a.correct;
+      if (typeof c === 'string' && /^(true|t|false|f)$/i.test(c.trim())) c = /^t/i.test(c.trim());
+      if (typeof c !== 'boolean') { err(path + '.correct', 'must be true or false.'); return null; }
+      return { correct: c };
+    }
+    if (type === 'numeric') {
+      const value = str(a.value, path + '.value', null);
+      if (value === null || !value.trim()) { err(path + '.value', 'is required (the answer, as text such as "9.8").'); return null; }
+      let tol = a.tolerance === undefined || a.tolerance === null ? 0 : a.tolerance;
+      if (typeof tol !== 'number' || !isFinite(tol) || tol < 0) { err(path + '.tolerance', 'must be a number, 0 or more.'); return null; }
+      return { value, units: str(a.units, path + '.units', '', 500), tolerance: tol };
+    }
+    if (type === 'short') {
+      let lines = a.lines === undefined || a.lines === null ? 4 : a.lines;
+      if (!Number.isInteger(lines) || lines < 1 || lines > 40) { err(path + '.lines', 'must be a whole number from 1 to 40 (how many answer lines to print).'); return null; }
+      return { lines, rubric: str(a.rubric, path + '.rubric', '', 5000) };
+    }
+    if (type === 'matching') {
+      if (!Array.isArray(a.pairs) || a.pairs.length < 2 || a.pairs.length > 12) { err(path + '.pairs', 'must be 2 to 12 pairs, each { "left": "...", "right": "..." }.'); return null; }
+      const pairs = a.pairs.map((p, i) => ({ left: p && typeof p.left === 'number' ? String(p.left) : p && p.left, right: p && typeof p.right === 'number' ? String(p.right) : p && p.right }));
+      if (!pairs.every(p => isStr(p.left) && isStr(p.right) && p.left.trim() && p.right.trim())) { err(path + '.pairs', 'each pair needs a non-empty "left" and "right" (the correct match; they are shuffled when printed).'); return null; }
+      return { pairs };
+    }
+    return null;
+  };
+  // stimuli (optional): shared passages or data tables, referred to by a key
+  const stimById = new Map(), stimuli = [];
+  const bankName = str(d.bank, 'bank', '', 200).trim() || 'Imported questions';
+  const local = (opts.banks || []).find(b => b && String(b.name).trim().toLowerCase() === bankName.toLowerCase());
+  const bank = local ? local : { id: uid(), name: bankName, created: now, updated: now };
+  if (d.stimuli !== undefined && !Array.isArray(d.stimuli)) err('stimuli', 'must be a list.');
+  (Array.isArray(d.stimuli) ? d.stimuli : []).forEach((s, i) => {
+    const path = 'stimuli[' + i + ']';
+    if (!s || typeof s !== 'object') { err(path, 'must be an object.'); return; }
+    const key = str(s.key, path + '.key', '', 100).trim(), title = str(s.title, path + '.title', '', 500).trim();
+    if (!key) err(path + '.key', 'is required (a short name that questions use to point at this stimulus).');
+    else if (stimById.has(key)) err(path + '.key', 'is used twice.');
+    if (!title) err(path + '.title', 'is required.');
+    const rec = { id: uid(), bankId: bank.id, title, text: str(s.text, path + '.text', '').trim(), imageIds: [], table: table(s.table, path + '.table'), created: now, updated: now };
+    if (key) stimById.set(key, rec);
+    stimuli.push(rec);
+  });
+  const questions = [];
+  d.questions.forEach((q, i) => {
+    const path = 'questions[' + (i + 1) + ']';          // numbered from 1, as a person counts
+    if (!q || typeof q !== 'object' || Array.isArray(q)) { err(path, 'must be an object.'); return; }
+    const type = typeof q.type === 'string' ? q.type.trim().toLowerCase() : q.type;
+    if (!TYPES.includes(type)) { err(path + '.type', 'must be one of ' + TYPES.join(', ') + '.'); return; }
+    const prompt = str(q.prompt, path + '.prompt', '').trim();
+    if (!prompt && type !== 'multipart') err(path + '.prompt', 'is required.');
+    let ans = null;
+    if (type === 'multipart') {
+      const parts = q.answer && q.answer.parts;
+      if (!Array.isArray(parts) || !parts.length || parts.length > MAX_PARTS) err(path + '.answer.parts', 'must be 1 to ' + MAX_PARTS + ' parts.');
+      else {
+        const out = parts.map((p, j) => {
+          const pp = path + '.answer.parts[' + (j + 1) + ']';
+          if (!p || typeof p !== 'object') { err(pp, 'must be an object.'); return null; }
+          const pt = typeof p.type === 'string' ? p.type.trim().toLowerCase() : p.type;
+          if (!PART_TYPES.includes(pt)) { err(pp + '.type', 'must be one of ' + PART_TYPES.join(', ') + ' (a part cannot be a multipart).'); return null; }
+          const pprompt = str(p.prompt, pp + '.prompt', '').trim();
+          if (!pprompt) err(pp + '.prompt', 'is required.');
+          const pa = answer(pt, p.answer, pp + '.answer');
+          const part = { type: pt, prompt: pprompt, answer: pa };
+          if (pt === 'mc' && p.keepOrder === true) part.keepOrder = true;
+          return pa ? part : null;
+        });
+        if (out.every(Boolean)) ans = { parts: out };
+      }
+    } else ans = answer(type, q.answer, path + '.answer');
+    let stimulusId = null;
+    if (q.stimulus !== undefined && q.stimulus !== null && q.stimulus !== '') {
+      const st = stimById.get(String(q.stimulus));
+      if (!st) err(path + '.stimulus', '"' + q.stimulus + '" is not the key of any item in "stimuli".'); else stimulusId = st.id;
+    }
+    const difficulty = q.difficulty === undefined || q.difficulty === null ? 'medium' : String(q.difficulty).toLowerCase();
+    if (!DIFFICULTIES.includes(difficulty)) err(path + '.difficulty', 'must be easy, medium or hard.');
+    let tags = q.tags === undefined || q.tags === null ? [] : q.tags;
+    if (typeof tags === 'string') tags = tags.split(',');
+    if (!Array.isArray(tags) || !tags.every(isStr)) { err(path + '.tags', 'must be a list of text.'); tags = []; }
+    const rec = {
+      id: uid(), bankId: bank.id, type, prompt, course: str(q.course, path + '.course', '', 200).trim(), unit: str(q.unit, path + '.unit', '', 200).trim(),
+      tags: Array.from(new Set(tags.map(x => x.trim()).filter(Boolean))), difficulty, status: 'review', stimulusId, imageIds: [], table: table(q.table, path + '.table'),
+      answer: ans, notes: str(q.notes, path + '.notes', '', 5000).trim(), created: now, updated: now
+    };
+    if (type === 'mc' && q.keepOrder === true) rec.keepOrder = true;
+    questions.push(rec);
+  });
+  if (errors.length) return { ok: false, errors };
+  const unused = stimuli.filter(s => !questions.some(q => q.stimulusId === s.id)).length;
+  return { ok: true, count: questions.length, unusedStimuli: unused, payload: {
+    format: FORMAT, schemaVersion: SCHEMA_VERSION, appVersion: APP_VERSION, requiredFeatures: [], exportedAt: now,
+    banks: [bank], questions, stimuli, tests: [], images: {} } };
 }
 
 /* === TESTS: seeded shuffle, versions, answer keys (pure, no DOM) === */
@@ -2368,7 +2524,7 @@ const NAV = [['home', 'Home', '⌂'], ['tests', 'Tests', '▤'], ['banks', 'Ques
 const navGroup = name => (name === 'bank' ? 'banks' : name === 'test' ? 'tests' : name);
 
 function buildShell() {
-  const fileInput = h('input', { type: 'file', accept: 'application/pdf,.pdf', style: 'display:none', id: 'file-input', onchange: async e => { const f = e.target.files[0]; e.target.value = ''; if (f) await importFile(f); } });
+  const fileInput = h('input', { type: 'file', accept: 'application/pdf,.pdf,.json,.txt,application/json,text/plain', style: 'display:none', id: 'file-input', onchange: async e => { const f = e.target.files[0]; e.target.value = ''; if (f) await importFile(f); } });
   el.fileInput = fileInput;
   el.view = h('div', { class: 'view', id: 'view' });
   el.status = h('footer', { class: 'statusbar' });
@@ -2510,6 +2666,7 @@ VIEWS.banks = () => {
     cards(sortedBanks().map(b => bankCard(b, true)), tile('New Question Bank', 'tile-new-bank', () => newBankFlow()))));
 };
 
+const AI_INSTRUCTIONS_URL = 'https://ethanpullan.github.io/PrimeQuestions/ai-instructions.md';
 const importLog = () => { try { const v = JSON.parse(ls.get('imports') || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } };
 function logImport(entry) { ls.set('imports', JSON.stringify([entry].concat(importLog()).slice(0, 20))); }
 
@@ -2518,8 +2675,15 @@ VIEWS.imports = () => {
   el.view.append(h('div', { class: 'page', id: 'page-imports' },
     topbar('Imports'),
     h('div', { class: 'dropzone', id: 'drop-zone' },
-      h('div', { class: 'dz-title' }, 'Drop a bank PDF here'), h('div', { class: 'hint' }, 'or'),
+      h('div', { class: 'dz-title' }, 'Drop a bank PDF or an AI-written .json file here'), h('div', { class: 'hint' }, 'or'),
       h('button', { class: 'btn primary', type: 'button', id: 'btn-choose-import', onclick: () => el.fileInput.click() }, 'Choose a file…')),
+    h('div', { class: 'card', id: 'ai-import' }, h('h3', { class: 'section-title' }, 'Questions written by an AI'),
+      h('p', { class: 'hint', style: 'margin-top:0' }, 'Give an AI the instructions below along with your questions. It replies with a short block of text. Paste that here (or save it as a .json file and choose it above). You always see a summary first, and every question arrives marked “Needs review”.'),
+      h('div', { class: 'opt-row' },
+        h('a', { class: 'btn small', id: 'ai-instructions-link', href: AI_INSTRUCTIONS_URL, target: '_blank', rel: 'noopener' }, 'Open the AI instructions'),
+        h('button', { class: 'btn small', type: 'button', id: 'btn-copy-ai-link', onclick: async () => { try { await navigator.clipboard.writeText(AI_INSTRUCTIONS_URL); toast('Link copied. Paste it into your AI chat.', 'ok'); } catch (e) { toast('Could not copy. The link is ' + AI_INSTRUCTIONS_URL, 'warn'); } } }, 'Copy link for an AI')),
+      h('textarea', { id: 'paste-box', rows: '6', placeholder: 'Paste the AI\u2019s reply here', 'aria-label': 'Text from the AI', style: 'font-family:var(--mono);font-size:12px' }),
+      h('div', { class: 'opt-row', style: 'margin-top:8px' }, h('button', { class: 'btn primary', type: 'button', id: 'btn-import-paste', onclick: async () => { const t = document.getElementById('paste-box').value; if (!t.trim()) { toast('Paste the AI’s reply first.', 'warn'); return; } await importDraftText(t, 'pasted text'); } }, 'Import pasted text'))),
     h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'How importing works'),
       h('ul', { class: 'plainlist' },
         h('li', null, 'Use a PDF that was exported from Prime Questions. Import reads the data hidden inside it. A copy that was printed, scanned or saved again as a PDF has lost that data.'),
@@ -3955,10 +4119,42 @@ function summaryBody(plan, payload) {
   return { body, overwrites: over.length };
 }
 
+// A bank PDF (data inside) or a text draft (JSON, for example written by an AI: see ai-instructions.md).
 async function importFile(file) {
+  const buf = await file.arrayBuffer();
+  const pdf = /\.pdf$/i.test(file.name) || String.fromCharCode(...new Uint8Array(buf.slice(0, 5))) === '%PDF-';
+  if (!pdf) { await importDraftText(new TextDecoder().decode(buf), file.name); return; }
   let raw;
-  try { raw = await readPdfPayload(await file.arrayBuffer()); }
+  try { raw = await readPdfPayload(buf); }
   catch (e) { await info('Could not import this file', String(e && e.message || e), 'Nothing was changed.'); return; }
+  await importRaw(raw, file.name, null);
+}
+
+async function importDraftText(text, name) {
+  const j = extractJson(text);
+  if (!j.ok) { await info('Could not read this text', j.error, 'Nothing was changed.'); return; }
+  if (!(await guardDirty())) return;
+  try { await loadAll(); } catch (e) { toast('Could not read your current bank: ' + (e && e.message || e), 'err'); return; }
+  const r = draftToPayload(j.value, { banks: state.banks });
+  if (!r.ok) {
+    const msgs = r.errors.join('\n');
+    for (;;) {
+      const c = await modal({ title: 'These questions cannot be imported yet', body: h('div', null, h('p', null, 'Nothing was changed. Copy these messages back to the AI and ask it to fix them and send the whole list again.'),
+        h('ul', { class: 'problems', id: 'draft-errors' }, r.errors.map(m => h('li', null, m)))),
+        actions: [{ label: 'Copy messages', value: 'copy' }, { label: 'Close', value: 'close', kind: 'primary' }], dismissValue: 'close' });
+      if (c !== 'copy') return;
+      try { await navigator.clipboard.writeText(msgs); toast('Copied.', 'ok'); } catch (e) { toast('Could not copy. Select the text and copy it.', 'warn'); }
+    }
+  }
+  const bad = r.payload.questions.filter(q => checkQuestion(q).length).length, bank = r.payload.banks[0];
+  const note = h('div', { id: 'draft-note' },
+    h('p', null, 'These ' + plural(r.count, 'question') + ' come from a text draft. They will be added to the bank “' + bank.name + '”' + (state.banks.some(b => b.id === bank.id) ? '' : ' (a new bank)') + ' and marked “Needs review”, so check each one before you use it.'),
+    bad ? h('p', null, h('b', null, plural(bad, 'question') + ' ' + (bad === 1 ? 'has' : 'have') + ' maths that does not render or a missing answer.'), ' You can import them and fix them in the editor.') : null,
+    r.unusedStimuli ? h('p', { class: 'hint' }, plural(r.unusedStimuli, 'stimulus', 'stimuli') + ' in the draft ' + (r.unusedStimuli === 1 ? 'is' : 'are') + ' not used by any question.') : null);
+  await importRaw(r.payload, name, note);
+}
+
+async function importRaw(raw, name, note) {
   const parsed = parsePayload(raw);
   if (!parsed.ok) { await modal({ title: 'Could not import this file', body: h('div', null, parsed.errors.map(m => h('p', null, m))), actions: [{ label: 'OK', value: true, kind: 'primary' }], dismissValue: true }); return; }
   if (!(await guardDirty())) return;
@@ -3967,9 +4163,10 @@ async function importFile(file) {
   const plan = planMerge({ banks: state.banks, questions: state.questions, stimuli: state.stimuli, tests: state.tests, imageIds: state.imageIds }, payload);
   if (planIsNoop(plan)) { await info('Nothing to import', 'Everything in this file is already in your bank, or your copies are newer. Nothing was changed.'); return; }
   const { body, overwrites } = summaryBody(plan, payload);
+  if (note) body.prepend(note);
   for (;;) {
     const choice = await modal({
-      title: 'Import this bank?', body,
+      title: note ? 'Import these questions?' : 'Import this bank?', body,
       actions: [{ label: 'Cancel', value: 'cancel' }].concat(state.questions.length || state.stimuli.length || state.tests.length ? [{ label: 'Export my current bank first', value: 'export' }] : [])
         .concat([{ label: overwrites ? 'Apply (replaces ' + overwrites + ')' : 'Apply', value: 'apply', kind: overwrites ? 'danger' : 'primary' }]),
       dismissValue: 'cancel'
@@ -3987,7 +4184,7 @@ async function importFile(file) {
   await loadAll();
   const done = [w.banks.length ? plural(w.banks.length, 'bank') : null, plural(w.questions.length, 'question'), w.stimuli.length ? plural(w.stimuli.length, 'stimulus', 'stimuli') : null,
     w.tests.length ? plural(w.tests.length, 'test') : null, plan.images.new.length ? plural(plan.images.new.length, 'image') : null].filter(Boolean).join(', ');
-  logImport({ name: file.name, at: nowIso(), summary: done + ' added or updated' });
+  logImport({ name, at: nowIso(), summary: done + ' added or updated' });
   teardown();                    // whatever is on screen is redrawn from the stored data (nothing unsaved is left: guardDirty asked)
   render();
   toast('Imported: ' + done + ' added or updated.', 'ok');
@@ -3998,7 +4195,7 @@ window.PQ = {
   APP_VERSION, SCHEMA_VERSION, FORMAT, MIGRATIONS,
   uuid, stable, splitMath, mathErrors, defaultAnswer, emptyQuestion, textFields, checkQuestion,
   migrate, parsePayload, planMerge, recordsToWrite, planIsNoop,
-  asciiToTex, convertBackticksAt, buildPayload, defaultBank, DEFAULT_BANK_ID, TYPES, PART_TYPES, partLabel, newPart, answerLines,
+  asciiToTex, convertBackticksAt, buildPayload, draftToPayload, extractJson, importDraftText, defaultBank, DEFAULT_BANK_ID, TYPES, PART_TYPES, partLabel, newPart, answerLines,
   hashSeed, mulberry32, shuffled, newSeed, formBlocks, questionView, planTest, keyText, keyEntries,
   isTextSafe, needsImage, textWidth, wrapText, blockLines, layoutText,
   buildBankPdf, readPdfPayload, renderBlockImage, buildSheet, preparePrint, processImageFile, ensureImageUrls,
