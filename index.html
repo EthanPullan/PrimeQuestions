@@ -205,6 +205,79 @@
   @media (prefers-reduced-motion:reduce){
     .btn:active{transform:none;} *{scroll-behavior:auto;} .toast{animation:none;} .progress-bar > div{transition:none;}
   }
+
+  /* === APP: modes, tables, images, test builder === */
+  .modeseg{margin-left:6px;}
+  .tbl-scroll{overflow-x:auto;}
+  .tbl-edit{border-collapse:separate;border-spacing:4px;}
+  .tbl-edit th,.tbl-edit td{padding:0;font-weight:inherit;vertical-align:middle;}
+  .tbl-edit .in{min-width:90px;}
+  .tbl-x{text-align:center;}
+  .thumbs{display:flex;flex-wrap:wrap;gap:10px;}
+  .thumb{border:1px solid var(--line);border-radius:8px;background:var(--panel-2);padding:6px;display:flex;align-items:flex-start;gap:4px;}
+  .thumb img{max-width:140px;max-height:110px;display:block;}
+  .trow{display:flex;gap:10px;align-items:center;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);margin-bottom:6px;}
+  .trow.missing{border-style:dashed;background:var(--danger-soft);}
+  .trow .num{font-family:var(--mono);font-weight:600;color:var(--muted);min-width:24px;text-align:right;}
+  .trow .tmain{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
+  .trow .top{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+  .trow .snip{font-size:13px;}
+  .tbtns{display:flex;gap:2px;flex:none;}
+  .tbtns .xbtn:hover{color:var(--ink);background:var(--panel-2);}
+  .tbtns .xbtn:last-child:hover{color:var(--danger);background:var(--danger-soft);}
+  .tbtns .xbtn[disabled]{opacity:.3;cursor:not-allowed;}
+  .print-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .mono{font-family:var(--mono);font-weight:600;}
+  .paper-sheet{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:16px;overflow:auto;}
+  .paper-sheet .sheet{background:var(--panel);max-width:8.5in;margin:0 auto;padding:.6in .55in;box-shadow:var(--shadow);}
+
+  /* === The printed test and answer key. Plain black on white (school copiers are greyscale); no colour carries meaning.
+     Layout avoids flex and grid inside the questions so page breaks stay reliable on older browsers. === */
+  .sheet{font-family:Helvetica,Arial,"Liberation Sans",sans-serif;color:#000;background:#fff;font-size:11pt;line-height:1.35;}
+  .sheet h1{font-size:18pt;margin:0 0 2pt;line-height:1.2;}
+  .sheet .tp-head{border-bottom:1.5pt solid #000;padding-bottom:8pt;margin-bottom:12pt;}
+  .sheet .tp-version{float:right;font-weight:700;border:1.5pt solid #000;padding:1pt 8pt;margin-left:12pt;}
+  .sheet .tp-lines{display:flex;gap:24pt;margin-top:12pt;}
+  .sheet .tp-line{flex:2;border-bottom:1pt solid #000;padding-bottom:1pt;}
+  .sheet .tp-line.tp-short{flex:1;}
+  .sheet .tp-block{break-inside:avoid;page-break-inside:avoid;margin-bottom:12pt;}
+  .sheet .tp-intro{font-style:italic;margin-bottom:5pt;}
+  .sheet .tp-stim{border:1pt solid #000;padding:8pt;margin-bottom:10pt;}
+  .sheet .tp-stim-title{font-weight:700;margin-bottom:3pt;}
+  .sheet .tp-text{white-space:pre-wrap;overflow-wrap:anywhere;}
+  .sheet .tp-q{position:relative;padding-left:30pt;margin:0 0 12pt;break-inside:avoid;page-break-inside:avoid;}
+  .sheet .tp-block .tp-q:last-child{margin-bottom:0;}
+  .sheet .tp-num{position:absolute;left:0;width:22pt;text-align:right;font-weight:700;}
+  .sheet .tp-opts{margin-top:5pt;}
+  .sheet .tp-opt{position:relative;padding-left:22pt;margin:2pt 0;break-inside:avoid;page-break-inside:avoid;}
+  .sheet .tp-let{position:absolute;left:0;font-weight:700;}
+  .sheet .tp-tf{margin-top:6pt;}
+  .sheet .tp-tfopt{display:inline-block;border:1pt solid #000;border-radius:10pt;padding:0 12pt;margin-left:14pt;}
+  .sheet .tp-numeric{margin-top:8pt;}
+  .sheet .tp-blankline{display:inline-block;width:180pt;border-bottom:1pt solid #000;margin-left:8pt;}
+  .sheet .tp-rules{margin-top:4pt;}
+  .sheet .tp-rule{border-bottom:1pt solid #000;height:22pt;}
+  .sheet .tp-match{display:table;width:100%;margin-top:6pt;}
+  .sheet .tp-mcol{display:table-cell;width:50%;vertical-align:top;padding-right:14pt;}
+  .sheet .tp-mrow{position:relative;margin:3pt 0;}
+  .sheet .tp-mrow.l{padding-left:56pt;}
+  .sheet .tp-mrow.l .tp-let{left:34pt;}
+  .sheet .tp-mrow.r{padding-left:22pt;}
+  .sheet .tp-mblank{position:absolute;left:0;width:28pt;top:0;height:1.1em;border-bottom:1pt solid #000;}
+  .sheet .pq-table{border-collapse:collapse;margin:5pt 0;}
+  .sheet .pq-table th,.sheet .pq-table td{border:1pt solid #000;padding:2pt 7pt;text-align:left;}
+  .sheet .pq-tablewrap{break-inside:avoid;page-break-inside:avoid;margin:5pt 0;}
+  .sheet .pq-cap{font-weight:700;padding-bottom:2pt;}
+  .sheet .tp-imgs img{max-width:100%;max-height:90mm;margin:4pt 8pt 0 0;}
+  .sheet .tp-key{width:100%;border-collapse:collapse;}
+  .sheet .tp-key th,.sheet .tp-key td{border:1pt solid #000;padding:4pt 8pt;text-align:left;vertical-align:top;}
+  .sheet .tp-key tr{break-inside:avoid;page-break-inside:avoid;}
+  #print-root{display:none;color:#000;background:#fff;}
+  @media print{
+    html,body{height:auto;background:#fff;}
+    .app,.toast-wrap,.modal-back{display:none !important;}
+    #print-root{display:block;}
+  }
 /* === VENDOR START: temml CSS 0.13.5 (MIT) · npm temml dist/Temml-Local.css · font inlined · do not edit === */
 /*
 Temml.woff2 is a clone of KaTeX_Script-Regular, except that the code points
@@ -590,8 +663,8 @@ document.addEventListener('DOMContentLoaded', () => {
 'use strict';
 
 /* === CONSTANTS === */
-const APP_VERSION = '0.1.0';
-const SCHEMA_VERSION = 1;
+const APP_VERSION = '0.2.0';
+const SCHEMA_VERSION = 2;
 const FORMAT = 'prime-questions';
 const KNOWN_FEATURES = [];                 // payload.requiredFeatures entries this app understands
 const DB_NAME = 'prime-questions';
@@ -701,10 +774,21 @@ function emptyQuestion(type) {
 
 const letter = i => i < 26 ? String.fromCharCode(65 + i) : String(i + 1);
 
+// Text fields of a table (caption, headers, cells), for maths checking.
+function tableFields(t, label) {
+  const f = [];
+  if (!t) return f;
+  f.push({ field: label + ' caption', text: t.caption || '' });
+  (t.headers || []).forEach((x, i) => f.push({ field: label + ' header ' + (i + 1), text: x }));
+  (t.rows || []).forEach((r, i) => r.forEach((x, j) => f.push({ field: label + ' row ' + (i + 1) + ', column ' + (j + 1), text: x })));
+  return f;
+}
+
 // Every text field that may hold \( math \), with a label for error messages.
 function textFields(q) {
   const f = [{ field: 'Question text', text: q.prompt }];
   const a = q.answer || {};
+  f.push(...tableFields(q.table, 'Table'));
   if (q.type === 'mc') (a.options || []).forEach((o, i) => f.push({ field: 'Option ' + letter(i), text: o }));
   if (q.type === 'numeric') { f.push({ field: 'Answer value', text: a.value || '' }); f.push({ field: 'Units', text: a.units || '' }); }
   if (q.type === 'short') f.push({ field: 'Marking guide', text: a.rubric || '' });
@@ -740,7 +824,9 @@ function checkQuestion(q) {
 }
 
 /* === PAYLOAD: validation, migration, merge === */
-const MIGRATIONS = {};   // { fromVersion: payload => payload at fromVersion + 1 }
+// { fromVersion: payload => payload at fromVersion + 1 }
+// 1 -> 2: questions may carry an optional boolean `keepOrder` (absent = false). A schema 1 bank has none, so only the version changes.
+const MIGRATIONS = { 1: p => Object.assign({}, p, { schemaVersion: 2 }) };
 
 function migrate(p, migrations, target) {
   migrations = migrations || MIGRATIONS;
@@ -779,6 +865,7 @@ function recordProblems(kind, r) {
     need(r.stimulusId === null || isStr(r.stimulusId), 'has an invalid stimulusId');
     need(isStrArr(r.imageIds), 'has invalid imageIds');
     need(checkTable(r.table), 'has an invalid table');
+    need(r.keepOrder === undefined || typeof r.keepOrder === 'boolean', 'has an invalid keepOrder');
     const a = r.answer;
     if (!a || typeof a !== 'object') e.push('has no answer');
     else if (r.type === 'mc') need(isStrArr(a.options) && a.options.length >= 2 && Number.isInteger(a.correct) && a.correct >= 0 && a.correct < a.options.length, 'has an invalid multiple-choice answer');
@@ -869,6 +956,99 @@ function recordsToWrite(plan) {
 function planIsNoop(plan) {
   const w = recordsToWrite(plan);
   return !w.questions.length && !w.stimuli.length && !w.tests.length && !plan.images.new.length;
+}
+
+/* === TESTS: seeded shuffle, versions, answer keys (pure, no DOM) === */
+// 32-bit FNV-1a of "seed|label": gives every shuffle its own stable stream, so editing one
+// question never changes how another one is shuffled.
+function hashSeed(seed, label) {
+  let x = 0x811c9dc5;
+  const s = String(seed) + '|' + label;
+  for (let i = 0; i < s.length; i++) { x ^= s.charCodeAt(i); x = Math.imul(x, 0x01000193); }
+  return x >>> 0;
+}
+function mulberry32(a) {
+  return function () {
+    a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function shuffled(arr, rnd) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a;
+}
+function newSeed() { return (crypto.getRandomValues(new Uint32Array(1))[0] % 2147483646) + 1; }
+
+// Questions that share a stimulus form one block, placed where the first of them appears.
+// A stimulus that is not in the bank leaves its questions standing alone.
+function formBlocks(questions, stimById) {
+  const blocks = [], byStim = new Map();
+  for (const q of questions) {
+    if (q.stimulusId && stimById.has(q.stimulusId)) {
+      let b = byStim.get(q.stimulusId);
+      if (!b) { b = { stimulusId: q.stimulusId, questions: [] }; byStim.set(q.stimulusId, b); blocks.push(b); }
+      b.questions.push(q);
+    } else blocks.push({ stimulusId: null, questions: [q] });
+  }
+  return blocks;
+}
+
+// What one question looks like on the paper for a version. Blank options are not printed.
+function questionView(q, seed, version) {
+  const a = q.answer;
+  if (q.type === 'mc') {
+    let opts = a.options.map((text, orig) => ({ text, orig })).filter(o => String(o.text).trim() !== '');
+    if (version === 'B' && !q.keepOrder) opts = shuffled(opts, mulberry32(hashSeed(seed, 'opt|' + q.id)));
+    return { type: 'mc', options: opts, correct: opts.findIndex(o => o.orig === a.correct), shuffled: version === 'B' && !q.keepOrder };
+  }
+  if (q.type === 'tf') return { type: 'tf', correct: a.correct };
+  if (q.type === 'numeric') return { type: 'numeric', value: a.value, units: a.units, tolerance: a.tolerance };
+  if (q.type === 'short') return { type: 'short', lines: Math.max(1, a.lines), rubric: a.rubric };
+  // matching: the right-hand column is always shuffled (the pairs are stored in true order); never left in place
+  const n = a.pairs.length, idx = a.pairs.map((_, i) => i);
+  const rnd = mulberry32(hashSeed(seed, 'match|' + version + '|' + q.id));
+  let order = shuffled(idx, rnd);
+  for (let t = 0; t < 10 && n > 1 && order.every((v, i) => v === i); t++) order = shuffled(idx, rnd);
+  return { type: 'matching', left: a.pairs.map(p => p.left), right: order.map(i => a.pairs[i].right), key: idx.map(i => order.indexOf(i)) };
+}
+
+// The test for a version. A: the order you chose (stimulus questions pulled together).
+// B: the blocks in a seeded shuffled order and each MC question's options shuffled, unless it has keepOrder.
+// Questions missing from the bank are skipped and listed in `missing`.
+function planTest(test, questions, stimuli, version) {
+  const qById = new Map(questions.map(q => [q.id, q])), sById = new Map(stimuli.map(s => [s.id, s]));
+  const ordered = [], missing = [];
+  for (const id of test.questionIds) { const q = qById.get(id); if (q) ordered.push(q); else missing.push(id); }
+  const blocksA = formBlocks(ordered, sById);
+  const aNumber = new Map();
+  let n = 0;
+  for (const b of blocksA) for (const q of b.questions) aNumber.set(q.id, ++n);
+  const blocks = version === 'B' ? shuffled(blocksA, mulberry32(hashSeed(test.seed, 'blocks'))) : blocksA;
+  let num = 0;
+  const out = blocks.map(b => ({
+    stimulus: b.stimulusId ? sById.get(b.stimulusId) : null,
+    items: b.questions.map(q => ({ q, number: ++num, aNumber: aNumber.get(q.id), view: questionView(q, test.seed, version) }))
+  }));
+  return { version, title: test.title, course: test.course, blocks: out, total: num, missing };
+}
+
+// The answer as a short string, from the version's own view (so a B key shows B's letters).
+function keyText(item) {
+  const v = item.view;
+  if (v.type === 'mc') return v.correct >= 0 ? letter(v.correct) + '. ' + v.options[v.correct].text : '(no correct option set)';
+  if (v.type === 'tf') return v.correct ? 'True' : 'False';
+  if (v.type === 'numeric') return v.value + (v.units ? ' ' + v.units : '') + (v.tolerance ? '  (±' + v.tolerance + ')' : '');
+  if (v.type === 'short') return v.rubric || '(marked by the teacher)';
+  return v.key.map((k, i) => (i + 1) + '-' + letter(k)).join('   ');
+}
+// Flat list for the key: Version B lines say which A question they are.
+function keyEntries(plan) {
+  const out = [];
+  for (const b of plan.blocks) for (const it of b.items) out.push({ number: it.number, aNumber: it.aNumber, text: keyText(it), item: it });
+  return out;
 }
 
 /* === PDF: low-level writer / reader (no library; browser built-ins only) === */
@@ -1065,11 +1245,21 @@ function blockLines(q, num, ctx) {
   meta.push('Topics: ' + (q.tags.length ? q.tags.join(', ') : 'None'));
   if (q.status === 'review') meta.push('Status: needs review');
   L.push({ k: 'meta', text: meta.join('   ') });
+  const rich = !!(ctx && ctx.rich);   // rich = screen preview: show real tables and images; otherwise one-line placeholders
   if (q.stimulusId) {
     const s = ctx && ctx.stim && ctx.stim.get(q.stimulusId);
     L.push({ k: 'sub', text: 'Shared stimulus: ' + (s ? (s.title || 'Untitled') : '(not in this bank)') });
+    if (rich && s) {
+      if (s.text) L.push({ k: 'stim', text: s.text });
+      if (s.table) L.push({ k: 'table', table: s.table });
+      if (s.imageIds.length) L.push({ k: 'imgs', ids: s.imageIds });
+    }
   }
   L.push({ k: 'body', text: q.prompt });
+  if (rich) {
+    if (q.table) L.push({ k: 'table', table: q.table });
+    if (q.imageIds.length) L.push({ k: 'imgs', ids: q.imageIds });
+  }
   const a = q.answer;
   if (q.type === 'mc') {
     a.options.forEach((o, i) => L.push({ k: 'option', label: letter(i) + '.', text: o }));
@@ -1085,14 +1275,19 @@ function blockLines(q, num, ctx) {
     L.push({ k: 'answer', label: 'Matching pairs:', text: '' });
     a.pairs.forEach((p, i) => L.push({ k: 'option', label: (i + 1) + '.', text: p.left + '   =   ' + p.right }));
   }
-  if (q.table) L.push({ k: 'sub', text: '[Table: ' + (q.table.caption || 'untitled') + ', ' + q.table.headers.length + ' columns x ' + q.table.rows.length + ' rows. Open the data in Prime Questions to see it.]' });
-  if (q.imageIds.length) L.push({ k: 'sub', text: '[' + q.imageIds.length + ' image' + (q.imageIds.length > 1 ? 's' : '') + ' attached. Open the data in Prime Questions to see ' + (q.imageIds.length > 1 ? 'them' : 'it') + '.]' });
+  if (!rich && q.table) L.push({ k: 'sub', text: '[Table: ' + (q.table.caption || 'untitled') + ', ' + q.table.headers.length + ' columns x ' + q.table.rows.length + ' rows. Open the data in Prime Questions to see it.]' });
+  if (!rich && q.imageIds.length) L.push({ k: 'sub', text: '[' + q.imageIds.length + ' image' + (q.imageIds.length > 1 ? 's' : '') + ' attached. Open the data in Prime Questions to see ' + (q.imageIds.length > 1 ? 'them' : 'it') + '.]' });
   if (q.notes) L.push({ k: 'sub', text: 'Notes: ' + q.notes });
   return L;
 }
 
-function stimulusLines(s) {
+function stimulusLines(s, rich) {
   const L = [{ k: 'title', text: s.title || 'Untitled stimulus' }, { k: 'body', text: s.text }];
+  if (rich) {
+    if (s.table) L.push({ k: 'table', table: s.table });
+    if (s.imageIds.length) L.push({ k: 'imgs', ids: s.imageIds });
+    return L;
+  }
   if (s.table) L.push({ k: 'sub', text: '[Table: ' + (s.table.caption || 'untitled') + ', ' + s.table.headers.length + ' columns x ' + s.table.rows.length + ' rows.]' });
   if (s.imageIds.length) L.push({ k: 'sub', text: '[' + s.imageIds.length + ' image(s) attached.]' });
   return L;
@@ -1315,13 +1510,18 @@ const db = (() => {
       return keys.map((id, i) => ({ id, blob: vals[i] }));
     },
     async getImageIds() { const d = await open(); return req(d.transaction('images').objectStore('images').getAllKeys()); },
+    async getImage(id) { const d = await open(); return req(d.transaction('images').objectStore('images').get(id)); },
     async put(store, rec) { const d = await open(); const tx = d.transaction(store, 'readwrite'); tx.objectStore(store).put(rec); return finish(tx); },
     async del(store, id) { const d = await open(); const tx = d.transaction(store, 'readwrite'); tx.objectStore(store).delete(id); return finish(tx); },
-    // one transaction, so an import is all-or-nothing
+    // One transaction, so an import, a save with images, or a delete that also edits other records is all-or-nothing.
+    // b = { questions, stimuli, tests: [records to put], images: [{id, blob}], deletes: { questions, stimuli, tests: [ids] } }
     async applyBatch(b) {
       const d = await open();
       const tx = d.transaction(['questions', 'stimuli', 'tests', 'images'], 'readwrite');
-      for (const c of ['questions', 'stimuli', 'tests']) for (const r of (b[c] || [])) tx.objectStore(c).put(r);
+      for (const c of ['questions', 'stimuli', 'tests']) {
+        for (const r of (b[c] || [])) tx.objectStore(c).put(r);
+        for (const id of ((b.deletes && b.deletes[c]) || [])) tx.objectStore(c).delete(id);
+      }
       for (const im of (b.images || [])) tx.objectStore('images').put(im.blob, im.id);
       return finish(tx);
     }
@@ -1396,11 +1596,18 @@ function blockCss(u, sel) {
     sel + ' .pb-hang{display:flex;}' +
     sel + ' .pb-label{flex:none;font-weight:700;padding-right:' + p(4) + ';}' +
     sel + ' .pb-option .pb-label{min-width:' + p(24) + ';}' +
-    sel + ' .pb-text{flex:1;min-width:0;}';
+    sel + ' .pb-text{flex:1;min-width:0;}' +
+    sel + ' .pb-stim{border-left:' + p(2) + ' solid #000;padding-left:' + p(8) + ';}' +
+    sel + ' .pq-table{border-collapse:collapse;margin:' + p(2) + ' 0;}' +
+    sel + ' .pq-table th,' + sel + ' .pq-table td{border:1px solid #000;padding:' + p(2) + ' ' + p(6) + ';text-align:left;}' +
+    sel + ' .pq-cap{font-weight:700;padding-bottom:' + p(2) + ';}' +
+    sel + ' .pq-imgs img{max-width:100%;max-height:' + p(180) + ';margin:' + p(2) + ' ' + p(6) + ' 0 0;}';
 }
 function buildBlockDom(lines) {
   const root = h('div', { class: 'pb' });
   for (const l of lines) {
+    if (l.k === 'table') { root.append(h('div', { class: 'pb-row pb-tablerow' }, buildTableDom(l.table))); continue; }
+    if (l.k === 'imgs') { root.append(h('div', { class: 'pb-row pb-imgsrow' }, buildImgsDom(l.ids))); continue; }
     const row = h('div', { class: 'pb-row pb-' + l.k + (l.label ? ' pb-hang' : '') });
     if (l.label) row.append(h('span', { class: 'pb-label' }, l.label));
     row.append(h('span', { class: 'pb-text' }, l.text || ''));
@@ -1448,9 +1655,11 @@ async function renderBlockImage(lines, widthPt) {
 /* === APP STATE === */
 const state = {
   questions: [], stimuli: [], tests: [], imageIds: new Set(),
+  mode: 'questions',                       // 'questions' | 'stimuli' | 'tests'
   selectedId: null,
-  editor: null,        // { draft, original, isNew, dirty, answers, lastNote }
+  editor: null,                            // { kind, draft, original, isNew, dirty, pending, ... }
   filter: { text: '', type: '', course: '', status: '' },
+  search: { stimuli: '', tests: '' },
   persisted: null
 };
 const el = {};         // cached DOM nodes
@@ -1467,35 +1676,122 @@ async function ensurePersist() {
   try { if (navigator.storage && navigator.storage.persist) state.persisted = await navigator.storage.persist(); } catch (e) { /* not supported */ }
 }
 
-/* === UI: shell === */
+/* === IMAGES and TABLES: shared by the editors, the previews and printing === */
+const MAX_IMAGE_EDGE = 1600, MAX_IMAGE_BYTES = 25 * 1024 * 1024, MAX_SVG_BYTES = 2 * 1024 * 1024;
+const MAX_IMAGES = 6, MAX_COLS = 8, MAX_ROWS = 40;
+const imgUrls = new Map();     // image id -> object URL, for this page load
+
+// Make sure the object URLs for these ids exist. `pending` holds images added in the open editor and not saved yet.
+async function ensureImageUrls(ids, pending) {
+  for (const id of ids) {
+    if (imgUrls.has(id)) continue;
+    let blob = pending && pending.get(id);
+    if (!blob) { try { blob = await db.getImage(id); } catch (e) { blob = null; } }
+    if (blob) imgUrls.set(id, URL.createObjectURL(blob));
+  }
+}
+
+// PNG and JPEG are kept as they are unless the long edge is over ~1600 px (then re-drawn smaller). SVG is kept as is
+// and is only ever shown through <img>, so any script inside it never runs.
+async function processImageFile(file) {
+  if (file.size > MAX_IMAGE_BYTES) throw new Error('That file is bigger than 25 MB.');
+  const head = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+  const png = head[0] === 0x89 && head[1] === 0x50 && head[2] === 0x4E && head[3] === 0x47;
+  const jpg = head[0] === 0xFF && head[1] === 0xD8 && head[2] === 0xFF;
+  if (!png && !jpg) {
+    if (file.size > MAX_SVG_BYTES) throw new Error('Use a PNG, JPEG or SVG image (an SVG can be up to 2 MB).');
+    const text = await file.text();
+    const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+    if (doc.getElementsByTagName('parsererror').length || doc.documentElement.nodeName !== 'svg') throw new Error('Use a PNG, JPEG or SVG image.');
+    return new Blob([text], { type: 'image/svg+xml' });
+  }
+  let bmp;
+  try { bmp = await createImageBitmap(file); } catch (e) { throw new Error('That image could not be read.'); }
+  const type = png ? 'image/png' : 'image/jpeg';
+  const long = Math.max(bmp.width, bmp.height);
+  if (long <= MAX_IMAGE_EDGE) { if (bmp.close) bmp.close(); return new Blob([file], { type }); }
+  const f = MAX_IMAGE_EDGE / long;
+  const c = document.createElement('canvas');
+  c.width = Math.round(bmp.width * f); c.height = Math.round(bmp.height * f);
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  if (bmp.close) bmp.close();
+  const blob = await new Promise(res => c.toBlob(res, type, 0.9));
+  if (!blob) throw new Error('That image could not be resized.');
+  return blob;
+}
+
+// The caption is a line above the table (an HTML <caption> is only as wide as the table and wraps badly);
+// the wrapper keeps caption and table together across a page break.
+function buildTableDom(t) {
+  const tbl = h('table', { class: 'pq-table' });
+  if (t.headers.length) tbl.append(h('thead', null, h('tr', null, t.headers.map(x => h('th', null, x)))));
+  tbl.append(h('tbody', null, t.rows.map(r => h('tr', null, r.map(x => h('td', null, x))))));
+  return h('div', { class: 'pq-tablewrap' }, t.caption ? h('div', { class: 'pq-cap' }, t.caption) : null, tbl);
+}
+function buildImgsDom(ids, cls) {
+  return h('div', { class: cls || 'pq-imgs' }, ids.map((id, i) => imgUrls.has(id) ? h('img', { src: imgUrls.get(id), alt: 'Image ' + (i + 1) }) : h('span', { class: 'hint' }, '[image not found]')));
+}
+
+/* === UI: shell, modes, lists === */
+const PAPERS = { letter: { label: 'Letter', css: 'letter' }, legal: { label: 'Legal', css: 'legal' }, a4: { label: 'A4', css: 'A4' } };
+const MODES = [['questions', 'Questions'], ['stimuli', 'Stimuli'], ['tests', 'Tests']];
+
 function buildShell() {
   const fileInput = h('input', { type: 'file', accept: 'application/pdf,.pdf', style: 'display:none', id: 'file-input', onchange: async e => { const f = e.target.files[0]; e.target.value = ''; if (f) await importFile(f); } });
-  el.search = h('input', { type: 'text', class: 'in', placeholder: 'Search questions…', 'aria-label': 'Search questions', oninput: e => { state.filter.text = e.target.value; renderList(); } });
-  const mkSel = (key, aria) => h('select', { 'aria-label': aria, onchange: e => { state.filter[key] = e.target.value; renderList(); } });
+  el.search = h('input', { type: 'text', class: 'in', placeholder: 'Search questions…', 'aria-label': 'Search questions', oninput: e => { if (state.mode === 'questions') state.filter.text = e.target.value; else state.search[state.mode] = e.target.value; renderPanel(); } });
+  const mkSel = (key, aria) => h('select', { 'aria-label': aria, onchange: e => { state.filter[key] = e.target.value; renderPanel(); } });
   el.fType = mkSel('type', 'Filter by type');
   el.fCourse = mkSel('course', 'Filter by course');
   el.fStatus = mkSel('status', 'Filter by status');
+  el.filters = h('div', { class: 'filters' }, el.fType, el.fCourse, el.fStatus);
+  el.panelTitle = h('h3', { class: 'section-title', style: 'margin:0' }, 'Questions');
   el.count = h('span', { class: 'count-pill' }, '0');
   el.list = h('ul', { class: 'qlist' });
   el.stage = h('div', { class: 'stage' });
   el.stage.addEventListener('focusin', e => { if (e.target.dataset && e.target.dataset.math !== undefined) lastField = e.target; });
   el.status = h('footer', { class: 'statusbar' });
+  el.newLabel = h('span', null, 'New question');
+  el.printRoot = h('div', { id: 'print-root' });
+  el.pageStyle = h('style', { id: 'page-style' });
+  document.head.append(el.pageStyle);
+  const modeSeg = h('div', { class: 'seg modeseg', role: 'group', 'aria-label': 'What to work on' },
+    MODES.map(([m, l]) => h('button', { type: 'button', id: 'mode-' + m, 'data-mode': m, 'aria-pressed': 'false', onclick: () => setMode(m) }, l)));
   document.getElementById('root').append(h('div', { class: 'app' },
     h('header', { class: 'toolbar' },
       h('div', { class: 'brand' }, h('span', { class: 'mark' }), 'Prime Questions ', h('small', null, 'question bank')),
+      modeSeg,
       h('div', { class: 'spacer' }),
-      h('button', { class: 'btn primary', type: 'button', id: 'btn-new', onclick: () => newQuestion() }, h('span', { class: 'ic' }, '+'), 'New question'),
+      h('button', { class: 'btn primary', type: 'button', id: 'btn-new', onclick: () => newItem() }, h('span', { class: 'ic' }, '+'), el.newLabel),
       h('button', { class: 'btn', type: 'button', id: 'btn-import', onclick: () => fileInput.click() }, 'Import bank'),
       h('button', { class: 'btn primary', type: 'button', id: 'btn-export', onclick: () => exportBank() }, 'Export bank'),
       fileInput),
     h('div', { class: 'main' },
       h('aside', { class: 'panel' },
-        h('div', { class: 'panel-head' }, el.search, h('div', { class: 'filters' }, el.fType, el.fCourse, el.fStatus),
-          h('div', { class: 'panel-meta' }, h('h3', { class: 'section-title', style: 'margin:0' }, 'Questions'), el.count)),
+        h('div', { class: 'panel-head' }, el.search, el.filters, h('div', { class: 'panel-meta' }, el.panelTitle, el.count)),
         el.list),
       el.stage),
-    el.status));
+    el.status), el.printRoot);
   window.addEventListener('beforeunload', e => { if (state.editor && state.editor.dirty) { e.preventDefault(); e.returnValue = ''; } });
+  syncChrome();
+}
+
+// Toolbar and panel furniture that depends on the mode.
+function syncChrome() {
+  const m = state.mode;
+  document.querySelectorAll('.modeseg button').forEach(b => { const on = b.dataset.mode === m; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
+  el.filters.style.display = m === 'questions' ? '' : 'none';
+  el.search.value = m === 'questions' ? state.filter.text : state.search[m];
+  el.search.placeholder = 'Search ' + m + '…';
+  el.search.setAttribute('aria-label', 'Search ' + m);
+  el.panelTitle.textContent = cap(m);
+  el.newLabel.textContent = m === 'questions' ? 'New question' : m === 'stimuli' ? 'New stimulus' : 'New test';
+}
+
+async function setMode(m) {
+  if (m === state.mode) return;
+  if (!(await guardDirty())) return;
+  state.mode = m; state.editor = null; state.selectedId = null; lastField = null;
+  syncChrome(); renderPanel(); renderEditor();
 }
 
 function fillSelect(sel, firstLabel, values, current) {
@@ -1509,8 +1805,17 @@ function searchText(q) {
   return textFields(q).map(f => f.text).concat([q.course, q.unit, q.tags.join(' ')]).join('\n').toLowerCase();
 }
 const snippet = s => { const t = s.replace(/\\\(([\s\S]*?)\\\)/g, '[math]').replace(/\s+/g, ' ').trim(); return t.length > 110 ? t.slice(0, 107) + '…' : (t || '(no text yet)'); };
+const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many || one + 's');
 
-function renderList() {
+function renderPanel() {
+  const m = state.mode;
+  el.list.textContent = '';
+  if (m === 'questions') renderQuestionList();
+  else if (m === 'stimuli') renderStimulusList();
+  else renderTestList();
+}
+
+function renderQuestionList() {
   const f = state.filter, t = f.text.trim().toLowerCase();
   const courses = Array.from(new Set(state.questions.map(q => q.course).filter(Boolean))).sort();
   fillSelect(el.fType, 'All types', TYPES.map(x => [x, TYPE_LABEL[x]]), f.type);
@@ -1521,18 +1826,42 @@ function renderList() {
     .filter(q => (!f.type || q.type === f.type) && (!f.course || q.course === f.course) && (!f.status || q.status === f.status) && (!t || searchText(q).includes(t)))
     .sort((a, b) => Date.parse(b.updated) - Date.parse(a.updated));
   el.count.textContent = rows.length === state.questions.length ? String(rows.length) : rows.length + ' of ' + state.questions.length;
-  el.list.textContent = '';
   if (!rows.length) {
     el.list.append(h('li', { class: 'empty' }, state.questions.length
       ? 'No questions match these filters.'
       : 'No questions yet. Choose “New question”, or “Import bank” to bring in a bank you exported earlier.'));
   }
   for (const q of rows) {
-    el.list.append(h('li', null, h('button', { type: 'button', class: 'qrow' + (q.id === state.selectedId ? ' sel' : ''), 'data-id': q.id, onclick: () => openQuestion(q.id) },
+    el.list.append(h('li', null, h('button', { type: 'button', class: 'qrow' + (q.id === state.selectedId ? ' sel' : ''), 'data-id': q.id, onclick: () => openRecord('question', q.id) },
       h('span', { class: 'top' }, h('span', { class: 'badge' }, TYPE_SHORT[q.type]), q.status === 'review' ? h('span', { class: 'badge review' }, 'REVIEW') : null,
         h('span', { class: 'badge' }, cap(q.difficulty))),
       h('span', { class: 'snip' }, snippet(q.prompt)),
       (q.course || q.unit) ? h('span', { class: 'sub' }, [q.course, q.unit].filter(Boolean).join(' · ')) : null)));
+  }
+}
+
+function renderStimulusList() {
+  const t = state.search.stimuli.trim().toLowerCase();
+  const rows = state.stimuli.filter(s => !t || (s.title + '\n' + s.text).toLowerCase().includes(t)).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  el.count.textContent = rows.length === state.stimuli.length ? String(rows.length) : rows.length + ' of ' + state.stimuli.length;
+  if (!rows.length) el.list.append(h('li', { class: 'empty' }, state.stimuli.length ? 'No stimuli match this search.' : 'No stimuli yet. A stimulus is a passage, data table or picture that several questions share. Choose “New stimulus” to make one.'));
+  for (const s of rows) {
+    const n = state.questions.filter(q => q.stimulusId === s.id).length;
+    el.list.append(h('li', null, h('button', { type: 'button', class: 'qrow' + (s.id === state.selectedId ? ' sel' : ''), 'data-id': s.id, onclick: () => openRecord('stimulus', s.id) },
+      h('span', { class: 'snip' }, h('b', null, s.title || 'Untitled stimulus')),
+      h('span', { class: 'sub' }, plural(n, 'question') + ' use it' + (s.table ? ' · table' : '') + (s.imageIds.length ? ' · ' + plural(s.imageIds.length, 'image') : '')))));
+  }
+}
+
+function renderTestList() {
+  const t = state.search.tests.trim().toLowerCase();
+  const rows = state.tests.filter(x => !t || (x.title + '\n' + x.course).toLowerCase().includes(t)).sort((a, b) => Date.parse(b.updated) - Date.parse(a.updated));
+  el.count.textContent = rows.length === state.tests.length ? String(rows.length) : rows.length + ' of ' + state.tests.length;
+  if (!rows.length) el.list.append(h('li', { class: 'empty' }, state.tests.length ? 'No tests match this search.' : 'No tests yet. Choose “New test”, then add questions from your bank.'));
+  for (const x of rows) {
+    el.list.append(h('li', null, h('button', { type: 'button', class: 'qrow' + (x.id === state.selectedId ? ' sel' : ''), 'data-id': x.id, onclick: () => openRecord('test', x.id) },
+      h('span', { class: 'snip' }, h('b', null, x.title || 'Untitled test')),
+      h('span', { class: 'sub' }, [x.course, plural(x.questionIds.length, 'question')].filter(Boolean).join(' · ')))));
   }
 }
 
@@ -1558,7 +1887,7 @@ function renderStatus() {
     h('span', { class: 'stamp' }, 'v' + APP_VERSION));
 }
 
-/* === UI: editor === */
+/* === UI: insert buttons, editor frame === */
 const MATH_BUTTONS = [
   { label: '\\( \\)', title: 'Wrap selection in math delimiters', kind: 'delims' },
   { label: 'a/b', title: 'Fraction (select the numerator first, or just click)', withSel: '\\frac{¦}{§}', noSel: '\\frac{§}{}' },
@@ -1600,66 +1929,170 @@ function insertSnippet(btn) {
   f.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
+const KIND_LABEL = { question: 'question', stimulus: 'stimulus', test: 'test' };
+
 async function guardDirty() {
   if (!state.editor || !state.editor.dirty) return true;
   return modal({
     title: 'Discard unsaved changes?',
-    body: h('p', null, 'This question has changes that are not saved. If you leave now they will be lost.'),
+    body: h('p', null, 'This ' + KIND_LABEL[state.editor.kind] + ' has changes that are not saved. If you leave now they will be lost.'),
     actions: [{ label: 'Keep editing', value: false }, { label: 'Discard changes', value: true, kind: 'danger' }],
     dismissValue: false
   });
 }
 
-async function newQuestion() {
-  if (!(await guardDirty())) return;
-  const d = emptyQuestion('mc');
-  state.selectedId = null;
-  state.editor = { draft: d, original: clone(d), isNew: true, dirty: false, answers: { mc: d.answer }, lastNote: '' };
-  renderList(); renderEditor();
+function makeEditor(kind, draft, isNew) {
+  const ed = { kind, draft, original: clone(draft), isNew, dirty: false, pending: new Map(), answers: {}, lastNote: '' };
+  if (kind === 'question') ed.answers[draft.type] = draft.answer;
+  return ed;
 }
-async function openQuestion(id) {
+
+async function newItem() {
+  if (!(await guardDirty())) return;
+  const t = nowIso();
+  let kind, d;
+  if (state.mode === 'questions') { kind = 'question'; d = emptyQuestion('mc'); }
+  else if (state.mode === 'stimuli') { kind = 'stimulus'; d = { id: uuid(), title: '', text: '', imageIds: [], table: null, created: t, updated: t }; }
+  else { kind = 'test'; d = { id: uuid(), title: '', course: '', questionIds: [], seed: newSeed(), created: t, updated: t }; }
+  state.selectedId = null; lastField = null;
+  state.editor = makeEditor(kind, d, true);
+  renderPanel(); renderEditor();
+}
+async function openRecord(kind, id) {
   if (state.editor && state.editor.draft.id === id) return;
   if (!(await guardDirty())) return;
-  const q = state.questions.find(x => x.id === id);
-  if (!q) return;
-  state.selectedId = id;
-  const d = clone(q);
-  state.editor = { draft: d, original: clone(d), isNew: false, dirty: false, answers: { [d.type]: d.answer }, lastNote: '' };
-  renderList(); renderEditor();
+  const rec = (kind === 'question' ? state.questions : kind === 'stimulus' ? state.stimuli : state.tests).find(x => x.id === id);
+  if (!rec) return;
+  state.selectedId = id; lastField = null;
+  state.editor = makeEditor(kind, clone(rec), false);
+  renderPanel(); renderEditor();
 }
 async function closeEditor() {
   if (!(await guardDirty())) return;
   state.editor = null; state.selectedId = null; lastField = null;
-  renderList(); renderEditor();
+  renderPanel(); renderEditor();
 }
 
 function field(label, control, id) { return h('div', { class: 'field' }, h('label', { for: id }, label), control); }
+const EMPTY_HINT = {
+  questions: ['Pick a question from the list to edit it, or choose “New question”. ', 'Your questions are stored in this browser. Use “Export bank” often: the exported PDF is your backup, and you can import it on any computer.'],
+  stimuli: ['A stimulus is a passage, data table or picture that several questions share. Pick one to edit it, or choose “New stimulus”. ', 'Attach it to questions from the question editor. Questions that share a stimulus always print together under it.'],
+  tests: ['Pick a test to edit it, or choose “New test”. ', 'A test is an ordered list of questions from your bank. Version B reprints in a shuffled order, and each test can be printed with its answer key.']
+};
 
 function renderEditor() {
   const ed = state.editor;
   el.stage.textContent = '';
-  if (!ed) {
-    el.stage.append(h('div', { class: 'canvas-scroll' }, h('div', { class: 'empty', id: 'stage-empty' },
-      'Pick a question from the list to edit it, or choose “New question”. ',
-      'Your questions are stored in this browser. Use “Export bank” often: the exported PDF is your backup, and you can import it on any computer.')));
-    return;
-  }
-  const d = ed.draft;
-  el.titleBar = h('h2', null, ed.isNew ? 'New question' : 'Edit question');
+  if (!ed) { el.stage.append(h('div', { class: 'canvas-scroll' }, h('div', { class: 'empty', id: 'stage-empty' }, EMPTY_HINT[state.mode]))); return; }
+  el.titleBar = h('h2', null, (ed.isNew ? 'New ' : 'Edit ') + KIND_LABEL[ed.kind]);
   el.dirtyFlag = h('span', { class: 'dirty-flag', id: 'dirty-flag' });
-  el.saveBtn = h('button', { class: 'btn primary', type: 'button', id: 'btn-save', onclick: () => saveDraft() }, 'Save');
+  el.saveBtn = h('button', { class: 'btn primary', type: 'button', id: 'btn-save', onclick: () => saveCurrent() }, 'Save');
   el.stage.append(h('div', { class: 'stage-bar' }, el.titleBar, el.dirtyFlag, h('div', { class: 'spacer' }), el.saveBtn,
     h('button', { class: 'btn', type: 'button', id: 'btn-close', onclick: () => closeEditor() }, 'Close'),
-    ed.isNew ? null : h('button', { class: 'btn danger', type: 'button', id: 'btn-delete', onclick: () => deleteQuestion() }, 'Delete')));
+    ed.isNew ? null : h('button', { class: 'btn danger', type: 'button', id: 'btn-delete', onclick: () => deleteCurrent() }, 'Delete')));
+  const body = ed.kind === 'question' ? questionBody(ed) : ed.kind === 'stimulus' ? stimulusBody(ed) : testBody(ed);
+  el.stage.append(h('div', { class: 'canvas-scroll' }, body));
+  touch();
+}
 
-  // insert toolbar
-  const mathbar = h('div', { class: 'mathbar', role: 'toolbar', 'aria-label': 'Insert math' }, h('span', { class: 'lab' }, 'Insert'),
-    MATH_BUTTONS.map(b => h('button', { class: 'btn small', type: 'button', title: b.title, 'aria-label': b.title, onmousedown: e => e.preventDefault(), onclick: () => insertSnippet(b) }, b.label)));
+const mathbar = () => h('div', { class: 'mathbar', role: 'toolbar', 'aria-label': 'Insert math' }, h('span', { class: 'lab' }, 'Insert'),
+  MATH_BUTTONS.map(b => h('button', { class: 'btn small', type: 'button', title: b.title, 'aria-label': b.title, onmousedown: e => e.preventDefault(), onclick: () => insertSnippet(b) }, b.label)));
 
-  // type
+function touch() {
+  const ed = state.editor;
+  if (!ed) return;
+  if (ed.kind === 'question') touchQuestion(); else if (ed.kind === 'stimulus') touchStimulus(); else touchTest();
+}
+
+/* --- editor pieces shared by questions and stimuli --- */
+function renderTableEditor(host, owner, onChange) {
+  host.textContent = '';
+  const t = owner.table;
+  if (!t) {
+    host.append(h('p', { class: 'hint' }, 'No table. Add one for genuine data (rows and columns). Cells can hold maths.'),
+      h('button', { class: 'btn small', type: 'button', id: 'btn-add-table', onclick: () => { owner.table = { headers: ['', ''], rows: [['', '']], caption: '' }; renderTableEditor(host, owner, onChange); onChange(); } }, '+ Add a table'));
+    return;
+  }
+  const rerender = () => { renderTableEditor(host, owner, onChange); onChange(); };
+  const cell = (value, on, label) => h('input', { type: 'text', class: 'in', 'data-math': '', value, 'aria-label': label, oninput: e => { on(e.target.value); onChange(); } });
+  const cols = t.headers.length;
+  host.append(
+    field('Caption (optional)', h('input', { type: 'text', class: 'in', id: 'f-tcaption', 'data-math': '', value: t.caption, oninput: e => { t.caption = e.target.value; onChange(); } }), 'f-tcaption'),
+    h('div', { class: 'tbl-scroll' }, h('table', { class: 'tbl-edit' },
+      h('thead', null,
+        h('tr', null, t.headers.map((x, j) => h('th', null, cell(x, v => { t.headers[j] = v; }, 'Column ' + (j + 1) + ' heading'))), h('th', null)),
+        h('tr', null, t.headers.map((_, j) => h('td', { class: 'tbl-x' }, cols > 1 ? h('button', { class: 'xbtn', type: 'button', title: 'Remove column', 'aria-label': 'Remove column ' + (j + 1), onclick: () => { t.headers.splice(j, 1); t.rows.forEach(r => r.splice(j, 1)); rerender(); } }, '×') : null)), h('td', null))),
+      h('tbody', null, t.rows.map((r, i) => h('tr', null, r.map((x, j) => h('td', null, cell(x, v => { r[j] = v; }, 'Row ' + (i + 1) + ', column ' + (j + 1)))),
+        h('td', { class: 'tbl-x' }, t.rows.length > 1 ? h('button', { class: 'xbtn', type: 'button', title: 'Remove row', 'aria-label': 'Remove row ' + (i + 1), onclick: () => { t.rows.splice(i, 1); rerender(); } }, '×') : null)))))),
+    h('div', { class: 'opt-row', style: 'margin-top:8px' },
+      h('button', { class: 'btn small', type: 'button', id: 'btn-add-row', disabled: t.rows.length >= MAX_ROWS, onclick: () => { t.rows.push(t.headers.map(() => '')); rerender(); } }, '+ Row'),
+      h('button', { class: 'btn small', type: 'button', id: 'btn-add-col', disabled: cols >= MAX_COLS, onclick: () => { t.headers.push(''); t.rows.forEach(r => r.push('')); rerender(); } }, '+ Column'),
+      h('span', { class: 'spacer' }),
+      h('button', { class: 'btn small danger', type: 'button', id: 'btn-remove-table', onclick: async () => {
+        const any = t.caption || t.headers.some(Boolean) || t.rows.some(r => r.some(Boolean));
+        if (any && !(await modal({ title: 'Remove this table?', body: h('p', null, 'The table and everything typed in it will be removed from this ' + (state.editor ? KIND_LABEL[state.editor.kind] : 'item') + ' when you save.'), actions: [{ label: 'Keep it', value: false }, { label: 'Remove table', value: true, kind: 'danger' }], dismissValue: false }))) return;
+        owner.table = null; rerender();
+      } }, 'Remove table')));
+}
+
+function renderImageEditor(host, owner, ed, onChange) {
+  host.textContent = '';
+  const ids = owner.imageIds;
+  const file = h('input', { type: 'file', accept: 'image/png,image/jpeg,image/svg+xml', style: 'display:none', id: 'f-image-file', multiple: true, onchange: async e => {
+    const files = Array.from(e.target.files); e.target.value = '';
+    for (const f of files) {
+      if (owner.imageIds.length >= MAX_IMAGES) { toast('At most ' + MAX_IMAGES + ' images here.', 'warn'); break; }
+      try {
+        const blob = await processImageFile(f);
+        const id = uuid();
+        ed.pending.set(id, blob);
+        await ensureImageUrls([id], ed.pending);
+        owner.imageIds.push(id);
+      } catch (err) { toast(f.name + ': ' + (err && err.message || err), 'err'); }
+    }
+    renderImageEditor(host, owner, ed, onChange); onChange();
+  } });
+  host.append(
+    ids.length ? h('div', { class: 'thumbs' }, ids.map((id, i) => h('div', { class: 'thumb' },
+      imgUrls.has(id) ? h('img', { src: imgUrls.get(id), alt: 'Image ' + (i + 1) }) : h('span', { class: 'hint' }, '(not found)'),
+      h('button', { class: 'xbtn', type: 'button', title: 'Remove image', 'aria-label': 'Remove image ' + (i + 1), onclick: () => { owner.imageIds.splice(i, 1); ed.pending.delete(id); renderImageEditor(host, owner, ed, onChange); onChange(); } }, '×')))) : h('p', { class: 'hint' }, 'No images. PNG or JPEG (resized to fit about 1600 px) or SVG.'),
+    h('div', { class: 'opt-row', style: 'margin-top:8px' }, h('button', { class: 'btn small', type: 'button', id: 'btn-add-image', disabled: ids.length >= MAX_IMAGES, onclick: () => file.click() }, '+ Add image'),
+      h('span', { class: 'hint' }, plural(ids.length, 'image') + ' of ' + MAX_IMAGES)), file);
+}
+
+let previewSeq = 0;
+async function updatePreview() {
+  const ed = state.editor;
+  if (!ed || ed.kind === 'test' || !el.preview || !el.preview.isConnected) return;
+  const seq = ++previewSeq;
+  let lines, ids;
+  if (ed.kind === 'question') {
+    const stim = new Map(state.stimuli.map(s => [s.id, s]));
+    const s = ed.draft.stimulusId && stim.get(ed.draft.stimulusId);
+    ids = ed.draft.imageIds.concat(s ? s.imageIds : []);
+    lines = blockLines(ed.draft, '', { stim, rich: true }).filter(l => l.k !== 'title');
+  } else { ids = ed.draft.imageIds; lines = stimulusLines(ed.draft, true); }
+  await ensureImageUrls(ids, ed.pending);
+  if (seq !== previewSeq || !el.preview.isConnected) return;
+  el.preview.textContent = '';
+  el.preview.append(h('style', null, blockCss(4 / 3, '#preview .pb')), buildBlockDom(lines));
+  renderMath(el.preview);
+}
+let previewTimer = null;
+const schedulePreview = () => { clearTimeout(previewTimer); previewTimer = setTimeout(updatePreview, 90); };
+
+function problemsList(host, problems, okText, note) {
+  host.textContent = '';
+  if (note && problems.length) host.append(h('div', { class: 'note-box' }, note));
+  if (!problems.length) host.append(h('p', { class: 'ok-line' }, h('b', null, '✓ '), okText));
+  else host.append(h('ul', { class: 'problems' }, problems.map(p => h('li', null, h('span', { class: 'kind' }, p.kind === 'math' ? 'MATHS' : 'MISSING'), ' · ', h('b', null, p.field), ' ', p.message))));
+}
+
+/* --- question editor --- */
+function questionBody(ed) {
+  const d = ed.draft;
   const typeSeg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Question type' }, TYPES.map(t =>
     h('button', { type: 'button', class: d.type === t ? 'active' : '', 'data-type': t, 'aria-pressed': String(d.type === t), onclick: () => setType(t) }, TYPE_LABEL[t])));
-
   el.prompt = h('textarea', { id: 'f-prompt', 'data-math': '', rows: '4', value: d.prompt, oninput: e => { d.prompt = e.target.value; touch(); } });
   el.answerHost = h('div');
   const coursesList = Array.from(new Set(state.questions.map(q => q.course).filter(Boolean)));
@@ -1668,8 +2101,17 @@ function renderEditor() {
   el.difficulty.value = d.difficulty;
   el.statusSel = h('select', { id: 'f-status', onchange: e => { d.status = e.target.value; touch(); } }, STATUSES.map(x => h('option', { value: x }, STATUS_LABEL[x])));
   el.statusSel.value = d.status;
+  const stims = state.stimuli.slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  const stimSel = h('select', { id: 'f-stimulus', onchange: e => { d.stimulusId = e.target.value || null; touch(); } },
+    h('option', { value: '' }, 'None'), stims.map(s => h('option', { value: s.id }, s.title || 'Untitled stimulus')),
+    d.stimulusId && !stims.some(s => s.id === d.stimulusId) ? h('option', { value: d.stimulusId }, '(missing stimulus)') : null);
+  stimSel.value = d.stimulusId || '';
   el.problems = h('div', { id: 'problems' });
   el.preview = h('div', { class: 'paper', id: 'preview' });
+  el.tableHost = h('div', { id: 'table-host' });
+  el.imgHost = h('div', { id: 'img-host' });
+  renderTableEditor(el.tableHost, d, () => touch());
+  renderImageEditor(el.imgHost, d, ed, () => touch());
 
   const details = h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Details'),
     h('div', { class: 'row2' },
@@ -1682,19 +2124,21 @@ function renderEditor() {
     h('p', { class: 'hint', style: 'margin:-4px 0 12px' }, '“Needs review” is for questions that still need a human check. A question can only be “Ready” when nothing is wrong with it (see Problems).'),
     field('Notes (not shown to students)', h('textarea', { id: 'f-notes', 'data-math': '', rows: '3', value: d.notes, oninput: e => { d.notes = e.target.value; touch(); } }), 'f-notes'));
 
-  el.stage.append(h('div', { class: 'canvas-scroll' }, mathbar,
-    h('div', { class: 'editor-grid' },
-      h('div', { class: 'col-form' },
-        h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Type'), typeSeg),
-        h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Question'), field('Question text', el.prompt, 'f-prompt'),
-          h('p', { class: 'hint', style: 'margin:0' }, 'Write maths between \\( and \\), for example \\(\\frac{3}{4}\\). Use the Insert buttons if you do not know LaTeX. Dollar signs are just money.')),
-        h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Answer'), el.answerHost),
-        details),
-      h('div', { class: 'col-preview' },
-        h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Problems'), el.problems),
-        h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Preview'), el.preview)))));
+  const grid = h('div', { class: 'editor-grid' },
+    h('div', { class: 'col-form' },
+      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Type'), typeSeg),
+      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Question'), field('Question text', el.prompt, 'f-prompt'),
+        h('p', { class: 'hint', style: 'margin:0 0 12px' }, 'Write maths between \\( and \\), for example \\(\\frac{3}{4}\\). Use the Insert buttons if you do not know LaTeX. Dollar signs are just money.'),
+        field('Shared stimulus (optional)', stimSel, 'f-stimulus')),
+      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Answer'), el.answerHost),
+      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Table (optional)'), el.tableHost),
+      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Images (optional)'), el.imgHost),
+      details),
+    h('div', { class: 'col-preview' },
+      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Problems'), el.problems),
+      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Preview'), el.preview)));
   renderAnswer();
-  touch();
+  return [mathbar(), grid];
 }
 
 function setType(t) {
@@ -1704,6 +2148,7 @@ function setType(t) {
   d.type = t;
   d.answer = ed.answers[t] || defaultAnswer(t);
   ed.answers[t] = d.answer;
+  if (t !== 'mc') delete d.keepOrder;
   document.querySelectorAll('.seg button[data-type]').forEach(b => { const on = b.dataset.type === t; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
   renderAnswer(); touch();
 }
@@ -1719,7 +2164,9 @@ function renderAnswer() {
       textIn(o, v => { a.options[i] = v; }, { 'aria-label': 'Option ' + letter(i), placeholder: 'Option ' + letter(i) }),
       a.options.length > 2 ? h('button', { class: 'xbtn', type: 'button', title: 'Remove option', 'aria-label': 'Remove option ' + letter(i), onclick: () => { a.options.splice(i, 1); if (a.correct >= a.options.length) a.correct = a.options.length - 1; else if (a.correct > i) a.correct--; renderAnswer(); touch(); } }, '×') : null)));
     host.append(h('div', { class: 'opt-row' }, h('button', { class: 'btn small', type: 'button', disabled: a.options.length >= 8, onclick: () => { a.options.push(''); renderAnswer(); touch(); } }, '+ Add option'),
-      h('span', { class: 'hint' }, 'Select the round button beside the correct option.')));
+      h('span', { class: 'hint' }, 'Select the round button beside the correct option.')),
+      h('label', { class: 'check', style: 'margin:10px 0 0' }, h('input', { type: 'checkbox', id: 'f-keeporder', checked: d.keepOrder === true, onchange: e => { if (e.target.checked) d.keepOrder = true; else delete d.keepOrder; touch(); } }),
+        'Keep these options in this order in Version B (use for “All of the above” or “Both A and B”)'));
   } else if (d.type === 'tf') {
     host.append(h('div', { class: 'seg', role: 'group', 'aria-label': 'Correct answer' }, [[true, 'True'], [false, 'False']].map(([v, l]) =>
       h('button', { type: 'button', class: a.correct === v ? 'active' : '', 'aria-pressed': String(a.correct === v), onclick: e => { a.correct = v; host.querySelectorAll('.seg button').forEach(b => { const on = b === e.currentTarget; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); }); touch(); } }, l))));
@@ -1742,11 +2189,8 @@ function renderAnswer() {
   }
 }
 
-let previewTimer = null;
-function touch() {
-  const ed = state.editor;
-  if (!ed) return;
-  const d = ed.draft;
+function touchQuestion() {
+  const ed = state.editor, d = ed.draft;
   ed.dirty = stable(d) !== stable(ed.original);
   const problems = checkQuestion(d);
   // "ready" is only allowed when nothing is wrong
@@ -1758,25 +2202,12 @@ function touch() {
   for (const o of el.statusSel.options) if (o.value === 'ready') o.disabled = problems.length > 0;
   el.dirtyFlag.textContent = ed.dirty ? '● Unsaved changes' : '';
   el.saveBtn.disabled = !ed.dirty;
-  el.problems.textContent = '';
-  if (ed.lastNote && problems.length) el.problems.append(h('div', { class: 'note-box' }, ed.lastNote));
-  if (!problems.length) { ed.lastNote = ''; el.problems.append(h('p', { class: 'ok-line' }, h('b', null, '✓ '), 'No problems. This question can be marked Ready.')); }
-  else el.problems.append(h('ul', { class: 'problems' }, problems.map(p => h('li', null, h('span', { class: 'kind' }, p.kind === 'math' ? 'MATHS' : 'MISSING'), ' · ', h('b', null, p.field), ' ', p.message))));
-  clearTimeout(previewTimer);
-  previewTimer = setTimeout(updatePreview, 90);
+  if (!problems.length) ed.lastNote = '';
+  problemsList(el.problems, problems, 'No problems. This question can be marked Ready.', ed.lastNote);
+  schedulePreview();
 }
 
-function updatePreview() {
-  const ed = state.editor;
-  if (!ed || !el.preview.isConnected) return;
-  const stim = new Map(state.stimuli.map(s => [s.id, s]));
-  const lines = blockLines(ed.draft, '', { stim }).filter(l => l.k !== 'title');
-  el.preview.textContent = '';
-  el.preview.append(h('style', null, blockCss(4 / 3, '#preview .pb')), buildBlockDom(lines));
-  renderMath(el.preview);
-}
-
-function normalizeDraft(d) {
+function normalizeQuestion(d) {
   d.prompt = d.prompt.trim(); d.course = d.course.trim(); d.unit = d.unit.trim(); d.notes = d.notes.trim();
   d.tags = Array.from(new Set(d.tags));
   const a = d.answer;
@@ -1784,42 +2215,342 @@ function normalizeDraft(d) {
   if (d.type === 'numeric') { a.value = a.value.trim(); a.units = a.units.trim(); }
   if (d.type === 'short') a.rubric = a.rubric.trim();
   if (d.type === 'matching') a.pairs = a.pairs.map(p => ({ left: p.left.trim(), right: p.right.trim() }));
+  if (d.type !== 'mc' || d.keepOrder !== true) delete d.keepOrder;
+  normalizeTable(d);
+}
+function normalizeTable(d) {
+  if (!d.table) return;
+  d.table.caption = d.table.caption.trim();
+  d.table.headers = d.table.headers.map(x => x.trim());
+  d.table.rows = d.table.rows.map(r => r.map(x => x.trim()));
 }
 
-async function saveDraft() {
+/* --- stimulus editor --- */
+function stimulusBody(ed) {
+  const d = ed.draft;
+  el.stimTitle = h('input', { type: 'text', class: 'in', id: 'f-title', value: d.title, oninput: e => { d.title = e.target.value; touch(); } });
+  el.stimText = h('textarea', { id: 'f-stim-text', 'data-math': '', rows: '6', value: d.text, oninput: e => { d.text = e.target.value; touch(); } });
+  el.problems = h('div', { id: 'problems' });
+  el.preview = h('div', { class: 'paper', id: 'preview' });
+  el.tableHost = h('div', { id: 'table-host' });
+  el.imgHost = h('div', { id: 'img-host' });
+  renderTableEditor(el.tableHost, d, () => touch());
+  renderImageEditor(el.imgHost, d, ed, () => touch());
+  return [mathbar(), h('div', { class: 'editor-grid' },
+    h('div', { class: 'col-form' },
+      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Stimulus'),
+        field('Title (so you can find it)', el.stimTitle, 'f-title'),
+        field('Text (a passage, a description of a diagram, instructions…)', el.stimText, 'f-stim-text'),
+        h('p', { class: 'hint', style: 'margin:0' }, 'Questions that use this stimulus are printed together directly after it. Maths works here too.')),
+      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Table (optional)'), el.tableHost),
+      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Images (optional)'), el.imgHost)),
+    h('div', { class: 'col-preview' },
+      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Problems'), el.problems),
+      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Preview'), el.preview)))];
+}
+
+function checkStimulus(s) {
+  const out = [];
+  if (!String(s.title || '').trim()) out.push({ kind: 'incomplete', field: 'Title', message: 'is empty. Give it a title so you can find it' });
+  const f = [{ field: 'Text', text: s.text || '' }].concat(tableFields(s.table, 'Table'));
+  for (const x of f) for (const m of mathErrors(String(x.text))) out.push({ kind: 'math', field: x.field, message: m });
+  return out;
+}
+function touchStimulus() {
+  const ed = state.editor, d = ed.draft;
+  ed.dirty = stable(d) !== stable(ed.original);
+  el.dirtyFlag.textContent = ed.dirty ? '● Unsaved changes' : '';
+  el.saveBtn.disabled = !ed.dirty || !d.title.trim();
+  problemsList(el.problems, checkStimulus(d), 'No problems.');
+  schedulePreview();
+}
+
+/* --- test editor --- */
+const PICK_MAX = 200;
+function testBody(ed) {
+  const d = ed.draft;
+  ed.pickText = ''; ed.pickType = ''; ed.pv = 'A';
+  const paper = ls.get('paper') in PAPERS ? ls.get('paper') : 'letter';
+  const coursesList = Array.from(new Set(state.questions.map(q => q.course).filter(Boolean)));
+  el.testList = h('div', { id: 'test-list' });
+  el.picker = h('div', { id: 'picker' });
+  el.testWarn = h('div', { id: 'test-warn' });
+  el.sheetHost = h('div', { id: 'sheet-preview', class: 'paper-sheet' });
+  el.seedVal = h('span', { class: 'mono', id: 'seed-val' }, String(d.seed));
+  el.printBtns = ['A', 'B', 'KA', 'KB'].map(v => h('button', { class: 'btn' + (v === 'A' ? ' primary' : ''), type: 'button', id: 'btn-print-' + v.toLowerCase(), onclick: () => printSheet(v[0] === 'K' ? 'key' : 'test', v.slice(-1)) },
+    v === 'A' ? 'Print Version A' : v === 'B' ? 'Print Version B' : 'Answer key ' + v[1]));
+  el.pvSeg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Preview' }, [['A', 'Test A'], ['B', 'Test B'], ['KA', 'Key A'], ['KB', 'Key B']].map(([v, l]) =>
+    h('button', { type: 'button', id: 'pv-' + v.toLowerCase(), class: v === 'A' ? 'active' : '', 'data-pv': v, 'aria-pressed': String(v === 'A'), onclick: () => { ed.pv = v; el.pvSeg.querySelectorAll('button').forEach(b => { const on = b.dataset.pv === v; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); }); updateSheetPreview(); } }, l)));
+  const paperSel = h('select', { id: 'f-paper', 'aria-label': 'Paper size', onchange: e => { ls.set('paper', e.target.value); } }, Object.keys(PAPERS).map(k => h('option', { value: k }, PAPERS[k].label)));
+  paperSel.value = paper;
+  renderTestLists();
+  return [h('div', { class: 'editor-grid' },
+    h('div', { class: 'col-form' },
+      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Test'),
+        h('div', { class: 'row2' },
+          field('Title', h('input', { type: 'text', class: 'in', id: 'f-test-title', value: d.title, oninput: e => { d.title = e.target.value; touch(); } }), 'f-test-title'),
+          field('Course', h('input', { type: 'text', class: 'in', id: 'f-test-course', list: 'dl-tcourses', value: d.course, oninput: e => { d.course = e.target.value; touch(); } }), 'f-test-course')),
+        h('datalist', { id: 'dl-tcourses' }, coursesList.map(c => h('option', { value: c })))),
+      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'In this test'),
+        h('p', { class: 'hint', style: 'margin-top:0' }, 'The order you set here is Version A. Questions that share a stimulus always print together under it, at the place of the first one.'),
+        el.testList),
+      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Add from your question bank'), el.picker)),
+    h('div', { class: 'col-preview' },
+      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Print'),
+        h('div', { class: 'print-grid' }, el.printBtns),
+        h('div', { class: 'row2', style: 'margin-top:12px' }, field('Paper', paperSel, 'f-paper'),
+          h('div', { class: 'field' }, h('label', null, 'Version B shuffle'), h('div', { class: 'opt-row', style: 'margin:0' }, el.seedVal,
+            h('button', { class: 'btn small', type: 'button', id: 'btn-reseed', onclick: async () => {
+              if (!ed.isNew && !(await modal({ title: 'Reshuffle Version B?', body: h('p', null, 'Version B will print in a different order than any copies you have already printed. Version A is not affected.'), actions: [{ label: 'Keep current shuffle', value: false }, { label: 'Reshuffle', value: true, kind: 'danger' }], dismissValue: false }))) return;
+              d.seed = newSeed(); el.seedVal.textContent = String(d.seed); touch();
+            } }, 'New shuffle')))),
+        h('p', { class: 'hint', style: 'margin:8px 0 0' }, 'Print opens your browser’s print dialog. Choose “Save as PDF” there to make a file.')),
+      h('div', { class: 'card' }, h('h3', { class: 'section-title' }, 'Check'), el.testWarn))),
+  h('div', { class: 'card' }, h('div', { class: 'opt-row', style: 'justify-content:space-between;margin-bottom:12px' }, h('h3', { class: 'section-title', style: 'margin:0' }, 'Preview'), el.pvSeg), el.sheetHost)];
+}
+
+// Rebuild the "In this test" list and the picker (after any change to which questions are in the test).
+function renderTestLists() {
+  const ed = state.editor, d = ed.draft;
+  const qById = new Map(state.questions.map(q => [q.id, q]));
+  const sById = new Map(state.stimuli.map(s => [s.id, s]));
+  const move = (i, dir) => { const j = i + dir; if (j < 0 || j >= d.questionIds.length) return; const t = d.questionIds[i]; d.questionIds[i] = d.questionIds[j]; d.questionIds[j] = t; renderTestLists(); touch(); };
+  el.testList.textContent = '';
+  if (!d.questionIds.length) el.testList.append(h('div', { class: 'empty' }, 'No questions yet. Add some from the list below.'));
+  d.questionIds.forEach((id, i) => {
+    const q = qById.get(id);
+    el.testList.append(h('div', { class: 'trow' + (q ? '' : ' missing'), 'data-id': id },
+      h('span', { class: 'num' }, String(i + 1)),
+      h('span', { class: 'tmain' },
+        q ? h('span', { class: 'top' }, h('span', { class: 'badge' }, TYPE_SHORT[q.type]), q.status === 'review' ? h('span', { class: 'badge review' }, 'REVIEW') : null,
+          q.stimulusId && sById.has(q.stimulusId) ? h('span', { class: 'badge' }, 'STIMULUS: ' + (sById.get(q.stimulusId).title || 'Untitled')) : null,
+          q.keepOrder ? h('span', { class: 'badge' }, 'OPTIONS KEPT IN ORDER') : null) : null,
+        h('span', { class: 'snip' }, q ? snippet(q.prompt) : '(This question is no longer in the bank. It will be skipped.)')),
+      h('span', { class: 'tbtns' },
+        h('button', { class: 'xbtn', type: 'button', title: 'Move up', 'aria-label': 'Move question ' + (i + 1) + ' up', disabled: i === 0, onclick: () => move(i, -1) }, '↑'),
+        h('button', { class: 'xbtn', type: 'button', title: 'Move down', 'aria-label': 'Move question ' + (i + 1) + ' down', disabled: i === d.questionIds.length - 1, onclick: () => move(i, 1) }, '↓'),
+        h('button', { class: 'xbtn', type: 'button', title: 'Remove from test', 'aria-label': 'Remove question ' + (i + 1) + ' from the test', onclick: () => { d.questionIds.splice(i, 1); renderTestLists(); touch(); } }, '×'))));
+  });
+  // picker: questions not in the test yet
+  const inTest = new Set(d.questionIds);
+  const t = ed.pickText.trim().toLowerCase();
+  const avail = state.questions.filter(q => !inTest.has(q.id) && (!ed.pickType || q.type === ed.pickType) && (!t || searchText(q).includes(t))).sort((a, b) => Date.parse(b.updated) - Date.parse(a.updated));
+  el.picker.textContent = '';
+  el.picker.append(h('div', { class: 'opt-row' },
+    h('input', { type: 'text', class: 'in', id: 'f-pick', placeholder: 'Search the bank…', 'aria-label': 'Search the bank', value: ed.pickText, oninput: e => { ed.pickText = e.target.value; renderTestLists(); const f = document.getElementById('f-pick'); if (f) { f.focus(); f.setSelectionRange(f.value.length, f.value.length); } } }),
+    (() => { const s = h('select', { id: 'f-picktype', 'aria-label': 'Filter by type', onchange: e => { ed.pickType = e.target.value; renderTestLists(); } }, h('option', { value: '' }, 'All types'), TYPES.map(x => h('option', { value: x }, TYPE_LABEL[x]))); s.value = ed.pickType; return s; })()));
+  if (!avail.length) el.picker.append(h('div', { class: 'empty' }, state.questions.length ? (inTest.size === state.questions.length ? 'Every question in your bank is already in this test.' : 'No questions match.') : 'Your bank is empty. Add questions in the Questions tab first.'));
+  else {
+    el.picker.append(h('div', { class: 'opt-row' }, h('span', { class: 'hint' }, plural(avail.length, 'question') + (avail.length > PICK_MAX ? ' (showing the first ' + PICK_MAX + ')' : '')), h('span', { class: 'spacer' }),
+      h('button', { class: 'btn small', type: 'button', id: 'btn-add-all', onclick: () => { for (const q of avail.slice(0, PICK_MAX)) d.questionIds.push(q.id); renderTestLists(); touch(); } }, 'Add all shown')));
+    for (const q of avail.slice(0, PICK_MAX)) {
+      el.picker.append(h('div', { class: 'trow', 'data-id': q.id },
+        h('span', { class: 'tmain' }, h('span', { class: 'top' }, h('span', { class: 'badge' }, TYPE_SHORT[q.type]), q.status === 'review' ? h('span', { class: 'badge review' }, 'REVIEW') : null, q.course ? h('span', { class: 'badge' }, q.course) : null),
+          h('span', { class: 'snip' }, snippet(q.prompt))),
+        h('button', { class: 'btn small', type: 'button', 'aria-label': 'Add to test: ' + snippet(q.prompt), onclick: () => { d.questionIds.push(q.id); renderTestLists(); touch(); } }, '+ Add')));
+    }
+  }
+}
+
+// "Does this question have problems?" is slow (it renders every maths snippet), so remember it per saved version of a question.
+const problemCache = new Map();
+function hasProblems(q) {
+  const k = q.id + '|' + q.updated;
+  let v = problemCache.get(k);
+  if (v === undefined) { v = checkQuestion(q).length > 0; problemCache.set(k, v); }
+  return v;
+}
+
+function touchTest() {
+  const ed = state.editor, d = ed.draft;
+  ed.dirty = stable(d) !== stable(ed.original);
+  el.dirtyFlag.textContent = ed.dirty ? '● Unsaved changes' : '';
+  el.saveBtn.disabled = !ed.dirty || !d.title.trim();
+  const qById = new Map(state.questions.map(q => [q.id, q]));
+  const present = d.questionIds.map(id => qById.get(id)).filter(Boolean);
+  const missing = d.questionIds.length - present.length;
+  const review = present.filter(q => q.status === 'review').length;
+  const bad = present.filter(hasProblems).length;
+  const hinty = present.filter(q => q.type === 'mc' && !q.keepOrder && q.answer.options.some(o => /\b(all|none)\s+of\s+the\s+above\b/i.test(o)));
+  const items = [];
+  if (!d.title.trim()) items.push(['warn', 'Give the test a title to save it.']);
+  if (!d.questionIds.length) items.push(['warn', 'Add questions to enable printing.']);
+  if (missing) items.push(['warn', plural(missing, 'question') + ' in this test ' + (missing === 1 ? 'is' : 'are') + ' no longer in the bank and will be skipped.']);
+  if (review) items.push(['warn', plural(review, 'question') + ' ' + (review === 1 ? 'is' : 'are') + ' marked “Needs review”.']);
+  if (bad) items.push(['warn', plural(bad, 'question') + ' ' + (bad === 1 ? 'has' : 'have') + ' problems (missing answers or broken maths). Open them in the Questions tab.']);
+  for (const q of hinty) items.push(['warn', 'Version B will shuffle the options of “' + snippet(q.prompt).slice(0, 50) + '”, which has an “all/none of the above” option. Open it and tick “Keep these options in this order”.']);
+  el.testWarn.textContent = '';
+  el.testWarn.append(items.length ? h('ul', { class: 'problems' }, items.map(([, m]) => h('li', null, m))) : h('p', { class: 'ok-line' }, h('b', null, '✓ '), 'Ready to print: ' + plural(present.length, 'question') + '.'));
+  for (const b of el.printBtns) b.disabled = !present.length;
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(updateSheetPreview, 120);
+}
+
+async function updateSheetPreview() {
+  const ed = state.editor;
+  if (!ed || ed.kind !== 'test' || !el.sheetHost || !el.sheetHost.isConnected) return;
+  const seq = ++previewSeq;
+  const kind = ed.pv[0] === 'K' ? 'key' : 'test', version = ed.pv.slice(-1);
+  const plan = planTest(ed.draft, state.questions, state.stimuli, version);
+  await ensureImageUrls(planImageIds(plan), null);
+  if (seq !== previewSeq || !el.sheetHost.isConnected) return;
+  el.sheetHost.textContent = '';
+  if (!plan.total) { el.sheetHost.append(h('div', { class: 'empty' }, 'Add questions to see the test here.')); return; }
+  const sheet = buildSheet(plan, kind);
+  el.sheetHost.append(sheet);
+  renderMath(sheet);
+}
+
+/* === PRINT: the test paper and the answer key (same DOM for preview and print) === */
+const planImageIds = plan => plan.blocks.flatMap(b => (b.stimulus ? b.stimulus.imageIds : []).concat(...b.items.map(i => i.q.imageIds)));
+
+function buildQuestionDom(it) {
+  const q = it.q, v = it.view;
+  const body = h('div', { class: 'tp-body' }, h('div', { class: 'tp-text tp-prompt' }, q.prompt));
+  if (q.table) body.append(buildTableDom(q.table));
+  if (q.imageIds.length) body.append(buildImgsDom(q.imageIds, 'tp-imgs'));
+  if (v.type === 'mc') body.append(h('div', { class: 'tp-opts' }, v.options.map((o, i) => h('div', { class: 'tp-opt' }, h('span', { class: 'tp-let' }, letter(i) + '.'), h('span', { class: 'tp-text' }, o.text)))));
+  else if (v.type === 'tf') body.append(h('div', { class: 'tp-tf' }, 'Circle one:', h('span', { class: 'tp-tfopt' }, 'True'), h('span', { class: 'tp-tfopt' }, 'False')));
+  else if (v.type === 'numeric') body.append(h('div', { class: 'tp-numeric' }, 'Answer:', h('span', { class: 'tp-blankline' })));
+  else if (v.type === 'short') body.append(h('div', { class: 'tp-rules' }, Array.from({ length: v.lines }, () => h('div', { class: 'tp-rule' }))));
+  else body.append(h('div', { class: 'tp-match' },
+    h('div', { class: 'tp-mcol' }, v.left.map((l, i) => h('div', { class: 'tp-mrow l' }, h('span', { class: 'tp-mblank' }), h('span', { class: 'tp-let' }, (i + 1) + '.'), h('span', { class: 'tp-text' }, l)))),
+    h('div', { class: 'tp-mcol' }, v.right.map((r, i) => h('div', { class: 'tp-mrow r' }, h('span', { class: 'tp-let' }, letter(i) + '.'), h('span', { class: 'tp-text' }, r))))));
+  return h('div', { class: 'tp-q', 'data-n': String(it.number) }, h('span', { class: 'tp-num' }, it.number + '.'), body);
+}
+
+function buildSheet(plan, kind) {
+  const root = h('div', { class: 'sheet' });
+  const head = h('div', { class: 'tp-head' },
+    h('div', { class: 'tp-version' }, kind === 'key' ? 'Answer Key · Version ' + plan.version : 'Version ' + plan.version),
+    h('h1', null, plan.title || 'Untitled test'), plan.course ? h('div', { class: 'tp-sub' }, plan.course) : null);
+  if (kind === 'test') head.append(h('div', { class: 'tp-lines' }, h('div', { class: 'tp-line' }, 'Name:'), h('div', { class: 'tp-line tp-short' }, 'Date:')));
+  root.append(head);
+  if (kind === 'test') {
+    for (const b of plan.blocks) {
+      const wrap = h('section', { class: 'tp-block' });
+      if (b.stimulus) {
+        const nums = b.items.map(i => i.number);
+        wrap.append(h('div', { class: 'tp-intro' }, 'Use the information below to answer ' + (nums.length > 1 ? 'questions ' + nums[0] + ' to ' + nums[nums.length - 1] : 'question ' + nums[0]) + '.'));
+        const st = h('div', { class: 'tp-stim' });
+        if (b.stimulus.title) st.append(h('div', { class: 'tp-stim-title' }, b.stimulus.title));
+        if (b.stimulus.text) st.append(h('div', { class: 'tp-text' }, b.stimulus.text));
+        if (b.stimulus.table) st.append(buildTableDom(b.stimulus.table));
+        if (b.stimulus.imageIds.length) st.append(buildImgsDom(b.stimulus.imageIds, 'tp-imgs'));
+        wrap.append(st);
+      }
+      for (const it of b.items) wrap.append(buildQuestionDom(it));
+      root.append(wrap);
+    }
+  } else {
+    const B = plan.version === 'B';
+    root.append(h('table', { class: 'tp-key' },
+      h('thead', null, h('tr', null, h('th', null, B ? 'B' : 'No.'), B ? h('th', null, 'is A') : null, h('th', null, B ? 'Answer (as printed on Version B)' : 'Answer'))),
+      h('tbody', null, keyEntries(plan).map(e => h('tr', null, h('td', null, String(e.number)), B ? h('td', null, 'A' + e.aNumber) : null, h('td', { class: 'tp-text' }, e.text))))));
+  }
+  return root;
+}
+
+// Put the sheet in the print-only area and set the page size. window.print() is the caller's job (tests skip it).
+async function preparePrint(kind, version, test) {
+  const plan = planTest(test, state.questions, state.stimuli, version);
+  await ensureImageUrls(planImageIds(plan), null);
+  const sheet = buildSheet(plan, kind);
+  el.printRoot.textContent = '';
+  el.printRoot.append(sheet);
+  renderMath(sheet);
+  const paper = ls.get('paper') in PAPERS ? ls.get('paper') : 'letter';
+  el.pageStyle.textContent = '@page{size:' + PAPERS[paper].css + ' portrait;margin:16mm 14mm 18mm;}';
+  await Promise.all(Array.from(sheet.querySelectorAll('img')).map(i => (i.decode ? i.decode().catch(() => {}) : Promise.resolve())));
+  return plan;
+}
+async function printSheet(kind, version) {
+  const ed = state.editor;
+  if (!ed || ed.kind !== 'test') return;
+  const plan = await preparePrint(kind, version, ed.draft);
+  if (!plan.total) { toast('Add questions first.', 'warn'); return; }
+  const prev = document.title;
+  document.title = (ed.draft.title || 'Test') + ' - ' + (kind === 'key' ? 'Answer key ' : 'Version ') + version;
+  const restore = () => { document.title = prev; };
+  window.addEventListener('afterprint', restore, { once: true });
+  window.print();
+  restore();
+}
+
+/* === SAVE and DELETE === */
+async function saveCurrent() {
   const ed = state.editor;
   if (!ed || !ed.dirty) return;
   const d = clone(ed.draft);
-  normalizeDraft(d);
-  const problems = checkQuestion(d);
-  if (d.status === 'ready' && problems.length) { toast('Fix the problems first, or set the status to “Needs review”.', 'err'); return; }
+  const batch = {};
+  let coll, list;
+  if (ed.kind === 'question') {
+    normalizeQuestion(d);
+    const problems = checkQuestion(d);
+    if (d.status === 'ready' && problems.length) { toast('Fix the problems first, or set the status to “Needs review”.', 'err'); return; }
+    coll = 'questions'; list = state.questions;
+  } else if (ed.kind === 'stimulus') {
+    d.title = d.title.trim(); d.text = d.text.trim(); normalizeTable(d);
+    if (!d.title) { toast('Give the stimulus a title first.', 'err'); return; }
+    coll = 'stimuli'; list = state.stimuli;
+  } else {
+    d.title = d.title.trim(); d.course = d.course.trim();
+    if (!d.title) { toast('Give the test a title first.', 'err'); return; }
+    coll = 'tests'; list = state.tests;
+  }
   d.updated = nowIso();
+  batch[coll] = [d];
+  const newImages = (d.imageIds || []).filter(id => ed.pending.has(id)).map(id => ({ id, blob: ed.pending.get(id) }));
+  if (newImages.length) batch.images = newImages;
   try {
     await ensurePersist();
-    await db.put('questions', d);
+    await db.applyBatch(batch);
   } catch (e) { toast('Could not save: ' + (e && e.message || e) + ' Your edits are still on screen. Export what you have, then try again.', 'err'); return; }
-  const i = state.questions.findIndex(q => q.id === d.id);
-  if (i >= 0) state.questions[i] = d; else state.questions.push(d);
+  const i = list.findIndex(x => x.id === d.id);
+  if (i >= 0) list[i] = d; else list.push(d);
+  for (const im of newImages) { state.imageIds.add(im.id); ed.pending.delete(im.id); }
   state.selectedId = d.id;
-  ed.draft = clone(d); ed.original = clone(d); ed.isNew = false; ed.dirty = false; ed.answers = { [d.type]: ed.draft.answer };
-  renderList(); renderEditor(); renderStatus();
+  const pend = ed.pending;
+  state.editor = makeEditor(ed.kind, clone(d), false);
+  state.editor.pending = pend;
+  if (ed.kind === 'test') { state.editor.pv = ed.pv; }
+  renderPanel(); renderEditor(); renderStatus();
   toast('Saved.', 'ok');
 }
 
-async function deleteQuestion() {
+async function deleteCurrent() {
   const ed = state.editor;
   if (!ed || ed.isNew) return;
-  const ok = await modal({
-    title: 'Delete this question?',
-    body: h('div', null, h('p', null, snippet(ed.original.prompt)), h('p', { class: 'hint' }, 'It will be removed from this browser. If you have not exported a recent backup, it cannot be recovered.')),
-    actions: [{ label: 'Cancel', value: false }, { label: 'Delete question', value: true, kind: 'danger' }], dismissValue: false
-  });
+  const id = ed.draft.id;
+  let title, body, batch;
+  if (ed.kind === 'question') {
+    const inTests = state.tests.filter(t => t.questionIds.includes(id));
+    title = 'Delete this question?';
+    body = h('div', null, h('p', null, snippet(ed.original.prompt)),
+      inTests.length ? h('p', null, 'It is in ' + plural(inTests.length, 'saved test') + ' (' + inTests.map(t => t.title || 'Untitled').join(', ') + ') and will be removed from ' + (inTests.length === 1 ? 'it' : 'them') + '.') : null,
+      h('p', { class: 'hint' }, 'It will be removed from this browser. If you have not exported a recent backup, it cannot be recovered.'));
+    const t = nowIso();
+    batch = { deletes: { questions: [id] }, tests: inTests.map(x => Object.assign({}, x, { questionIds: x.questionIds.filter(q => q !== id), updated: t })) };
+  } else if (ed.kind === 'stimulus') {
+    const users = state.questions.filter(q => q.stimulusId === id);
+    title = 'Delete this stimulus?';
+    body = h('div', null, h('p', null, ed.original.title || 'Untitled stimulus'),
+      users.length ? h('p', null, plural(users.length, 'question') + ' use' + (users.length === 1 ? 's' : '') + ' it. They stay in your bank but will no longer have a stimulus.') : null,
+      h('p', { class: 'hint' }, 'If you have not exported a recent backup, it cannot be recovered.'));
+    const t = nowIso();
+    batch = { deletes: { stimuli: [id] }, questions: users.map(q => Object.assign({}, q, { stimulusId: null, updated: t })) };
+  } else {
+    title = 'Delete this test?';
+    body = h('div', null, h('p', null, ed.original.title || 'Untitled test'), h('p', { class: 'hint' }, 'The questions stay in your bank. Only the saved test is removed. If you have not exported a recent backup, it cannot be recovered.'));
+    batch = { deletes: { tests: [id] } };
+  }
+  const ok = await modal({ title, body, actions: [{ label: 'Cancel', value: false }, { label: 'Delete ' + KIND_LABEL[ed.kind], value: true, kind: 'danger' }], dismissValue: false });
   if (!ok) return;
-  try { await db.del('questions', ed.draft.id); } catch (e) { toast('Could not delete: ' + (e && e.message || e), 'err'); return; }
-  state.questions = state.questions.filter(q => q.id !== ed.draft.id);
+  try { await db.applyBatch(batch); } catch (e) { toast('Could not delete: ' + (e && e.message || e), 'err'); return; }
+  await loadAll();
   state.editor = null; state.selectedId = null; lastField = null;
-  renderList(); renderEditor(); renderStatus();
-  toast('Question deleted.', 'ok');
+  renderPanel(); renderEditor(); renderStatus();
+  toast(cap(KIND_LABEL[ed.kind]) + ' deleted.', 'ok');
 }
 
 /* === UI: export / import === */
@@ -1919,12 +2650,14 @@ async function importFile(file) {
     await db.applyBatch({ questions: w.questions, stimuli: w.stimuli, tests: w.tests, images });
   } catch (e) { toast('Import failed and nothing was changed: ' + (e && e.message || e), 'err'); return; }
   await loadAll();
-  if (state.editor && !state.editor.isNew) {                       // an open question may have just been replaced: reload it
-    const fresh = state.questions.find(q => q.id === state.editor.draft.id);
-    if (fresh) { state.editor.draft = clone(fresh); state.editor.original = clone(fresh); state.editor.dirty = false; state.editor.answers = { [fresh.type]: state.editor.draft.answer }; renderEditor(); }
+  if (state.editor && !state.editor.isNew) {                       // the open record may have just been replaced: reload it
+    const list = { question: state.questions, stimulus: state.stimuli, test: state.tests }[state.editor.kind];
+    const fresh = list.find(x => x.id === state.editor.draft.id);
+    if (fresh) { const old = state.editor; state.editor = makeEditor(old.kind, clone(fresh), false); state.editor.pending = old.pending; state.editor.pv = old.pv; renderEditor(); }
   }
-  renderList(); renderStatus();
-  toast('Imported: ' + recordsToWrite(plan).questions.length + ' question(s) added or updated.', 'ok');
+  renderPanel(); renderStatus();
+  const wrote = recordsToWrite(plan);
+  toast('Imported: ' + [plural(wrote.questions.length, 'question'), wrote.stimuli.length ? plural(wrote.stimuli.length, 'stimulus', 'stimuli') : null, wrote.tests.length ? plural(wrote.tests.length, 'test') : null, plan.images.new.length ? plural(plan.images.new.length, 'image') : null].filter(Boolean).join(', ') + ' added or updated.', 'ok');
 }
 
 /* === PUBLIC (pure logic, for tests and debugging) === */
@@ -1932,8 +2665,9 @@ window.PQ = {
   APP_VERSION, SCHEMA_VERSION, FORMAT, MIGRATIONS,
   uuid, stable, splitMath, mathErrors, defaultAnswer, emptyQuestion, textFields, checkQuestion,
   migrate, parsePayload, planMerge, recordsToWrite, planIsNoop,
+  hashSeed, mulberry32, shuffled, newSeed, formBlocks, questionView, planTest, keyText, keyEntries,
   isTextSafe, needsImage, textWidth, wrapText, blockLines, layoutText,
-  buildBankPdf, readPdfPayload, renderBlockImage,
+  buildBankPdf, readPdfPayload, renderBlockImage, buildSheet, preparePrint, processImageFile, ensureImageUrls,
   dataUrlToBlob, blobToDataUrl, db, collectPayload, loadAll, state
 };
 
@@ -1946,7 +2680,7 @@ window.PQ = {
   } catch (e) {
     el.stage.append(h('div', { class: 'canvas-scroll' }, h('div', { class: 'empty' }, 'Storage is not available in this browser, so Prime Questions cannot save anything here. ' + (e && e.message || e))));
   }
-  renderList(); renderEditor(); renderStatus();
+  renderPanel(); renderEditor(); renderStatus();
   window.PQ.ready = true;
 })();
 });
