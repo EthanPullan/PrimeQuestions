@@ -16,7 +16,7 @@ inside the repo.
 ## Run
 ```
 node tests/run.js          # everything
-node tests/run.js unit     # one script (smoke, unit, ui, phase2, phase3, format or ai)
+node tests/run.js unit     # one script (smoke, unit, ui, phase2, phase3, format, ai or layout)
 ```
 Output files (exported PDFs, screenshots) go to a temporary folder. Set
 `PQ_TEST_OUT` to choose where, for example to look at the rendered pages. They are
@@ -67,8 +67,15 @@ checks were written for the Phase 2 interface and now drive the Phase 3 one.
   single-backslash LaTeX slip is repaired or refused (never silently corrupted), and that
   the script and the app convert a draft to the same content. Needs Python 3.
 
+- `layout.js`: the right-click question menu, answer area (line / blank space / none, and
+  per part), writing space (presets, custom, saved), fill rest of page (printed and swept
+  over many positions: no blank page, at most one page added), sections (add, edit, remove,
+  re-anchoring when a question is removed, Version B, Check), the font (dialog, typed
+  names, a mocked local-font list, printed fonts checked with `pdffonts`) and a property test
+  that nothing splits across pages with all of these in play.
+
 `fixtures/bank-schema1-v0.1.0.pdf` (app v0.1.0), `fixtures/bank-schema2-v0.2.0.pdf`
-(app v0.2.0) and `fixtures/bank-schema3-v0.3.0.pdf` (app v0.3.0) were produced by those versions before the schema moved on. Do not
+(app v0.2.0) and `fixtures/bank-schema3-v0.3.0.pdf` (app v0.3.0) and `fixtures/bank-schema4-v0.5.0.pdf` (app v0.5.0) were produced by those versions before the schema moved on. Do not
 regenerate them with a newer app: their job is to be old files.
 
 These run in headless Chromium only. Firefox, Safari and iPad are not covered.

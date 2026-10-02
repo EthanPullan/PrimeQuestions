@@ -96,7 +96,7 @@ const pdfInfo = file => execFileSync('pdfinfo', [file]).toString();
   check('a per-bank export is named after the bank (safe characters only)', /^prime-questions-physics-waves-sound-\d{4}-\d{2}-\d{2}\.pdf$/.test(bname), bname);
   fs.rmSync('b1', { recursive: true, force: true }); fs.mkdirSync('b1'); execFileSync('pdfdetach', ['-saveall', '-o', 'b1', 'bank-one.pdf']);
   const p1 = JSON.parse(fs.readFileSync('b1/prime-questions.pq', 'utf8'));
-  check('the per-bank file holds only that bank, its question and no tests', p1.schemaVersion === 4 && p1.banks.length === 1 && p1.banks[0].name === 'Physics: Waves & Sound' && p1.questions.length === 1 && p1.tests.length === 0, [p1.banks.length, p1.questions.length, p1.tests.length]);
+  check('the per-bank file holds only that bank, its question and no tests', p1.schemaVersion === 5 && p1.banks.length === 1 && p1.banks[0].name === 'Physics: Waves & Sound' && p1.questions.length === 1 && p1.tests.length === 0, [p1.banks.length, p1.questions.length, p1.tests.length]);
   check('a per-bank export does not count as "Last backup"', /Last backup: never/.test(await stat()), await stat());
   check('the bank PDF names the bank on its readable pages', /Physics: Waves & Sound/.test(pdfAll('bank-one.pdf')));
   const [dl2] = await Promise.all([page.waitForEvent('download', { timeout: 90000 }), page.click('#btn-export')]);

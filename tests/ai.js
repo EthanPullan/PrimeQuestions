@@ -63,7 +63,7 @@ const SCRIPT = path.join(ROOT, 'tools', 'draft_to_bank_pdf.py');
       noThrow: (() => { let n = 0; for (const v of [null, undefined, 5, 'x', [], {}, [null], [[]], { questions: [null] }, { questions: [[]] }, { questions: [{ type: 'mc', answer: null }] }, { stimuli: 5, questions: [{ type: 'tf', prompt: 'a', answer: { correct: true } }] }]) { try { run(v); } catch (e) { n++; } } return n; })()
     };
   }, ex);
-  check('the document\'s example converts to a payload that passes the strict validator', U.ok && U.valid && U.count === 8 && U.schema === 4, U.parseErrors || U);
+  check('the document\'s example converts to a payload that passes the strict validator', U.ok && U.valid && U.count === 8 && U.schema === 5, U.parseErrors || U);
   check('every question is marked "Needs review", all land in the named bank, and all ids are new and unique', U.statuses.join() === 'review' && U.banks.join() === 'Science 9: Matter' && U.allInBank && U.ids, U);
   check('a letter answer becomes the right index; keepOrder only where asked; stimulus keys resolve; tables and tolerance kept', U.letter === 0 && U.keep === true && U.noKeep === false && U.stim && U.tbl === 3 && U.tolerance === 0.05, U);
   check('optional fields default sensibly (difficulty medium, no tags, no notes) and multipart parts keep their types', U.defaults[1] === 'medium' && U.defaults[2] === 0 && U.mp === 'numeric,tf', U.defaults);

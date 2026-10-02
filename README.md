@@ -6,7 +6,7 @@ or use the hosted copy at <https://ethanpullan.github.io/PrimeQuestions/>.
 
 There are no accounts and no server. Your questions are stored in your browser.
 
-## What it does today (v0.5.0)
+## What it does today (v0.6.0)
 
 The sidebar has four places, like Test Parrot: **Home**, **Tests**,
 **Question Banks** and **Imports**.
@@ -39,8 +39,21 @@ The sidebar has four places, like Test Parrot: **Home**, **Tests**,
   and each multiple-choice question's options, the same way every time you print
   it (the shuffle is saved with the test). A multiple-choice question can be set
   to keep its options in order in Version B (for “All of the above”).
+- **Right-click a question** on the paper (or use its ⋯ button) to change just that
+  question for this test: **Answer area** (for numeric and short-answer questions, and
+  for each part of a multipart question: the normal answer line or ruled lines, plain
+  **blank space** with no “Answer:” label, or nothing), **Work space** (extra writing
+  space after the question: Small, Medium, Large, or your own size in millimetres),
+  **Fill rest of page** (the space grows to the bottom of the page), and **Start new
+  section here**. Your bank questions are not changed.
+- **Sections**: a heading with an optional line of instructions (for example “Short
+  Answer: Show all work”) above the question where you start it. Edit it directly on
+  the paper. Question numbers keep counting across sections, and Version B shuffles
+  the questions only inside each section, so the sections stay in your order.
 - The **Format** menu sets how the paper looks, per test: paper size (Letter, Legal,
-  A4), heading size and text size (Small, Medium, Large), margins (Narrow, Normal,
+  A4), **font** (choose from your computer's fonts where the browser allows it, or
+  type a font name; if it is not installed where you print, Helvetica is used),
+  heading size and text size (Small, Medium, Large), margins (Narrow, Normal,
   Wide or your own in millimetres), and the question style: **Standard** (circle
   the letter or T/F), **Classic** (a blank before each multiple-choice and
   true/false number, ruled lines for written answers) or **Condensed** (tighter

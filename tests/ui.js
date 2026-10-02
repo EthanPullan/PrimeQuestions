@@ -130,7 +130,7 @@ const { launch, openApp, check, summary } = require('./lib');
   check('exported PDF carries prime-questions.pq (poppler)', /prime-questions\.pq/.test(list), list);
   fs.rmSync('uiex', { recursive: true, force: true }); fs.mkdirSync('uiex'); execFileSync('pdfdetach', ['-saveall', '-o', 'uiex', 'ui-export.pdf']);
   const exported = JSON.parse(fs.readFileSync('uiex/prime-questions.pq', 'utf8'));
-  check('payload holds 5 questions, format/schema/appVersion/requiredFeatures set', exported.questions.length === 5 && exported.format === 'prime-questions' && exported.schemaVersion === 4 && exported.banks.length === 1 && /^\d+\.\d+\.\d+$/.test(exported.appVersion) && Array.isArray(exported.requiredFeatures), Object.keys(exported));
+  check('payload holds 5 questions, format/schema/appVersion/requiredFeatures set', exported.questions.length === 5 && exported.format === 'prime-questions' && exported.schemaVersion === 5 && exported.banks.length === 1 && /^\d+\.\d+\.\d+$/.test(exported.appVersion) && Array.isArray(exported.requiredFeatures), Object.keys(exported));
   fs.copyFileSync('ui-export.pdf', 'ui-export-original.pdf');
   const before = await page.evaluate(async () => { const p = await PQ.collectPayload(); delete p.exportedAt; return JSON.parse(JSON.stringify(p)); });
 
@@ -187,7 +187,7 @@ const { launch, openApp, check, summary } = require('./lib');
   await page.setInputFiles('#file-input', 'printed.pdf'); await modal.waitFor();
   check('a printed/re-saved PDF explains why it has no data', /printed or re-saved/.test(await modal.innerText()));
   await modal.locator('button:has-text("OK")').click();
-  const newerB64 = await page.evaluate(async () => { const p = await PQ.collectPayload(); p.schemaVersion = 5; const r = await PQ.buildBankPdf(p, {}); let s = ''; for (let i = 0; i < r.bytes.length; i += 32768) s += String.fromCharCode(...r.bytes.subarray(i, i + 32768)); return btoa(s); });
+  const newerB64 = await page.evaluate(async () => { const p = await PQ.collectPayload(); p.schemaVersion = 6; const r = await PQ.buildBankPdf(p, {}); let s = ''; for (let i = 0; i < r.bytes.length; i += 32768) s += String.fromCharCode(...r.bytes.subarray(i, i + 32768)); return btoa(s); });
   fs.writeFileSync('newer.pdf', Buffer.from(newerB64, 'base64'));
   await page.setInputFiles('#file-input', 'newer.pdf'); await modal.waitFor();
   check('a bank from a newer schema is refused with a clear message', /newer Prime Questions/.test(await modal.innerText()), await modal.innerText());

@@ -217,7 +217,7 @@
 
   /* === The printed test and answer key. Plain black on white (school copiers are greyscale); no colour carries meaning.
      Layout avoids flex and grid inside the questions so page breaks stay reliable on older browsers. === */
-  .sheet{font-family:Helvetica,Arial,"Liberation Sans",sans-serif;color:#000;background:#fff;font-size:var(--tp-fs,11pt);line-height:1.35;}
+  .sheet{font-family:var(--tp-font,Helvetica,Arial,"Liberation Sans",sans-serif);color:#000;background:#fff;font-size:var(--tp-fs,11pt);line-height:1.35;}
   .sheet h1{font-size:var(--tp-h1,18pt);margin:0 0 2pt;line-height:1.2;}
   .sheet .tp-head{border-bottom:1.5pt solid #000;padding-bottom:8pt;margin-bottom:12pt;}
   .sheet .tp-version{float:right;font-weight:700;border:1.5pt solid #000;padding:1pt 8pt;margin-left:12pt;}
@@ -408,6 +408,27 @@
   .sheet.style-condensed .tp-rule{height:16pt;}
   .sheet.style-condensed .tp-tf,.sheet.style-condensed .tp-numeric{margin-top:3pt;}
   .sheet.style-condensed .tp-part{margin-top:3pt;}
+  /* writing space, blank answer areas and section headings */
+  .sheet .tp-space{break-inside:avoid;page-break-inside:avoid;}
+  .sheet .tp-blankarea{height:14mm;}
+  .sheet .tp-blankarea.lines{height:calc(var(--lines,3) * 22pt);}
+  .sheet.style-condensed .tp-blankarea.lines{height:calc(var(--lines,3) * 16pt);}
+  .sheet .tp-section{margin:4pt 0 8pt;position:relative;}
+  .sheet .tp-sec-title{font-weight:700;font-size:calc(var(--tp-fs,11pt) * 1.3);line-height:1.25;margin-bottom:2pt;}
+  .sheet .tp-sec-instr{font-style:italic;white-space:pre-wrap;overflow-wrap:anywhere;}
+  .sheet .tp-block:not(:first-of-type) > .tp-section:first-child{margin-top:10pt;}
+  .sheet.editing .tp-space,.sheet.editing .tp-blankarea{outline:1px dashed #c4c4c4;outline-offset:-1px;}
+  .sheet.editing .tp-space-label{display:block;font-size:8.5pt;color:#999;font-style:normal;padding:1pt 3pt;}
+  .sheet.editing .tp-section .tp-edit{margin-bottom:1pt;}
+  .sheet.editing .tp-sec-title{font-weight:700;font-size:calc(var(--tp-fs,11pt) * 1.3);}
+  .sheet.editing .tp-sec-instr{font-style:italic;}
+  .sheet .tp-sec-x{position:absolute;top:0;right:0;border:none;background:none;color:#999;font-size:16px;cursor:pointer;line-height:1;padding:0 4px;opacity:0;}
+  .sheet .tp-section:hover .tp-sec-x,.sheet .tp-sec-x:focus{opacity:1;}
+  .sheet .tp-sec-x:hover{color:var(--danger);}
+  .font-list{max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:8px;margin:8px 0;background:var(--panel);}
+  .font-item{display:block;width:100%;text-align:left;border:none;background:none;padding:6px 10px;font-size:15px;cursor:pointer;color:var(--ink);}
+  .font-item:hover,.font-item.sel{background:var(--accent-soft);}
+  .font-preview{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#fff;font-size:16px;margin:8px 0;}
   #print-root{display:none;color:#000;background:#fff;}
   @media print{
     html,body{height:auto;background:#fff;}
@@ -799,8 +820,8 @@ document.addEventListener('DOMContentLoaded', () => {
 'use strict';
 
 /* === CONSTANTS === */
-const APP_VERSION = '0.5.0';
-const SCHEMA_VERSION = 4;
+const APP_VERSION = '0.6.0';
+const SCHEMA_VERSION = 5;
 const DB_VERSION = 2;                      // IndexedDB version (2 adds banks and test version history)
 const FORMAT = 'prime-questions';
 const KNOWN_FEATURES = [];                 // payload.requiredFeatures entries this app understands
@@ -823,7 +844,19 @@ const STYLE_KEYS = ['standard', 'classic', 'condensed'];
 const MARGIN_DEFAULT = { top: 16, right: 14, bottom: 18, left: 14 };      // mm
 const MARGIN_PRESETS = { narrow: { top: 10, right: 10, bottom: 10, left: 10 }, normal: MARGIN_DEFAULT, wide: { top: 25, right: 22, bottom: 25, left: 22 } };
 const MARGIN_MIN = 5, MARGIN_MAX = 40;
+// Writing space after a question (mm), per-question answer styles and sections (schema 5): all optional on a test.
+const SPACE_PRESETS = { small: 20, medium: 40, large: 70 }, SPACE_MIN = 5, SPACE_MAX = 200, SPACE_REST_FALLBACK = 60;
+const ANSWER_STYLES = ['blank', 'none'];                                        // absent = the question's normal answer area
+const FONT_RE = /^[\p{L}\p{N} ._()+&'-]{1,100}$/u;                              // a font family name: letters, digits, spaces and a little punctuation
+const DEFAULT_FONT_STACK = 'Helvetica,Arial,"Liberation Sans",sans-serif';
+const fontStack = name => (name && FONT_RE.test(name) ? '"' + name + '",' + DEFAULT_FONT_STACK : DEFAULT_FONT_STACK);
+const spaceOk = v => v === 'rest' || (typeof v === 'number' && isFinite(v) && v >= SPACE_MIN && v <= SPACE_MAX);
+const qoptionsOk = o => o && typeof o === 'object' && !Array.isArray(o) && Object.keys(o).length <= 1000 && Object.keys(o).every(k => k.length <= 100 && (v => v && typeof v === 'object' && !Array.isArray(v) &&
+  Object.keys(v).every(f => f === 'answerStyle' || f === 'space') && (v.answerStyle === undefined || ANSWER_STYLES.includes(v.answerStyle)) && (v.space === undefined || spaceOk(v.space)))(o[k]));
+const sectionsOk = a => Array.isArray(a) && a.length <= 50 && a.every(x => x && typeof x === 'object' && typeof x.id === 'string' && x.id && x.id.length <= 100 && typeof x.startId === 'string' && x.startId.length <= 100 &&
+  typeof x.title === 'string' && x.title.length <= 200 && typeof x.instructions === 'string' && x.instructions.length <= 1000);
 const testFormat = t => ({
+  font: typeof t.font === 'string' && FONT_RE.test(t.font) ? t.font : '',
   headingSize: SIZE_KEYS.includes(t.headingSize) ? t.headingSize : 'medium',
   textSize: SIZE_KEYS.includes(t.textSize) ? t.textSize : 'medium',
   questionStyle: STYLE_KEYS.includes(t.questionStyle) ? t.questionStyle : 'standard',
@@ -1281,7 +1314,8 @@ const MIGRATIONS = {
     const fix = r => lacks(r) ? Object.assign({}, r, { bankId: DEFAULT_BANK_ID }) : r;
     return Object.assign({}, p, { schemaVersion: 3, banks, questions: Array.isArray(qs) ? qs.map(fix) : qs, stimuli: Array.isArray(ss) ? ss.map(fix) : ss });
   },
-  3: p => Object.assign({}, p, { schemaVersion: 4 })     // schema 4 only adds optional fields on tests
+  3: p => Object.assign({}, p, { schemaVersion: 4 }),    // schema 4 only adds optional fields on tests
+  4: p => Object.assign({}, p, { schemaVersion: 5 })     // so does schema 5
 };
 
 function migrate(p, migrations, target) {
@@ -1360,6 +1394,9 @@ function recordProblems(kind, r) {
     need(r.textSize === undefined || SIZE_KEYS.includes(r.textSize), 'has an invalid text size');
     need(r.questionStyle === undefined || STYLE_KEYS.includes(r.questionStyle), 'has an invalid question style');
     need(r.margins === undefined || marginsOk(r.margins), 'has invalid margins');
+    need(r.font === undefined || (typeof r.font === 'string' && FONT_RE.test(r.font)), 'has an invalid font name');
+    need(r.sections === undefined || sectionsOk(r.sections), 'has invalid sections');
+    need(r.questionOptions === undefined || qoptionsOk(r.questionOptions), 'has invalid question options');
     need(r.instructions === undefined || (isStr(r.instructions) && r.instructions.length <= 5000), 'has invalid instructions');
   }
   return e;
@@ -1694,14 +1731,39 @@ function planTest(test, questions, stimuli, version) {
   const aNumber = new Map();
   let n = 0;
   for (const b of blocksA) for (const q of b.questions) aNumber.set(q.id, ++n);
-  const blocks = version === 'B' ? shuffled(blocksA, mulberry32(hashSeed(test.seed, 'blocks'))) : blocksA;
+  // Sections (schema 5). A section starts at the block that holds its start question (a stimulus group is one block). Version B shuffles
+  // the blocks inside each section only, so the sections stay in the teacher's order. The stretch before the first section uses the
+  // original stream label 'blocks', so a test without sections shuffles exactly as it always did. A section whose start question is not
+  // on the paper is left out and reported in orphanSections.
+  const placed = [], orphanSections = [];
+  for (const sec of (test.sections || [])) {
+    const bi = blocksA.findIndex(b => b.questions.some(q => q.id === sec.startId));
+    if (bi < 0) orphanSections.push(sec.id); else placed.push({ sec, bi });
+  }
+  placed.sort((a, b) => a.bi - b.bi);
+  const starts = Array.from(new Set(placed.map(p => p.bi))), bounds = starts[0] === 0 ? starts : [0].concat(starts);
+  const ordBlocks = [];
+  bounds.forEach((from, i) => {
+    const to = i + 1 < bounds.length ? bounds[i + 1] : blocksA.length, secs = placed.filter(p => p.bi === from).map(p => p.sec);
+    let part = blocksA.slice(from, to).map(b => ({ b, secs: [] }));
+    if (version === 'B') part = shuffled(part, mulberry32(hashSeed(test.seed, secs.length ? 'blocks|' + secs[0].id : 'blocks')));
+    if (part.length) part[0].secs = secs;
+    ordBlocks.push(...part);
+  });
+  const qopts = test.questionOptions || {};
   let num = 0;
-  const out = blocks.map(b => ({
+  const out = ordBlocks.map(({ b, secs }) => ({
     stimulus: b.stimulusId ? sById.get(b.stimulusId) : null,
-    items: b.questions.map(q => ({ q, number: ++num, aNumber: aNumber.get(q.id), view: questionView(q, test.seed, version) }))
+    sections: secs.map(x => ({ id: x.id, title: x.title, instructions: x.instructions })),
+    items: b.questions.map(q => {
+      const view = questionView(q, test.seed, version), o = qopts[q.id] || {};
+      if (view.type === 'multipart') view.parts.forEach((p, i) => { const po = qopts[q.id + '#' + i]; if (po && po.answerStyle) p.style = po.answerStyle; });
+      else if (o.answerStyle) view.style = o.answerStyle;
+      return { q, number: ++num, aNumber: aNumber.get(q.id), view, space: o.space === undefined ? null : o.space };
+    })
   }));
   return {
-    version, title: test.title, course: test.course, blocks: out, total: num, missing,
+    version, title: test.title, course: test.course, blocks: out, total: num, missing, orphanSections,
     header: Object.assign({}, HEADER_DEFAULT, test.header || {}), instructions: test.instructions || '', paper: test.paper || null, format: testFormat(test)
   };
 }
@@ -2485,7 +2547,8 @@ function menuItem(it, onSub) {
 }
 function openMenu(anchor, items, opts) {
   closeMenu();
-  const rect = anchor.getBoundingClientRect();
+  const at = opts && opts.at;                         // { x, y }: open at a point (a right click) instead of under an element
+  const rect = at ? { left: at.x, right: at.x, bottom: at.y } : anchor.getBoundingClientRect();
   const showSub = (btn, subItems) => {
     if (openSubEl && openSubEl.dataset.owner === btn.id) return;
     closeSub();
@@ -2508,12 +2571,13 @@ function openMenu(anchor, items, opts) {
     items.map(it => menuItem(it, showSub)));
   document.body.append(menu);
   openMenuEl = menu;
+  if (menu.getBoundingClientRect().bottom > window.innerHeight - 8) menu.style.top = Math.max(8, window.innerHeight - menu.offsetHeight - 8) + 'px';
   const first = menu.querySelector('.menu-item:not([disabled])'); if (first) first.focus();
-  const off = e => { if (!menu.contains(e.target) && !(openSubEl && openSubEl.contains(e.target)) && e.target !== anchor && !anchor.contains(e.target)) closeMenu(); };
+  const off = e => { if (!menu.contains(e.target) && !(openSubEl && openSubEl.contains(e.target)) && !(anchor && (e.target === anchor || anchor.contains(e.target)))) closeMenu(); };
   menuOff = off;                 // removed again by closeMenu, so an old menu's listener can never close a newer menu
   document.addEventListener('mousedown', off, true);
   menu.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeMenu(); anchor.focus(); }
+    if (e.key === 'Escape') { closeMenu(); if (anchor) anchor.focus(); }
     if (e.key === 'ArrowRight' && document.activeElement && document.activeElement.classList.contains('has-sub')) { e.preventDefault(); document.activeElement.click(); }
     subNav(e, menu);
   });
@@ -3433,14 +3497,15 @@ const blankBefore = v => v.type === 'mc' || v.type === 'tf';
 function answerAreaDom(v, st) {
   if (v.type === 'mc') return h('div', { class: 'tp-opts' + (st === 'condensed' && acrossOk(v.options) ? ' across' : '') }, v.options.map((o, i) => h('div', { class: 'tp-opt' }, h('span', { class: 'tp-let' }, letter(i) + '.'), h('span', { class: 'tp-text' }, o.text))));
   if (v.type === 'tf') return st === 'classic' ? null : h('div', { class: 'tp-tf' }, 'Circle one:', h('span', { class: 'tp-tfopt' }, 'True'), h('span', { class: 'tp-tfopt' }, 'False'));
-  if (v.type === 'numeric') return h('div', { class: 'tp-numeric' }, 'Answer:', h('span', { class: 'tp-blankline' }));
-  if (v.type === 'short') return h('div', { class: 'tp-rules' }, Array.from({ length: v.lines }, () => h('div', { class: 'tp-rule' })));
+  // v.style (from the test's question options): 'blank' = empty space and no printed line or label, 'none' = nothing at all
+  if (v.type === 'numeric') return v.style === 'none' ? null : v.style === 'blank' ? h('div', { class: 'tp-blankarea' }) : h('div', { class: 'tp-numeric' }, 'Answer:', h('span', { class: 'tp-blankline' }));
+  if (v.type === 'short') return v.style === 'none' ? null : v.style === 'blank' ? h('div', { class: 'tp-blankarea lines', style: '--lines:' + v.lines }) : h('div', { class: 'tp-rules' }, Array.from({ length: v.lines }, () => h('div', { class: 'tp-rule' })));
   return h('div', { class: 'tp-match' },
     h('div', { class: 'tp-mcol' }, v.left.map((l, i) => h('div', { class: 'tp-mrow l' }, h('span', { class: 'tp-mblank' }), h('span', { class: 'tp-let' }, (i + 1) + '.'), h('span', { class: 'tp-text' }, l)))),
     h('div', { class: 'tp-mcol' }, v.right.map((r, i) => h('div', { class: 'tp-mrow r' }, h('span', { class: 'tp-let' }, letter(i) + '.'), h('span', { class: 'tp-text' }, r)))));
 }
 
-function buildQuestionDom(it, st) {
+function buildQuestionDom(it, st, edit) {
   const q = it.q, v = it.view;
   const body = h('div', { class: 'tp-body' });
   if (q.type !== 'multipart' || q.prompt.trim()) body.append(h('div', { class: 'tp-text tp-prompt' }, q.prompt));
@@ -3449,7 +3514,21 @@ function buildQuestionDom(it, st) {
   if (v.type === 'multipart') v.parts.forEach((p, i) => body.append(h('div', { class: 'tp-part' }, st === 'classic' && blankBefore(p) ? h('span', { class: 'tp-blank tp-plblank' }) : null, h('span', { class: 'tp-plab' }, '(' + partLabel(i) + ')'),
     h('div', { class: 'tp-pbody' }, p.prompt ? h('div', { class: 'tp-text' }, p.prompt) : null, answerAreaDom(p, st)))));
   else { const area = answerAreaDom(v, st); if (area) body.append(area); }
+  if (it.space !== null && it.space !== undefined) {          // extra writing space after the question: a number of mm, or "rest" (the rest of the page, measured when printing)
+    const rest = it.space === 'rest';
+    body.append(h('div', { class: 'tp-space' + (rest ? ' rest' : ''), 'data-space': String(it.space), style: 'height:' + (rest ? SPACE_REST_FALLBACK : it.space) + 'mm' },
+      edit ? h('span', { class: 'ed-only tp-space-label' }, rest ? 'Writing space: the rest of the page' : 'Writing space: ' + it.space + ' mm') : null));
+  }
   return h('div', { class: 'tp-q', 'data-n': String(it.number), 'data-qid': q.id }, st === 'classic' && blankBefore(v) ? h('span', { class: 'tp-blank tp-numblank' }) : null, h('span', { class: 'tp-num' }, it.number + '.'), body);
+}
+
+function sectionDom(sec, ed) {
+  if (ed) return h('div', { class: 'tp-section', 'data-section': sec.id },
+    h('input', { type: 'text', class: 'tp-edit tp-sec-title', value: sec.title, placeholder: 'Section title', 'aria-label': 'Section title', 'data-sid': sec.id, oninput: e => ed.setSection(sec.id, 'title', e.target.value) }),
+    h('input', { type: 'text', class: 'tp-edit tp-sec-instr', value: sec.instructions, placeholder: 'Instructions for this section (optional)', 'aria-label': 'Section instructions', oninput: e => ed.setSection(sec.id, 'instructions', e.target.value) }),
+    h('button', { type: 'button', class: 'ed-only tp-sec-x', title: 'Remove this section heading (the questions stay)', 'aria-label': 'Remove this section heading', onclick: () => ed.removeSection(sec.id) }, '×'));
+  if (!sec.title && !sec.instructions) return null;
+  return h('div', { class: 'tp-section', 'data-section': sec.id }, sec.title ? h('div', { class: 'tp-sec-title' }, sec.title) : null, sec.instructions ? h('div', { class: 'tp-sec-instr' }, sec.instructions) : null);
 }
 
 function stimulusDom(b) {
@@ -3466,7 +3545,7 @@ function stimulusDom(b) {
 function buildSheet(plan, kind, ed) {
   const fmt = plan.format || testFormat({});
   const root = h('div', { class: 'sheet' + (ed ? ' editing' : '') + ' paper-' + (PAPERS[plan.paper] ? plan.paper : 'letter') + ' style-' + fmt.questionStyle,
-    style: '--tp-fs:' + TEXT_PT[fmt.textSize] + 'pt;--tp-h1:' + HEADING_PT[fmt.headingSize] + 'pt;' });
+    style: '--tp-fs:' + TEXT_PT[fmt.textSize] + 'pt;--tp-h1:' + HEADING_PT[fmt.headingSize] + 'pt;--tp-font:' + fontStack(fmt.font) + ';' });
   const head = h('div', { class: 'tp-head' }, h('div', { class: 'tp-version' }, kind === 'key' ? 'Answer Key · Version ' + plan.version : 'Version ' + plan.version));
   if (ed) head.append(
     h('input', { type: 'text', class: 'tp-edit tp-title', id: 'f-test-title', value: plan.title, placeholder: 'Untitled Test', 'aria-label': 'Test title', oninput: e => ed.setTitle(e.target.value) }),
@@ -3486,6 +3565,7 @@ function buildSheet(plan, kind, ed) {
   if (kind === 'test') {
     plan.blocks.forEach((b, bi) => {
       const wrap = h('section', { class: 'tp-block', 'data-bi': String(bi), 'data-stim': b.stimulus ? b.stimulus.id : null });
+      for (const sec of b.sections) { const sd = sectionDom(sec, ed); if (sd) wrap.append(sd); }
       if (b.stimulus) {
         const nums = b.items.map(i => i.number);
         wrap.append(h('div', { class: 'tp-intro' }, 'Use the information below to answer ' + (nums.length > 1 ? 'questions ' + nums[0] + ' to ' + nums[nums.length - 1] : 'question ' + nums[0]) + '.'));
@@ -3494,7 +3574,7 @@ function buildSheet(plan, kind, ed) {
         wrap.append(st);
       }
       for (const it of b.items) {
-        const qd = buildQuestionDom(it, fmt.questionStyle);
+        const qd = buildQuestionDom(it, fmt.questionStyle, !!ed);
         if (ed) qd.append(ed.tools('question', bi, it));
         wrap.append(qd);
       }
@@ -3521,7 +3601,32 @@ async function preparePrint(kind, version, test) {
   const m = plan.format.margins;
   el.pageStyle.textContent = '@page{size:' + PAPERS[effectivePaper(test)].css + ' portrait;margin:' + m.top + 'mm ' + m.right + 'mm ' + m.bottom + 'mm ' + m.left + 'mm;}';
   await Promise.all(Array.from(sheet.querySelectorAll('img')).map(i => (i.decode ? i.decode().catch(() => {}) : Promise.resolve())));
+  if (document.fonts && document.fonts.ready) await document.fonts.ready;
+  fillRestOfPage(sheet, effectivePaper(test), plan.format.margins);
   return plan;
+}
+// "Fill rest of page": a question's writing space grows to the bottom of the page it lands on. The browser paginates, so this measures the
+// sheet at the printed width and replays the page breaks that matter (every block avoids breaking inside itself and moves whole to the next
+// page when it does not fit). It leaves 3 mm spare, so a small measuring error costs a sliver of white space and never an extra page.
+const PAPER_MM = { letter: [215.9, 279.4], legal: [215.9, 355.6], a4: [210, 297] };
+function fillRestOfPage(sheet, paperKey, m) {
+  const spacers = Array.from(sheet.querySelectorAll('.tp-space.rest'));
+  if (!spacers.length) return;
+  const mm = 96 / 25.4, [pw, ph] = PAPER_MM[paperKey] || PAPER_MM.letter, W = (pw - m.left - m.right) * mm, H = (ph - m.top - m.bottom) * mm, spare = 3 * mm;
+  const root = el.printRoot;
+  root.style.cssText = 'display:block;position:absolute;left:-100000px;top:0;width:' + W + 'px;';
+  try {
+    spacers.forEach(sp => { sp.style.height = '0px'; });
+    const top0 = sheet.getBoundingClientRect().top;
+    let pageStart = 0;
+    for (const c of Array.from(sheet.children)) {
+      const r = c.getBoundingClientRect(), t = r.top - top0, hh = r.height;
+      if (hh > H) { pageStart = t + Math.floor(hh / H) * H; continue; }          // taller than a page: it splits, so only the last page matters
+      if (t - pageStart + hh > H) pageStart = t;                                   // does not fit: starts the next page
+      const sp = c.querySelector && c.querySelector('.tp-space.rest');
+      if (sp) { const free = H - (t - pageStart) - hh - spare; sp.style.height = (free > 8 * mm ? free : 0) + 'px'; }
+    }
+  } finally { root.style.cssText = ''; }
 }
 async function printTest(kind, version, test) {
   const plan = await preparePrint(kind, version, test);
@@ -3561,15 +3666,62 @@ function checkTest(d) {
   if (missing) items.push({ text: plural(missing, 'question') + ' in this test ' + (missing === 1 ? 'is' : 'are') + ' no longer in any bank and will be skipped.', fix: 'missing' });
   if (review) items.push({ text: plural(review, 'question') + ' ' + (review === 1 ? 'is' : 'are') + ' marked “Needs review”.' });
   if (bad) items.push({ text: plural(bad, 'question') + ' ' + (bad === 1 ? 'has' : 'have') + ' problems (missing answers or broken maths). Open them from the paper to fix them.' });
+  const orphans = (d.sections || []).filter(x => !present.some(q => q.id === x.startId)).length;
+  if (orphans) items.push({ text: plural(orphans, 'section heading') + ' point' + (orphans === 1 ? 's' : '') + ' to a question that is not on the paper any more, so ' + (orphans === 1 ? 'it is' : 'they are') + ' not printed.', fix: 'sections' });
   for (const q of hinty) items.push({ text: 'Version B will shuffle the options of “' + snippet(q.prompt).slice(0, 50) + '”, which has an “all/none of the above” option. Edit it and tick “Keep these options in this order”.' });
   return items;
+}
+
+// Fonts: the typed name or a list. Only Chromium-based browsers can list the fonts on a computer (after asking permission);
+// everywhere else the name is typed. The paper uses the font if it is installed where it prints, else Helvetica.
+let localFontsCache = null;
+const FONT_PRESETS = ['Arial', 'Calibri', 'Cambria', 'Comic Sans MS', 'Courier New', 'Georgia', 'Helvetica', 'Tahoma', 'Times New Roman', 'Trebuchet MS', 'Verdana'];
+async function fontDialog(current) {
+  const input = h('input', { type: 'text', class: 'in', id: 'font-input', value: current || '', placeholder: 'Type the name of a font, for example Georgia', 'aria-label': 'Font name', autocomplete: 'off' });
+  const list = h('div', { class: 'font-list', id: 'font-list', role: 'listbox', 'aria-label': 'Fonts' });
+  const preview = h('div', { class: 'font-preview', id: 'font-preview' }, 'The quick brown fox jumps over the lazy dog. 0123456789');
+  const hint = h('p', { class: 'hint', id: 'font-hint' });
+  let families = localFontsCache || FONT_PRESETS, filtering = false;       // the list is only narrowed by what the user types, not by the current font
+  const valid = () => { const t = input.value.trim(); return !t || FONT_RE.test(t); };
+  const update = () => {
+    const t = input.value.trim(), ok = valid();
+    preview.style.fontFamily = ok && t ? fontStack(t) : DEFAULT_FONT_STACK;
+    hint.textContent = ok ? 'If this font is not installed on the computer that prints, Helvetica is used instead.' : 'Use only letters, digits, spaces and . _ ( ) + & \' - in a font name.';
+    hint.style.color = ok ? '' : 'var(--danger)';
+    const b = document.querySelector('.modal .btn.primary'); if (b) b.disabled = !ok;
+    paint();
+  };
+  const paint = () => {
+    const q = filtering ? input.value.trim().toLowerCase() : '';
+    list.textContent = '';
+    const rows = [{ name: '', label: 'Default (Helvetica)' }].concat(families.filter(f => !q || f.toLowerCase().includes(q)).slice(0, 400).map(f => ({ name: f, label: f })));
+    for (const r of rows) list.append(h('button', { type: 'button', class: 'font-item' + (r.name === input.value.trim() ? ' sel' : ''), role: 'option', 'data-font': r.name, style: r.name ? 'font-family:' + fontStack(r.name) : '',
+      onclick: () => { input.value = r.name; filtering = false; update(); } }, r.label));
+  };
+  input.addEventListener('input', () => { filtering = true; update(); });
+  const local = 'queryLocalFonts' in window
+    ? h('button', { class: 'btn small', type: 'button', id: 'btn-local-fonts', onclick: async () => {
+        try {
+          const fonts = await window.queryLocalFonts();
+          families = Array.from(new Set(fonts.map(f => f.family))).sort((a, b) => a.localeCompare(b)); localFontsCache = families;
+          toast(families.length + ' fonts found on this computer.', 'ok'); paint();
+        } catch (e) { toast('The browser did not allow reading the fonts on this computer. Type a font name instead.', 'warn'); }
+      } }, 'Show the fonts installed on this computer')
+    : h('p', { class: 'hint' }, 'This browser cannot list the fonts on your computer. Type the name of an installed font above.');
+  const body = h('div', { class: 'font-dialog' }, field('Font', input, 'font-input'), local, list, preview, hint);
+  const p = modal({ title: 'Font', body, actions: [{ label: 'Cancel', value: null }, { label: 'Use the default', value: 'default' }, { label: 'Apply', value: 'ok', kind: 'primary' }], dismissValue: null });
+  update(); input.focus(); input.select();
+  const r = await p;
+  if (r === 'default') return { name: '' };
+  if (r === 'ok' && valid()) return { name: input.value.trim() };
+  return null;
 }
 
 function createExam(opts) {
   const d = opts.draft;
   let original = clone(d), isNew = !!opts.isNew, dirty = false;
   const undo = [], redo = [];
-  let lastKey = null, lastAt = 0, paintSeq = 0, checkTimer = null, paintIds = [];
+  let lastKey = null, lastAt = 0, paintSeq = 0, checkTimer = null, paintIds = [], paintItems = new Map();
   const ui = { pv: 'A', panel: 'bank', bankTabs: [], bankId: null, search: '', type: '', sort: 'newest', drag: null };
   const R = {};
   const node = h('div', { class: 'exam', 'data-kind': 'test' });
@@ -3648,7 +3800,32 @@ function createExam(opts) {
     const t = g[qi]; g[qi] = g[j]; g[j] = t;
     mutate(() => { d.questionIds = ids.flat().concat(plan.missing); });
   }
-  const removeQuestion = id => mutate(() => { d.questionIds = d.questionIds.filter(x => x !== id); });
+  // Removing a question: a section that started at it now starts at the next question on the paper (or goes, if there is none), and the
+  // question's own writing-space and answer-area choices go with it.
+  const removeQuestion = id => {
+    const flat = groups().ids.flat(), next = flat[flat.indexOf(id) + 1];
+    mutate(() => {
+      d.questionIds = d.questionIds.filter(x => x !== id);
+      if (d.sections) {
+        const secs = d.sections.map(x => (x.startId === id ? (next ? Object.assign({}, x, { startId: next }) : null) : x)).filter(Boolean);
+        if (secs.length) d.sections = secs; else delete d.sections;
+      }
+      if (d.questionOptions) {
+        const o = Object.assign({}, d.questionOptions);
+        for (const k of Object.keys(o)) if (k === id || k.startsWith(id + '#')) delete o[k];
+        if (Object.keys(o).length) d.questionOptions = o; else delete d.questionOptions;
+      }
+    });
+  };
+  const qopt = key => (d.questionOptions && d.questionOptions[key]) || {};
+  // field: 'answerStyle' or 'space'; value undefined removes it. Empty entries are removed so an untouched test keeps its shape.
+  const setQopt = (key, field, value) => mutate(() => {
+    const o = Object.assign({}, d.questionOptions || {}), cur = Object.assign({}, o[key] || {});
+    if (value === undefined) delete cur[field]; else cur[field] = value;
+    if (Object.keys(cur).length) o[key] = cur; else delete o[key];
+    if (Object.keys(o).length) d.questionOptions = o; else delete d.questionOptions;
+  });
+  const addSection = qid => { const id = uuid(); ui.focusSection = id; mutate(() => { d.sections = (d.sections || []).concat([{ id, startId: qid, title: 'New section', instructions: '' }]); }); };
 
   /* ---- the paper ---- */
   const edApi = {
@@ -3658,6 +3835,8 @@ function createExam(opts) {
     hasInstructions: () => typeof d.instructions === 'string',
     addInstructions: () => { mutate(() => { d.instructions = ''; }); const f = document.getElementById('f-test-instructions'); if (f) f.focus(); },
     toggleLine: k => mutate(() => { const x = hdr(); x[k] = !x[k]; d.header = x; }),
+    setSection: (id, field, v) => mutate(() => { d.sections = (d.sections || []).map(x => (x.id === id ? Object.assign({}, x, { [field]: v }) : x)); }, { key: 'sec-' + id + field }),
+    removeSection: id => mutate(() => { const secs = (d.sections || []).filter(x => x.id !== id); if (secs.length) d.sections = secs; else delete d.sections; }),
     tools(kind, bi, it) {
       const ids = paintIds, n = ids.length;
       const inGroup = kind === 'question' && ids[bi].length > 1;
@@ -3675,10 +3854,57 @@ function createExam(opts) {
       const kids = [handle];
       if (inGroup) kids.push(btn('t-up', '▲', 'Move ' + label + ' up', () => moveInBlock(bi, qi, -1), qi === 0), btn('t-down', '▼', 'Move ' + label + ' down', () => moveInBlock(bi, qi, 1), qi === ids[bi].length - 1));
       else kids.push(btn('t-up', '▲', 'Move ' + label + ' up', () => moveBlock(bi, bi - 1), bi === 0), btn('t-down', '▼', 'Move ' + label + ' down', () => moveBlock(bi, bi + 2), bi === n - 1));
-      if (it) kids.push(btn('t-edit', '✎', 'Edit ' + label, () => editQuestion(it.q.id)), btn('t-remove', '×', 'Remove ' + label + ' from the test', () => removeQuestion(it.q.id)));
+      if (it) kids.push(btn('t-edit', '✎', 'Edit ' + label, () => editQuestion(it.q.id)),
+        h('button', { type: 'button', class: 'xbtn t-more', title: 'More options for ' + label, 'aria-label': 'More options for ' + label, onclick: e => openMenu(e.currentTarget, questionMenu(it, -1)) }, '⋯'),
+        btn('t-remove', '×', 'Remove ' + label + ' from the test', () => removeQuestion(it.q.id)));
       return h('div', { class: 'ed-tools' + (kind === 'block' ? ' for-stim' : '') }, kids);
     }
   };
+
+  /* ---- the question menu (right click on a question, or the ⋯ button) ---- */
+  const SPACE_ROWS = [['small', 'Small'], ['medium', 'Medium'], ['large', 'Large']];
+  async function customSpace(key) {
+    const cur = qopt(key).space, input = h('input', { type: 'number', id: 'space-mm', min: String(SPACE_MIN), max: String(SPACE_MAX), step: '1', value: typeof cur === 'number' ? String(cur) : '40', 'aria-label': 'Writing space in millimetres' });
+    const ok = () => { const n = parseFloat(input.value); return isFinite(n) && n >= SPACE_MIN && n <= SPACE_MAX; };
+    input.addEventListener('input', () => { const b = document.querySelector('.modal .btn.primary'); if (b) b.disabled = !ok(); });
+    const p = modal({ title: 'Writing space', body: h('div', null, field('Height after this question (mm)', input, 'space-mm'), h('p', { class: 'hint' }, 'Between ' + SPACE_MIN + ' and ' + SPACE_MAX + ' mm. About 8 mm is one line of writing.')),
+      actions: [{ label: 'Cancel', value: null }, { label: 'Apply', value: 'ok', kind: 'primary' }], dismissValue: null });
+    input.focus(); input.select();
+    if ((await p) === 'ok' && ok()) setQopt(key, 'space', Math.round(parseFloat(input.value) * 10) / 10);
+  }
+  // it: an item of the Version A plan; part: index of the part that was clicked (multipart) or -1
+  function questionMenu(it, part) {
+    const q = it.q, v = it.view, flat = paintIds.flat();
+    const target = q.type === 'multipart' ? (part >= 0 ? { key: q.id + '#' + part, type: v.parts[part].type, label: 'Part (' + partLabel(part) + ')' } : null) : { key: q.id, type: q.type, label: null };
+    const items = [{ label: 'Edit question', id: 'mi-q-edit', onclick: () => editQuestion(q.id) }, { hr: true },
+      { label: 'Start new section here', id: 'mi-q-section', disabled: (d.sections || []).some(x => x.startId === q.id), onclick: () => addSection(q.id) }, { hr: true }];
+    if (target && (target.type === 'numeric' || target.type === 'short')) {
+      const cur = qopt(target.key).answerStyle, normal = target.type === 'numeric' ? 'Answer line' : 'Ruled lines';
+      items.push({ label: (target.label ? target.label + ' answer area' : 'Answer area'), id: 'mi-q-answer', value: cur === 'blank' ? 'Blank space' : cur === 'none' ? 'None' : normal, sub: [
+        { label: normal, desc: target.type === 'numeric' ? 'Prints “Answer:” and a line.' : 'Prints the ruled lines.', id: 'mi-q-answer-line', checked: !cur, onclick: () => setQopt(target.key, 'answerStyle', undefined) },
+        { label: 'Blank space', desc: 'Empty space for students to write in. No label and no lines.', id: 'mi-q-answer-blank', checked: cur === 'blank', onclick: () => setQopt(target.key, 'answerStyle', 'blank') },
+        { label: 'None', desc: 'Nothing is printed after the question.', id: 'mi-q-answer-none', checked: cur === 'none', onclick: () => setQopt(target.key, 'answerStyle', 'none') }] });
+    } else if (q.type === 'multipart' && !target) items.push({ label: 'Answer area: right-click a part', id: 'mi-q-answer-hint', disabled: true });
+    const sp = qopt(q.id).space;
+    items.push({ label: 'Work space', id: 'mi-q-space', value: sp === undefined ? 'None' : sp === 'rest' ? 'Rest of page' : sp + ' mm', sub: [
+      { label: 'None', id: 'mi-q-space-none', checked: sp === undefined, onclick: () => setQopt(q.id, 'space', undefined) }]
+      .concat(SPACE_ROWS.map(([k, l]) => ({ label: l + ' (' + SPACE_PRESETS[k] + ' mm)', id: 'mi-q-space-' + k, checked: sp === SPACE_PRESETS[k], onclick: () => setQopt(q.id, 'space', SPACE_PRESETS[k]) })))
+      .concat([{ label: 'Custom…', id: 'mi-q-space-custom', checked: typeof sp === 'number' && !Object.values(SPACE_PRESETS).includes(sp), onclick: () => customSpace(q.id) }]) });
+    items.push({ label: 'Fill rest of page', id: 'mi-q-rest', checked: sp === 'rest', onclick: () => setQopt(q.id, 'space', sp === 'rest' ? undefined : 'rest') },
+      { hr: true }, { label: 'Remove', id: 'mi-q-remove', onclick: () => removeQuestion(q.id) });
+    return items;
+  }
+  function wireContextMenu(sheet) {
+    sheet.addEventListener('contextmenu', e => {
+      const qEl = e.target.closest && e.target.closest('.tp-q');
+      if (!qEl || e.target.closest('input,textarea')) return;
+      const it = paintItems.get(qEl.dataset.qid);
+      if (!it) return;
+      e.preventDefault();
+      const partEl = e.target.closest('.tp-part'), part = partEl ? Array.from(qEl.querySelectorAll('.tp-part')).indexOf(partEl) : -1;
+      openMenu(null, questionMenu(it, part), { at: { x: e.clientX, y: e.clientY } });
+    });
+  }
 
   async function paintPaper() {
     if (!R.sheetHost) return;
@@ -3694,8 +3920,10 @@ function createExam(opts) {
       if (seq !== paintSeq || !R.sheetHost.isConnected) return;
     }
     paintIds = plan.blocks.map(b => b.items.map(i => i.q.id));
+    paintItems = new Map(plan.blocks.flatMap(b => b.items.map(i => [i.q.id, i])));
     const active0 = document.activeElement && R.sheetHost.contains(document.activeElement) ? document.activeElement.id : null;
     const sheet = buildSheet(plan, kind, edit ? edApi : null);
+    if (edit) wireContextMenu(sheet);
     const mg = plan.format.margins;
     sheet.style.padding = mg.top + 'mm ' + mg.right + 'mm ' + mg.bottom + 'mm ' + mg.left + 'mm';     // the page margins, drawn on screen
     if (edit && !plan.total) sheet.append(h('div', { class: 'tp-empty', id: 'tp-empty' }, 'Drag questions here from your question bank, or press “Add” on a question.'));
@@ -3706,6 +3934,7 @@ function createExam(opts) {
     R.versionNote.textContent = ui.pv === 'A' ? '' : ui.pv === 'B' ? 'Version B shuffle ' + d.seed + '. Switch to Version A to edit.' : ui.pv === 'KB' ? 'The key for Version B. Switch to Version A to edit.' : 'The key for Version A. Switch to Version A to edit.';
     const instr = document.getElementById('f-test-instructions'); if (instr) { instr.style.height = 'auto'; instr.style.height = instr.scrollHeight + 'px'; }
     if (active0) { const f = document.getElementById(active0); if (f && f.focus) f.focus(); }
+    if (ui.focusSection) { const f = R.sheetHost.querySelector('[data-sid="' + ui.focusSection + '"]'); ui.focusSection = null; if (f) { f.focus(); f.select(); } }
     node.dataset.busy = '0';
   }
 
@@ -3964,6 +4193,7 @@ function createExam(opts) {
     const presetName = Object.keys(MARGIN_PRESETS).find(k => marginsEqual(MARGIN_PRESETS[k], f.margins));
     return [
       { label: 'Paper size', id: 'mi-paper', value: PAPERS[p].label, sub: Object.keys(PAPERS).map(k => ({ label: PAPERS[k].label, id: 'mi-paper-' + k, checked: p === k, onclick: () => { ls.set('paper', k); mutate(() => { d.paper = k; }); } })) },
+      { label: 'Font', id: 'mi-font', value: f.font || 'Default', onclick: async () => { const r = await fontDialog(f.font); if (r) setFmt('font', r.name, ''); } },
       { label: 'Heading size', id: 'mi-heading', value: SIZE_LABEL[f.headingSize], sub: radio('headingSize', 'medium', SIZE_KEYS, v => SIZE_LABEL[v], 'heading') },
       { label: 'Text size', id: 'mi-text', value: SIZE_LABEL[f.textSize], sub: radio('textSize', 'medium', SIZE_KEYS, v => SIZE_LABEL[v], 'text') },
       { label: 'Questions', id: 'mi-style', value: STYLE_INFO[f.questionStyle][0], sub: STYLE_KEYS.map(k => ({ label: STYLE_INFO[k][0], desc: STYLE_INFO[k][1], id: 'mi-style-' + k, checked: f.questionStyle === k, onclick: () => setFmt('questionStyle', k, 'standard') })) },
@@ -3982,13 +4212,14 @@ function createExam(opts) {
 
   async function openCheck() {
     const items = checkTest(d);
-    const fix = items.some(i => i.fix === 'missing');
+    const fix = items.some(i => i.fix === 'missing'), fixSec = items.some(i => i.fix === 'sections');
     const r = await modal({
       title: 'Check this test',
       body: items.length ? h('ul', { class: 'problems', id: 'check-list' }, items.map(i => h('li', null, i.text))) : h('p', { class: 'ok-line', id: 'check-ok' }, h('b', null, '✓ '), 'Ready to print: ' + plural(d.questionIds.length, 'question') + '.'),
-      actions: [{ label: 'Close', value: 'close' }].concat(fix ? [{ label: 'Remove the missing questions', value: 'fix', kind: 'primary' }] : []), dismissValue: 'close'
+      actions: [{ label: 'Close', value: 'close' }].concat(fixSec ? [{ label: 'Remove those section headings', value: 'fixsec' }] : []).concat(fix ? [{ label: 'Remove the missing questions', value: 'fix', kind: 'primary' }] : []), dismissValue: 'close'
     });
     if (r === 'fix') { const ids = new Set(state.questions.map(q => q.id)); mutate(() => { d.questionIds = d.questionIds.filter(id => ids.has(id)); }); }
+    if (r === 'fixsec') mutate(() => { const on = new Set(d.questionIds); const keep = (d.sections || []).filter(x => on.has(x.startId) && state.questions.some(q => q.id === x.startId)); if (keep.length) d.sections = keep; else delete d.sections; });
   }
 
   function onKey(e) {
@@ -4199,7 +4430,7 @@ window.PQ = {
   hashSeed, mulberry32, shuffled, newSeed, formBlocks, questionView, planTest, keyText, keyEntries,
   isTextSafe, needsImage, textWidth, wrapText, blockLines, layoutText,
   buildBankPdf, readPdfPayload, renderBlockImage, buildSheet, preparePrint, processImageFile, ensureImageUrls,
-  dataUrlToBlob, blobToDataUrl, db, collectPayload, loadAll, state, active, navigate, render, checkTest, testFormat, MARGIN_DEFAULT, MARGIN_PRESETS, acrossOk
+  dataUrlToBlob, blobToDataUrl, db, collectPayload, loadAll, state, active, navigate, render, checkTest, testFormat, MARGIN_DEFAULT, MARGIN_PRESETS, acrossOk, fontStack, FONT_RE
 };
 
 /* === START === */

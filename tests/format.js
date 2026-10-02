@@ -42,7 +42,7 @@ const MM = 72 / 25.4;
   console.log('1. the Format menu');
   await page.click('#menu-format');
   const labels = await page.locator('.menu > .menu-item').allInnerTexts();
-  check('Format lists Paper size, Heading size, Text size, Questions and Margins with their current values', ['Paper size', 'Heading size', 'Text size', 'Questions', 'Margins'].every((l, i) => labels[i].replace(/\s+/g, ' ').startsWith(l)) && /Letter/.test(labels[0]) && /Medium/.test(labels[1]) && /Medium/.test(labels[2]) && /Standard/.test(labels[3]) && /Normal/.test(labels[4]), labels);
+  check('Format lists Paper size, Font, Heading size, Text size, Questions and Margins with their current values', ['Paper size', 'Font', 'Heading size', 'Text size', 'Questions', 'Margins'].every((l, i) => labels[i].replace(/\s+/g, ' ').startsWith(l)) && /Letter/.test(labels[0]) && /Default/.test(labels[1]) && /Medium/.test(labels[2]) && /Medium/.test(labels[3]) && /Standard/.test(labels[4]) && /Normal/.test(labels[5]), labels);
   await page.click('#mi-style');
   const styleText = await page.locator('.submenu').innerText();
   check('Questions opens a submenu of Standard, Classic and Condensed, each with a description, Standard checked', /Standard/.test(styleText) && /Classic/.test(styleText) && /Condensed/.test(styleText) && /blank before each objective number/.test(styleText) && /Saves paper/.test(styleText) && (await page.locator('#mi-style-standard .menu-check').innerText()) === '✓');

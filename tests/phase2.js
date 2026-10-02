@@ -316,7 +316,7 @@ const pdfPages = file => Number((/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [
   const keyA0 = await planKey('A'), keyB0 = await planKey('B');
   const snap = async () => page.evaluate(async () => { const p = await PQ.collectPayload(); delete p.exportedAt; return JSON.parse(JSON.stringify(p)); });
   const before2 = await snap();
-  check('payload carries schema 2, keepOrder on exactly one question, tables, a stimulus, a test and an image', before2.schemaVersion === 4 && before2.banks.length === 1 && before2.questions.filter(q => q.keepOrder === true).length === 1 && before2.questions.some(q => q.table) && before2.stimuli.length === 1 && before2.tests.length === 1 && Object.keys(before2.images).length === 1);
+  check('payload carries schema 2, keepOrder on exactly one question, tables, a stimulus, a test and an image', before2.schemaVersion === 5 && before2.banks.length === 1 && before2.questions.filter(q => q.keepOrder === true).length === 1 && before2.questions.some(q => q.table) && before2.stimuli.length === 1 && before2.tests.length === 1 && Object.keys(before2.images).length === 1);
   const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 90000 }), page.click('#btn-export')]);
   await dl.saveAs('p2-export.pdf'); await page.waitForSelector('.toast.ok');
   const list = execFileSync('pdfdetach', ['-list', 'p2-export.pdf']).toString();
