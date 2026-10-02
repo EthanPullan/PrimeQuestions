@@ -663,17 +663,27 @@ document.addEventListener('DOMContentLoaded', () => {
 'use strict';
 
 /* === CONSTANTS === */
-const APP_VERSION = '0.2.0';
-const SCHEMA_VERSION = 2;
+const APP_VERSION = '0.3.0';
+const SCHEMA_VERSION = 3;
+const DB_VERSION = 2;                      // IndexedDB version (2 adds banks and test version history)
 const FORMAT = 'prime-questions';
 const KNOWN_FEATURES = [];                 // payload.requiredFeatures entries this app understands
 const DB_NAME = 'prime-questions';
 const LS = 'prime-questions:';             // localStorage key prefix (UI prefs only)
 const ATTACHMENT_NAME = 'prime-questions.pq';
 const MAX_PDF_BYTES = 256 * 1024 * 1024;   // refuse bigger imports (untrusted input)
-const TYPES = ['mc', 'tf', 'numeric', 'short', 'matching'];
-const TYPE_LABEL = { mc: 'Multiple Choice', tf: 'True / False', numeric: 'Numeric', short: 'Short Answer', matching: 'Matching' };
-const TYPE_SHORT = { mc: 'MC', tf: 'T/F', numeric: 'NUM', short: 'SHORT', matching: 'MATCH' };
+const PART_TYPES = ['mc', 'tf', 'numeric', 'short', 'matching'];   // types a multipart question's parts may have
+const TYPES = PART_TYPES.concat(['multipart']);
+const TYPE_LABEL = { mc: 'Multiple Choice', tf: 'True / False', numeric: 'Numeric', short: 'Short Answer', matching: 'Matching', multipart: 'Multipart' };
+const TYPE_SHORT = { mc: 'MC', tf: 'T/F', numeric: 'NUM', short: 'SHORT', matching: 'MATCH', multipart: 'PARTS' };
+const MAX_PARTS = 12;
+const PAPER_KEYS = ['letter', 'legal', 'a4'];
+const HEADER_DEFAULT = { name: true, class: false, date: true };   // lines printed under a test's title
+// The bank every question belonged to before banks existed. One fixed id and fixed dates, so migrating a local
+// database and migrating an old file give the identical record and a re-import is "unchanged".
+const DEFAULT_BANK_ID = '00000000-0000-4000-8000-000000000001';
+const DEFAULT_BANK_TIME = '2000-01-01T00:00:00.000Z';
+const defaultBank = () => ({ id: DEFAULT_BANK_ID, name: 'My Questions', created: DEFAULT_BANK_TIME, updated: DEFAULT_BANK_TIME });
 const DIFFICULTIES = ['easy', 'medium', 'hard'];
 const STATUSES = ['ready', 'review'];
 const STATUS_LABEL = { ready: 'Ready', review: 'Needs review' };
@@ -759,14 +769,17 @@ function defaultAnswer(type) {
     case 'numeric': return { value: '', units: '', tolerance: 0 };
     case 'short': return { lines: 6, rubric: '' };
     case 'matching': return { pairs: [{ left: '', right: '' }, { left: '', right: '' }] };
+    case 'multipart': return { parts: [newPart('mc'), newPart('short')] };
   }
   throw new Error('Unknown question type: ' + type);
 }
+const newPart = type => ({ type, prompt: '', answer: defaultAnswer(type) });
+const partLabel = i => String.fromCharCode(97 + i);   // a, b, c ...
 
-function emptyQuestion(type) {
+function emptyQuestion(type, bankId) {
   const t = nowIso();
   return {
-    id: uuid(), type: type || 'mc', prompt: '', course: '', unit: '', tags: [],
+    id: uuid(), bankId: bankId || DEFAULT_BANK_ID, type: type || 'mc', prompt: '', course: '', unit: '', tags: [],
     difficulty: 'medium', status: 'review', stimulusId: null, imageIds: [], table: null,
     answer: defaultAnswer(type || 'mc'), notes: '', created: t, updated: t
   };
@@ -784,40 +797,66 @@ function tableFields(t, label) {
   return f;
 }
 
+// Text fields of one answer (a question's, or one part's), for maths checking. `pre` prefixes the field label.
+function answerFields(type, a, pre) {
+  const f = [];
+  a = a || {};
+  if (type === 'mc') (a.options || []).forEach((o, i) => f.push({ field: pre + 'Option ' + letter(i), text: o }));
+  if (type === 'numeric') { f.push({ field: pre + 'Answer value', text: a.value || '' }); f.push({ field: pre + 'Units', text: a.units || '' }); }
+  if (type === 'short') f.push({ field: pre + 'Marking guide', text: a.rubric || '' });
+  if (type === 'matching') (a.pairs || []).forEach((p, i) => { f.push({ field: pre + 'Pair ' + (i + 1) + ' left', text: p.left }); f.push({ field: pre + 'Pair ' + (i + 1) + ' right', text: p.right }); });
+  return f;
+}
+
 // Every text field that may hold \( math \), with a label for error messages.
 function textFields(q) {
   const f = [{ field: 'Question text', text: q.prompt }];
   const a = q.answer || {};
   f.push(...tableFields(q.table, 'Table'));
-  if (q.type === 'mc') (a.options || []).forEach((o, i) => f.push({ field: 'Option ' + letter(i), text: o }));
-  if (q.type === 'numeric') { f.push({ field: 'Answer value', text: a.value || '' }); f.push({ field: 'Units', text: a.units || '' }); }
-  if (q.type === 'short') f.push({ field: 'Marking guide', text: a.rubric || '' });
-  if (q.type === 'matching') (a.pairs || []).forEach((p, i) => { f.push({ field: 'Pair ' + (i + 1) + ' left', text: p.left }); f.push({ field: 'Pair ' + (i + 1) + ' right', text: p.right }); });
+  if (q.type === 'multipart') (a.parts || []).forEach((p, i) => { const pre = 'Part (' + partLabel(i) + ') '; f.push({ field: pre + 'Question text', text: p.prompt }); f.push(...answerFields(p.type, p.answer, pre)); });
+  else f.push(...answerFields(q.type, a, ''));
   f.push({ field: 'Notes', text: q.notes || '' });
   return f;
+}
+
+// Missing content in one answer. `pre` prefixes the field label ("Part (a) ").
+function completenessProblems(type, a, pre) {
+  const out = [], bad = (field, message) => out.push({ kind: 'incomplete', field: pre + field, message });
+  a = a || {};
+  if (type === 'mc') {
+    const opts = a.options || [];
+    if (opts.filter(o => String(o).trim()).length < 2) bad('Options', 'need at least two filled-in options');
+    if (!Number.isInteger(a.correct) || a.correct < 0 || a.correct >= opts.length || !String(opts[a.correct] || '').trim())
+      bad('Correct answer', 'pick a filled-in option as the correct one');
+  } else if (type === 'tf') {
+    if (typeof a.correct !== 'boolean') bad('Correct answer', 'choose True or False');
+  } else if (type === 'numeric') {
+    if (!String(a.value || '').trim()) bad('Answer value', 'is empty');
+    if (!(typeof a.tolerance === 'number' && a.tolerance >= 0)) bad('Tolerance', 'must be 0 or more');
+  } else if (type === 'short') {
+    if (!Number.isInteger(a.lines) || a.lines < 1) bad('Answer lines', 'must be a whole number, 1 or more');
+  } else if (type === 'matching') {
+    const pairs = a.pairs || [];
+    if (pairs.length < 2 || pairs.some(p => !String(p.left).trim() || !String(p.right).trim())) bad('Pairs', 'need at least two pairs, each filled in on both sides');
+  }
+  return out;
 }
 
 // Problems that stop a question being marked "ready": broken math and missing content.
 function checkQuestion(q) {
   const out = [];
   const a = q.answer || {};
-  if (!String(q.prompt || '').trim()) out.push({ kind: 'incomplete', field: 'Question text', message: 'is empty' });
-  if (q.type === 'mc') {
-    const opts = a.options || [];
-    if (opts.filter(o => String(o).trim()).length < 2) out.push({ kind: 'incomplete', field: 'Options', message: 'need at least two filled-in options' });
-    if (!Number.isInteger(a.correct) || a.correct < 0 || a.correct >= opts.length || !String(opts[a.correct] || '').trim())
-      out.push({ kind: 'incomplete', field: 'Correct answer', message: 'pick a filled-in option as the correct one' });
-  } else if (q.type === 'tf') {
-    if (typeof a.correct !== 'boolean') out.push({ kind: 'incomplete', field: 'Correct answer', message: 'choose True or False' });
-  } else if (q.type === 'numeric') {
-    if (!String(a.value || '').trim()) out.push({ kind: 'incomplete', field: 'Answer value', message: 'is empty' });
-    if (!(typeof a.tolerance === 'number' && a.tolerance >= 0)) out.push({ kind: 'incomplete', field: 'Tolerance', message: 'must be 0 or more' });
-  } else if (q.type === 'short') {
-    if (!Number.isInteger(a.lines) || a.lines < 1) out.push({ kind: 'incomplete', field: 'Answer lines', message: 'must be a whole number, 1 or more' });
-  } else if (q.type === 'matching') {
-    const pairs = a.pairs || [];
-    if (pairs.length < 2 || pairs.some(p => !String(p.left).trim() || !String(p.right).trim()))
-      out.push({ kind: 'incomplete', field: 'Pairs', message: 'need at least two pairs, each filled in on both sides' });
+  if (q.type === 'multipart') {
+    const parts = a.parts || [];       // the shared introduction (the question text) may be empty
+    if (!parts.length) out.push({ kind: 'incomplete', field: 'Parts', message: 'need at least one part' });
+    parts.forEach((p, i) => {
+      const pre = 'Part (' + partLabel(i) + ') ';
+      if (!String(p.prompt || '').trim()) out.push({ kind: 'incomplete', field: pre + 'Question text', message: 'is empty' });
+      out.push(...completenessProblems(p.type, p.answer, pre));
+    });
+  } else {
+    if (!String(q.prompt || '').trim()) out.push({ kind: 'incomplete', field: 'Question text', message: 'is empty' });
+    out.push(...completenessProblems(q.type, a, ''));
   }
   for (const f of textFields(q)) for (const m of mathErrors(String(f.text || ''))) out.push({ kind: 'math', field: f.field, message: m });
   return out;
@@ -826,7 +865,20 @@ function checkQuestion(q) {
 /* === PAYLOAD: validation, migration, merge === */
 // { fromVersion: payload => payload at fromVersion + 1 }
 // 1 -> 2: questions may carry an optional boolean `keepOrder` (absent = false). A schema 1 bank has none, so only the version changes.
-const MIGRATIONS = { 1: p => Object.assign({}, p, { schemaVersion: 2 }) };
+// 2 -> 3: questions and stimuli belong to a bank (`bankId`), and the file lists its `banks`. Records without a bank go in the
+// fixed default bank, which is added only when something needs it.
+const MIGRATIONS = {
+  1: p => Object.assign({}, p, { schemaVersion: 2 }),
+  2: p => {
+    const qs = Array.isArray(p.questions) ? p.questions : p.questions, ss = Array.isArray(p.stimuli) ? p.stimuli : p.stimuli;
+    const lacks = r => r && typeof r === 'object' && !r.bankId;
+    const need = (Array.isArray(qs) && qs.some(lacks)) || (Array.isArray(ss) && ss.some(lacks));
+    const banks = Array.isArray(p.banks) ? p.banks.slice() : [];
+    if (need && !banks.some(b => b && b.id === DEFAULT_BANK_ID)) banks.push(defaultBank());
+    const fix = r => lacks(r) ? Object.assign({}, r, { bankId: DEFAULT_BANK_ID }) : r;
+    return Object.assign({}, p, { schemaVersion: 3, banks, questions: Array.isArray(qs) ? qs.map(fix) : qs, stimuli: Array.isArray(ss) ? ss.map(fix) : ss });
+  }
+};
 
 function migrate(p, migrations, target) {
   migrations = migrations || MIGRATIONS;
@@ -850,13 +902,34 @@ function checkTable(t) {
     t.rows.every(isStrArr) && isStr(t.caption));
 }
 
+const ANSWER_PROBLEM = {
+  mc: 'has an invalid multiple-choice answer', tf: 'has an invalid true/false answer', numeric: 'has an invalid numeric answer',
+  short: 'has an invalid short-answer answer', matching: 'has invalid matching pairs', multipart: 'has invalid parts'
+};
+// Is `a` a well-formed answer for `type`? (Used for questions and for the parts of a multipart question.)
+function answerShapeOk(type, a) {
+  if (!a || typeof a !== 'object') return false;
+  if (type === 'mc') return isStrArr(a.options) && a.options.length >= 2 && Number.isInteger(a.correct) && a.correct >= 0 && a.correct < a.options.length;
+  if (type === 'tf') return typeof a.correct === 'boolean';
+  if (type === 'numeric') return isStr(a.value) && isStr(a.units) && typeof a.tolerance === 'number' && isFinite(a.tolerance);
+  if (type === 'short') return Number.isInteger(a.lines) && isStr(a.rubric);
+  if (type === 'matching') return Array.isArray(a.pairs) && a.pairs.every(p => p && isStr(p.left) && isStr(p.right));
+  if (type === 'multipart') return Array.isArray(a.parts) && a.parts.length >= 1 && a.parts.length <= MAX_PARTS &&
+    a.parts.every(p => p && typeof p === 'object' && PART_TYPES.includes(p.type) && isStr(p.prompt) && answerShapeOk(p.type, p.answer) && (p.keepOrder === undefined || typeof p.keepOrder === 'boolean'));
+  return false;
+}
+const isId = v => isStr(v) && v.length > 0 && v.length <= 200;
+
 function recordProblems(kind, r) {
   const e = [];
   const need = (ok, m) => { if (!ok) e.push(m); };
   if (!r || typeof r !== 'object' || Array.isArray(r)) return ['is not a record'];
-  need(isStr(r.id) && r.id.length > 0 && r.id.length <= 200, 'has no valid id');
+  need(isId(r.id), 'has no valid id');
   need(isIso(r.created) && isIso(r.updated), 'has an invalid created/updated date');
-  if (kind === 'question') {
+  if (kind === 'bank') {
+    need(isStr(r.name) && r.name.trim() !== '' && r.name.length <= 200, 'has no valid name');
+  } else if (kind === 'question') {
+    need(isId(r.bankId), 'has no bank');
     need(TYPES.includes(r.type), 'has an unknown type');
     need(isStr(r.prompt) && isStr(r.course) && isStr(r.unit) && isStr(r.notes), 'has a text field that is not text');
     need(isStrArr(r.tags), 'has invalid tags');
@@ -866,14 +939,10 @@ function recordProblems(kind, r) {
     need(isStrArr(r.imageIds), 'has invalid imageIds');
     need(checkTable(r.table), 'has an invalid table');
     need(r.keepOrder === undefined || typeof r.keepOrder === 'boolean', 'has an invalid keepOrder');
-    const a = r.answer;
-    if (!a || typeof a !== 'object') e.push('has no answer');
-    else if (r.type === 'mc') need(isStrArr(a.options) && a.options.length >= 2 && Number.isInteger(a.correct) && a.correct >= 0 && a.correct < a.options.length, 'has an invalid multiple-choice answer');
-    else if (r.type === 'tf') need(typeof a.correct === 'boolean', 'has an invalid true/false answer');
-    else if (r.type === 'numeric') need(isStr(a.value) && isStr(a.units) && typeof a.tolerance === 'number' && isFinite(a.tolerance), 'has an invalid numeric answer');
-    else if (r.type === 'short') need(Number.isInteger(a.lines) && isStr(a.rubric), 'has an invalid short-answer answer');
-    else if (r.type === 'matching') need(Array.isArray(a.pairs) && a.pairs.every(p => p && isStr(p.left) && isStr(p.right)), 'has invalid matching pairs');
+    if (!r.answer || typeof r.answer !== 'object') e.push('has no answer');
+    else if (TYPES.includes(r.type)) need(answerShapeOk(r.type, r.answer), ANSWER_PROBLEM[r.type]);
   } else if (kind === 'stimulus') {
+    need(isId(r.bankId), 'has no bank');
     need(isStr(r.title) && isStr(r.text), 'has a text field that is not text');
     need(isStrArr(r.imageIds), 'has invalid imageIds');
     need(checkTable(r.table), 'has an invalid table');
@@ -881,6 +950,9 @@ function recordProblems(kind, r) {
     need(isStr(r.title) && isStr(r.course), 'has a text field that is not text');
     need(isStrArr(r.questionIds), 'has invalid questionIds');
     need(Number.isInteger(r.seed), 'has an invalid seed');
+    need(r.header === undefined || (r.header && typeof r.header === 'object' && typeof r.header.name === 'boolean' && typeof r.header.class === 'boolean' && typeof r.header.date === 'boolean'), 'has an invalid header');
+    need(r.paper === undefined || PAPER_KEYS.includes(r.paper), 'has an invalid paper size');
+    need(r.instructions === undefined || (isStr(r.instructions) && r.instructions.length <= 5000), 'has invalid instructions');
   }
   return e;
 }
@@ -902,13 +974,18 @@ function parsePayload(p) {
   if (unknown.length) return fail('features', 'This bank needs features this copy of Prime Questions does not have: ' + unknown.join(', ') + '. Nothing was changed.');
   const errors = [];
   const add = msg => { if (errors.length < 15) errors.push(msg); };
-  for (const [key, kind] of [['questions', 'question'], ['stimuli', 'stimulus'], ['tests', 'test']]) {
+  for (const [key, kind] of [['banks', 'bank'], ['questions', 'question'], ['stimuli', 'stimulus'], ['tests', 'test']]) {
     if (!Array.isArray(m[key])) { add('"' + key + '" is missing or not a list.'); continue; }
     const seen = new Set();
     m[key].forEach((r, i) => {
       for (const prob of recordProblems(kind, r)) add('The ' + kind + ' at position ' + (i + 1) + ' ' + prob + '.');
       if (r && isStr(r.id)) { if (seen.has(r.id)) add('The id "' + r.id + '" appears twice in ' + key + '.'); seen.add(r.id); }
     });
+  }
+  // every question and stimulus must belong to a bank that is in the file
+  if (Array.isArray(m.banks) && Array.isArray(m.questions) && Array.isArray(m.stimuli)) {
+    const bankIds = new Set(m.banks.filter(b => b && isStr(b.id)).map(b => b.id));
+    for (const [key, kind] of [['questions', 'question'], ['stimuli', 'stimulus']]) m[key].forEach((r, i) => { if (r && isStr(r.bankId) && !bankIds.has(r.bankId)) add('The ' + kind + ' at position ' + (i + 1) + ' belongs to a question bank that is not in the file.'); });
   }
   if (!m.images || typeof m.images !== 'object' || Array.isArray(m.images)) add('"images" is missing or not a map.');
   else for (const id of Object.keys(m.images)) {
@@ -919,14 +996,14 @@ function parsePayload(p) {
   return { ok: true, payload: m };
 }
 
-// Merge plan: nothing is applied here. local = {questions, stimuli, tests, imageIds:Set}, incoming = parsed payload.
+// Merge plan: nothing is applied here. local = {banks, questions, stimuli, tests, imageIds:Set}, incoming = parsed payload.
 // "changed" = same id, different content. Newer `updated` wins; a tie keeps the local copy.
 function planMerge(local, incoming) {
   const plan = { collections: {}, images: { new: [], existing: 0 } };
-  for (const c of ['questions', 'stimuli', 'tests']) {
-    const byId = new Map(local[c].map(r => [r.id, r]));
+  for (const c of ['banks', 'questions', 'stimuli', 'tests']) {
+    const byId = new Map((local[c] || []).map(r => [r.id, r]));
     const res = { new: [], changed: [], unchanged: [] };
-    for (const r of incoming[c]) {
+    for (const r of (incoming[c] || [])) {
       const l = byId.get(r.id);
       if (!l) { res.new.push(r); continue; }
       if (stable(l) === stable(r)) { res.unchanged.push(r); continue; }
@@ -946,7 +1023,7 @@ function planMerge(local, incoming) {
 
 function recordsToWrite(plan) {
   const out = {};
-  for (const c of ['questions', 'stimuli', 'tests']) {
+  for (const c of ['banks', 'questions', 'stimuli', 'tests']) {
     const r = plan.collections[c];
     out[c] = r.new.concat(r.changed.filter(x => x.winner === 'incoming').map(x => x.incoming));
   }
@@ -955,7 +1032,32 @@ function recordsToWrite(plan) {
 
 function planIsNoop(plan) {
   const w = recordsToWrite(plan);
-  return !w.questions.length && !w.stimuli.length && !w.tests.length && !plan.images.new.length;
+  return !w.banks.length && !w.questions.length && !w.stimuli.length && !w.tests.length && !plan.images.new.length;
+}
+
+// The payload for export (pure). data = { banks, questions, stimuli, tests, images: {id: dataUrl} }.
+// With opts.bankId only that bank is exported: its questions and stimuli and the images they use, and no tests.
+function buildPayload(data, opts) {
+  opts = opts || {};
+  let { banks, questions, stimuli, tests } = data;
+  const all = data.images || {};
+  const images = Object.create(null);
+  if (opts.bankId) {
+    banks = banks.filter(b => b.id === opts.bankId);
+    questions = questions.filter(q => q.bankId === opts.bankId);
+    stimuli = stimuli.filter(s => s.bankId === opts.bankId);
+    tests = [];
+    const used = new Set();
+    for (const r of questions.concat(stimuli)) for (const id of r.imageIds) used.add(id);
+    for (const id of Object.keys(all).sort()) if (used.has(id)) images[id] = all[id];
+  } else {
+    for (const id of Object.keys(all).sort()) images[id] = all[id];
+  }
+  const order = (a, b) => a.created.localeCompare(b.created) || a.id.localeCompare(b.id);
+  return {
+    format: FORMAT, schemaVersion: SCHEMA_VERSION, appVersion: APP_VERSION, requiredFeatures: [], exportedAt: opts.exportedAt || nowIso(),
+    banks: banks.slice().sort(order), questions: questions.slice().sort(order), stimuli: stimuli.slice().sort(order), tests: tests.slice().sort(order), images
+  };
 }
 
 /* === TESTS: seeded shuffle, versions, answer keys (pure, no DOM) === */
@@ -999,6 +1101,8 @@ function formBlocks(questions, stimById) {
 // What one question looks like on the paper for a version. Blank options are not printed.
 function questionView(q, seed, version) {
   const a = q.answer;
+  // multipart: the parts keep their order; each part is viewed like a question of its own (own shuffle stream)
+  if (q.type === 'multipart') return { type: 'multipart', parts: a.parts.map((p, i) => Object.assign(questionView({ id: q.id + '#' + i, type: p.type, answer: p.answer, keepOrder: p.keepOrder }, seed, version), { prompt: p.prompt })) };
   if (q.type === 'mc') {
     let opts = a.options.map((text, orig) => ({ text, orig })).filter(o => String(o.text).trim() !== '');
     if (version === 'B' && !q.keepOrder) opts = shuffled(opts, mulberry32(hashSeed(seed, 'opt|' + q.id)));
@@ -1032,12 +1136,16 @@ function planTest(test, questions, stimuli, version) {
     stimulus: b.stimulusId ? sById.get(b.stimulusId) : null,
     items: b.questions.map(q => ({ q, number: ++num, aNumber: aNumber.get(q.id), view: questionView(q, test.seed, version) }))
   }));
-  return { version, title: test.title, course: test.course, blocks: out, total: num, missing };
+  return {
+    version, title: test.title, course: test.course, blocks: out, total: num, missing,
+    header: Object.assign({}, HEADER_DEFAULT, test.header || {}), instructions: test.instructions || '', paper: test.paper || null
+  };
 }
 
 // The answer as a short string, from the version's own view (so a B key shows B's letters).
 function keyText(item) {
   const v = item.view;
+  if (v.type === 'multipart') return v.parts.map((p, i) => '(' + partLabel(i) + ') ' + keyText({ view: p })).join('\n');
   if (v.type === 'mc') return v.correct >= 0 ? letter(v.correct) + '. ' + v.options[v.correct].text : '(no correct option set)';
   if (v.type === 'tf') return v.correct ? 'True' : 'False';
   if (v.type === 'numeric') return v.value + (v.units ? ' ' + v.units : '') + (v.tolerance ? '  (±' + v.tolerance + ')' : '');
@@ -1235,6 +1343,26 @@ const KIND = {
   answer: { size: 11, lh: 15, after: 3 }
 };
 
+// Lines for the options and the answer of one question or part. `ind` > 0 indents a part's lines.
+function answerLines(type, a, ind) {
+  const L = [], add = l => { if (ind) l.ind = ind; L.push(l); };
+  if (type === 'mc') {
+    a.options.forEach((o, i) => add({ k: 'option', label: letter(i) + '.', text: o }));
+    add({ k: 'answer', label: 'Answer:', text: letter(a.correct) });
+  } else if (type === 'tf') {
+    add({ k: 'answer', label: 'Answer:', text: a.correct ? 'True' : 'False' });
+  } else if (type === 'numeric') {
+    add({ k: 'answer', label: 'Answer:', text: a.value + (a.units ? ' ' + a.units : '') + (a.tolerance ? '   (tolerance \u00B1' + a.tolerance + ')' : '') });
+  } else if (type === 'short') {
+    add({ k: 'answer', label: 'Answer lines:', text: String(a.lines) });
+    if (a.rubric) add({ k: 'answer', label: 'Marking guide:', text: a.rubric });
+  } else if (type === 'matching') {
+    add({ k: 'answer', label: 'Matching pairs:', text: '' });
+    a.pairs.forEach((p, i) => add({ k: 'option', label: (i + 1) + '.', text: p.left + '   =   ' + p.right }));
+  }
+  return L;
+}
+
 // Lines of one question (or stimulus / test) block. The same lines feed the text route, the image route and the screen preview.
 function blockLines(q, num, ctx) {
   const L = [];
@@ -1260,21 +1388,8 @@ function blockLines(q, num, ctx) {
     if (q.table) L.push({ k: 'table', table: q.table });
     if (q.imageIds.length) L.push({ k: 'imgs', ids: q.imageIds });
   }
-  const a = q.answer;
-  if (q.type === 'mc') {
-    a.options.forEach((o, i) => L.push({ k: 'option', label: letter(i) + '.', text: o }));
-    L.push({ k: 'answer', label: 'Answer:', text: letter(a.correct) });
-  } else if (q.type === 'tf') {
-    L.push({ k: 'answer', label: 'Answer:', text: a.correct ? 'True' : 'False' });
-  } else if (q.type === 'numeric') {
-    L.push({ k: 'answer', label: 'Answer:', text: a.value + (a.units ? ' ' + a.units : '') + (a.tolerance ? '   (tolerance \u00B1' + a.tolerance + ')' : '') });
-  } else if (q.type === 'short') {
-    L.push({ k: 'answer', label: 'Answer lines:', text: String(a.lines) });
-    if (a.rubric) L.push({ k: 'answer', label: 'Marking guide:', text: a.rubric });
-  } else if (q.type === 'matching') {
-    L.push({ k: 'answer', label: 'Matching pairs:', text: '' });
-    a.pairs.forEach((p, i) => L.push({ k: 'option', label: (i + 1) + '.', text: p.left + '   =   ' + p.right }));
-  }
+  if (q.type === 'multipart') q.answer.parts.forEach((p, i) => { L.push({ k: 'body', label: '(' + partLabel(i) + ')', text: p.prompt }); L.push(...answerLines(p.type, p.answer, 1)); });
+  else L.push(...answerLines(q.type, q.answer, 0));
   if (!rich && q.table) L.push({ k: 'sub', text: '[Table: ' + (q.table.caption || 'untitled') + ', ' + q.table.headers.length + ' columns x ' + q.table.rows.length + ' rows. Open the data in Prime Questions to see it.]' });
   if (!rich && q.imageIds.length) L.push({ k: 'sub', text: '[' + q.imageIds.length + ' image' + (q.imageIds.length > 1 ? 's' : '') + ' attached. Open the data in Prime Questions to see ' + (q.imageIds.length > 1 ? 'them' : 'it') + '.]' });
   if (q.notes) L.push({ k: 'sub', text: 'Notes: ' + q.notes });
@@ -1304,12 +1419,13 @@ function layoutText(lines, width) {
     const k = KIND[l.k] || KIND.body;
     const bold = !!k.bold;
     let indent = 0;
+    const base = (l.ind || 0) * 18;     // a multipart question's part lines are indented
     const label = l.label ? safe(l.label) : null;
     if (label) indent = Math.max(k.indent || 0, textWidth(label, true, k.size) + 4);
     if (l.k === 'title' && idx > 0) top += 6;
-    const ls = wrapText(l.text || '', bold, k.size, width - indent);
+    const ls = wrapText(l.text || '', bold, k.size, width - base - indent);
     ls.forEach((t, i) => {
-      rows.push({ top, lh: k.lh, size: k.size, bold, gray: k.gray || 0, x: indent, text: t, label: i === 0 ? label : null });
+      rows.push({ top, lh: k.lh, size: k.size, bold, gray: k.gray || 0, x: base + indent, xl: base, text: t, label: i === 0 ? label : null });
       top += k.lh;
     });
     top += k.after;
@@ -1328,7 +1444,7 @@ class Doc {
   rect(x, y, w, h, gray) { this.page.ops.push(pdfNum(gray) + ' g ' + pdfNum(x) + ' ' + pdfNum(y) + ' ' + pdfNum(w) + ' ' + pdfNum(h) + ' re f 0 g'); }
   drawRow(r, yTop) {
     const base = yTop - r.top - r.size - (r.lh - r.size) / 2;
-    if (r.label) this.text(MX, base, r.label, r.size, true, r.gray);
+    if (r.label) this.text(MX + (r.xl || 0), base, r.label, r.size, true, r.gray);
     if (r.text !== '') this.text(MX + r.x, base, r.text, r.size, r.bold, r.gray);
   }
   place(block) {
@@ -1380,16 +1496,27 @@ async function buildBankPdf(payload, opts) {
     return layoutText(lines, CW);
   };
 
-  const byType = {};
-  for (const t of TYPES) byType[t] = payload.questions.filter(q => q.type === t);
-  const sections = TYPES.filter(t => byType[t].length);
+  // one group per bank (questions whose bank is missing from the file go in "Other"); inside a bank, one section per type
+  const bankOrder = (a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id);
+  const bankList = (payload.banks || []).slice().sort(bankOrder);
+  const known = new Set(bankList.map(b => b.id));
+  if (payload.questions.some(q => !known.has(q.bankId))) bankList.push({ id: '\u0000other', name: 'Other' });
+  const groups = [];
+  for (const b of bankList) {
+    const qs = payload.questions.filter(q => (b.id === '\u0000other' ? !known.has(q.bankId) : q.bankId === b.id));
+    const byType = {};
+    for (const t of TYPES) byType[t] = qs.filter(q => q.type === t);
+    groups.push({ bank: b, count: qs.length, byType, sections: TYPES.filter(t => byType[t].length) });
+  }
   const dateStr = payload.exportedAt.slice(0, 10);
+  const fit = (str, bold, size, maxW) => { let t = safe(str).replace(/\n/g, ' '); while (t.length > 1 && textWidth(t, bold, size) > maxW) t = t.slice(0, -1); return t; };
+  const bankTitle = groups.length === 1 ? groups[0].bank.name : 'Question Banks';
 
   // --- cover page ---
   const nQ = payload.questions.length;
   doc.rect(0, PAGE_H - 14, PAGE_W, 14, 0.1);
   doc.text(MX, PAGE_H - 70, 'PRIME QUESTIONS  \u00B7  QUESTION BANK FILE', 9, true, 0.3);
-  doc.text(MX, PAGE_H - 110, 'Question Bank', 28, true, 0);
+  doc.text(MX, PAGE_H - 110, fit(bankTitle, true, 28, CW), 28, true, 0);
   doc.text(MX, PAGE_H - 134, nQ + ' Question' + (nQ === 1 ? '' : 's'), 12, true, 0);
   const extras = [];
   if (payload.stimuli.length) extras.push(payload.stimuli.length + ' shared stimul' + (payload.stimuli.length === 1 ? 'us' : 'i'));
@@ -1403,10 +1530,12 @@ async function buildBankPdf(payload, opts) {
   doc.text(MX + 18, boxTop - 22, 'A digital file for importing into Prime Questions', 11, true, 0);
   boxLines.forEach((l, i) => doc.text(MX + 18, boxTop - 40 - i * 13, l, 10, false, 0));
   let cy = boxTop - boxH - 44;
-  doc.text(MX, cy, 'Question Types', 16, true, 0);
-  doc.text(MX, cy - 15, 'Each type starts on its own page.', 9, false, 0.3);
+  doc.text(MX, cy, groups.length === 1 ? 'Question Types' : 'Question Banks', 16, true, 0);
+  doc.text(MX, cy - 15, groups.length === 1 ? 'Each type starts on its own page.' : 'Each bank starts on its own page, grouped by question type.', 9, false, 0.3);
   cy -= 40;
-  const indexRows = sections.map(t => [TYPE_LABEL[t], byType[t].length]);
+  const indexRows = groups.length === 1
+    ? groups[0].sections.map(t => [TYPE_LABEL[t], groups[0].byType[t].length])
+    : groups.map(g => [fit(g.bank.name, true, 12, CW - 80), g.count]);
   if (payload.stimuli.length) indexRows.push(['Shared Stimuli', payload.stimuli.length]);
   if (payload.tests.length) indexRows.push(['Saved Tests', payload.tests.length]);
   for (const [label, n] of indexRows) {
@@ -1422,16 +1551,16 @@ async function buildBankPdf(payload, opts) {
   // --- sections ---
   let done = 0;
   const total = nQ + payload.stimuli.length + payload.tests.length;
-  const heading = (title, n) => {
+  const heading = (title, n, sub) => {
     doc.newPage();
     doc.rect(MX, doc.y - 34, 5, 38, 0.1);
     doc.text(MX + 16, doc.y - 18, title, 22, true, 0);
-    doc.text(MX + 16, doc.y - 32, n + ' ' + (n === 1 ? 'item' : 'items'), 9.5, false, 0.3);
+    doc.text(MX + 16, doc.y - 32, (sub ? fit(sub, false, 9.5, CW - 140) + '  \u00B7  ' : '') + n + ' ' + (n === 1 ? 'item' : 'items'), 9.5, false, 0.3);
     doc.y -= 62;
   };
-  for (const t of sections) {
-    heading(TYPE_LABEL[t], byType[t].length);
-    const qs = byType[t].slice().sort((a, b) => a.created.localeCompare(b.created) || a.id.localeCompare(b.id));
+  for (const g of groups) for (const t of g.sections) {
+    heading(TYPE_LABEL[t], g.byType[t].length, groups.length > 1 ? g.bank.name : '');
+    const qs = g.byType[t].slice().sort((a, b) => a.created.localeCompare(b.created) || a.id.localeCompare(b.id));
     let n = 0;
     for (const q of qs) { doc.place(await makeBlock(blockLines(q, ++n, { stim }))); progress(++done, total); }
   }
@@ -1481,11 +1610,24 @@ const db = (() => {
     if (handle) return Promise.resolve(handle);
     if (opening) return opening;          // parallel callers share one connection (separate opens leaked connections)
     opening = new Promise((res, rej) => {
-      const r = indexedDB.open(DB_NAME, 1);
-      r.onupgradeneeded = () => {
-        const d = r.result;
-        for (const s of ['questions', 'stimuli', 'tests']) if (!d.objectStoreNames.contains(s)) d.createObjectStore(s, { keyPath: 'id' });
+      const r = indexedDB.open(DB_NAME, DB_VERSION);
+      r.onupgradeneeded = ev => {
+        const d = r.result, tx = r.transaction;
+        for (const s of ['questions', 'stimuli', 'tests', 'banks', 'testVersions']) if (!d.objectStoreNames.contains(s)) d.createObjectStore(s, { keyPath: 'id' });
         if (!d.objectStoreNames.contains('images')) d.createObjectStore('images');   // Blobs keyed by id
+        // version 2 (schema 3): every question and stimulus belongs to a bank. Existing records move to the default bank
+        // inside this same upgrade transaction, so a failure leaves the old database exactly as it was.
+        if (ev.oldVersion < 2) {
+          tx.objectStore('banks').put(defaultBank());
+          if (ev.oldVersion >= 1) for (const name of ['questions', 'stimuli']) {
+            tx.objectStore(name).openCursor().onsuccess = e => {
+              const c = e.target.result;
+              if (!c) return;
+              if (!c.value.bankId) { const v = c.value; v.bankId = DEFAULT_BANK_ID; c.update(v); }
+              c.continue();
+            };
+          }
+        }
       };
       r.onsuccess = () => {
         const conn = r.result;
@@ -1514,11 +1656,12 @@ const db = (() => {
     async put(store, rec) { const d = await open(); const tx = d.transaction(store, 'readwrite'); tx.objectStore(store).put(rec); return finish(tx); },
     async del(store, id) { const d = await open(); const tx = d.transaction(store, 'readwrite'); tx.objectStore(store).delete(id); return finish(tx); },
     // One transaction, so an import, a save with images, or a delete that also edits other records is all-or-nothing.
-    // b = { questions, stimuli, tests: [records to put], images: [{id, blob}], deletes: { questions, stimuli, tests: [ids] } }
+    // b = { banks, questions, stimuli, tests, testVersions: [records to put], images: [{id, blob}],
+    //       deletes: { banks, questions, stimuli, tests, testVersions: [ids] } }
     async applyBatch(b) {
       const d = await open();
-      const tx = d.transaction(['questions', 'stimuli', 'tests', 'images'], 'readwrite');
-      for (const c of ['questions', 'stimuli', 'tests']) {
+      const tx = d.transaction(['banks', 'questions', 'stimuli', 'tests', 'testVersions', 'images'], 'readwrite');
+      for (const c of ['banks', 'questions', 'stimuli', 'tests', 'testVersions']) {
         for (const r of (b[c] || [])) tx.objectStore(c).put(r);
         for (const id of ((b.deletes && b.deletes[c]) || [])) tx.objectStore(c).delete(id);
       }
@@ -1597,6 +1740,7 @@ function blockCss(u, sel) {
     sel + ' .pb-label{flex:none;font-weight:700;padding-right:' + p(4) + ';}' +
     sel + ' .pb-option .pb-label{min-width:' + p(24) + ';}' +
     sel + ' .pb-text{flex:1;min-width:0;}' +
+    sel + ' .pb-ind{margin-left:' + p(18) + ';}' +
     sel + ' .pb-stim{border-left:' + p(2) + ' solid #000;padding-left:' + p(8) + ';}' +
     sel + ' .pq-table{border-collapse:collapse;margin:' + p(2) + ' 0;}' +
     sel + ' .pq-table th,' + sel + ' .pq-table td{border:1px solid #000;padding:' + p(2) + ' ' + p(6) + ';text-align:left;}' +
@@ -1608,7 +1752,7 @@ function buildBlockDom(lines) {
   for (const l of lines) {
     if (l.k === 'table') { root.append(h('div', { class: 'pb-row pb-tablerow' }, buildTableDom(l.table))); continue; }
     if (l.k === 'imgs') { root.append(h('div', { class: 'pb-row pb-imgsrow' }, buildImgsDom(l.ids))); continue; }
-    const row = h('div', { class: 'pb-row pb-' + l.k + (l.label ? ' pb-hang' : '') });
+    const row = h('div', { class: 'pb-row pb-' + l.k + (l.label ? ' pb-hang' : '') + (l.ind ? ' pb-ind' : '') });
     if (l.label) row.append(h('span', { class: 'pb-label' }, l.label));
     row.append(h('span', { class: 'pb-text' }, l.text || ''));
     root.append(row);
@@ -2665,6 +2809,7 @@ window.PQ = {
   APP_VERSION, SCHEMA_VERSION, FORMAT, MIGRATIONS,
   uuid, stable, splitMath, mathErrors, defaultAnswer, emptyQuestion, textFields, checkQuestion,
   migrate, parsePayload, planMerge, recordsToWrite, planIsNoop,
+  buildPayload, defaultBank, DEFAULT_BANK_ID, TYPES, PART_TYPES, partLabel, newPart, answerLines,
   hashSeed, mulberry32, shuffled, newSeed, formBlocks, questionView, planTest, keyText, keyEntries,
   isTextSafe, needsImage, textWidth, wrapText, blockLines, layoutText,
   buildBankPdf, readPdfPayload, renderBlockImage, buildSheet, preparePrint, processImageFile, ensureImageUrls,

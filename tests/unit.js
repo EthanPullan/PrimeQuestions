@@ -2,6 +2,7 @@ const fs = require('fs');
 const { execFileSync } = require('child_process');
 const { launch, openApp, check, summary } = require('./lib');
 
+const PQ_DEFAULT = () => '00000000-0000-4000-8000-000000000001|My Questions';
 (async () => {
   const { browser, page, problems } = await launch();
   await openApp(page);
@@ -65,7 +66,7 @@ const { launch, openApp, check, summary } = require('./lib');
     r.valid = PQ.parsePayload(base());
     r.notObj = PQ.parsePayload(null); r.arr = PQ.parsePayload([]); r.str = PQ.parsePayload('x');
     r.wrongFmt = PQ.parsePayload(Object.assign(base(), { format: 'test-parrot/package' }));
-    r.newer = PQ.parsePayload(Object.assign(base(), { schemaVersion: 3 }));
+    r.newer = PQ.parsePayload(Object.assign(base(), { schemaVersion: 4 }));
     r.zero = PQ.parsePayload(Object.assign(base(), { schemaVersion: 0 }));
     r.strVer = PQ.parsePayload(Object.assign(base(), { schemaVersion: '1' }));
     r.feat = PQ.parsePayload(Object.assign(base(), { requiredFeatures: ['hologram'] }));
@@ -400,22 +401,216 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
     const parsed = PQ.parsePayload(raw);
     const T = '2026-10-01T15:00:00Z';
     const q = Object.assign({ id: 'a', type: 'tf', prompt: 'p', course: '', unit: '', tags: [], difficulty: 'easy', status: 'ready', stimulusId: null, imageIds: [], table: null, answer: { correct: true }, notes: '', created: T, updated: T });
-    const p2 = (extra) => ({ format: 'prime-questions', schemaVersion: 2, appVersion: '9', requiredFeatures: [], exportedAt: T, questions: [Object.assign({}, q, extra)], stimuli: [], tests: [], images: {} });
+    const p2 = (extra) => ({ format: 'prime-questions', schemaVersion: 3, appVersion: '9', requiredFeatures: [], exportedAt: T, banks: [{ id: 'b1', name: 'B', created: T, updated: T }], questions: [Object.assign({}, q, { bankId: 'b1' }, extra)], stimuli: [], tests: [], images: {} });
     return {
       rawSchema: raw.schemaVersion, rawApp: raw.appVersion, ok: parsed.ok, errors: parsed.errors,
       migratedSchema: parsed.ok && parsed.payload.schemaVersion, counts: parsed.ok && [parsed.payload.questions.length, parsed.payload.stimuli.length, parsed.payload.tests.length, Object.keys(parsed.payload.images).length],
-      untouched: parsed.ok && JSON.stringify(parsed.payload.questions) === JSON.stringify(raw.questions),
+      untouched: parsed.ok && JSON.stringify(parsed.payload.questions.map(q => { const c = Object.assign({}, q); delete c.bankId; return c; })) === JSON.stringify(raw.questions),
+      allInDefaultBank: parsed.ok && parsed.payload.questions.every(q => q.bankId === PQ.DEFAULT_BANK_ID) && parsed.payload.stimuli.every(x => x.bankId === PQ.DEFAULT_BANK_ID) && parsed.payload.banks.length === 1,
       keepTrue: PQ.parsePayload(p2({ keepOrder: true })).ok, keepFalse: PQ.parsePayload(p2({ keepOrder: false })).ok, keepAbsent: PQ.parsePayload(p2({})).ok,
-      keepBad: PQ.parsePayload(p2({ keepOrder: 'yes' })).ok, v3: PQ.parsePayload(Object.assign(p2({}), { schemaVersion: 3 })).code,
+      keepBad: PQ.parsePayload(p2({ keepOrder: 'yes' })).ok, v4: PQ.parsePayload(Object.assign(p2({}), { schemaVersion: 4 })).code,
       appSchema: PQ.SCHEMA_VERSION, migrations: Object.keys(PQ.MIGRATIONS).join()
     };
   }, fx);
   check('fixture really is a schema 1 bank written by v0.1.0', J.rawSchema === 1 && J.rawApp === '0.1.0', J);
-  check('the v0.1.0 bank imports (migrated 1 -> 2) and keeps every record untouched', J.ok && J.migratedSchema === 2 && J.untouched, J.errors);
+  check('the v0.1.0 bank imports (migrated 1 -> 2 -> 3), keeps every record untouched and files them in the default bank', J.ok && J.migratedSchema === 3 && J.untouched && J.allInDefaultBank, J);
   check('fixture content: 7 questions, 1 stimulus, 1 test, 1 image', JSON.stringify(J.counts) === '[7,1,1,1]', J.counts);
-  check('schema is 2 with a 1->2 migration', J.appSchema === 2 && J.migrations === '1', J);
+  check('schema is 3 with 1->2 and 2->3 migrations', J.appSchema === 3 && J.migrations === '1,2', J);
   check('keepOrder true/false/absent accepted; non-boolean refused', J.keepTrue && J.keepFalse && J.keepAbsent && !J.keepBad);
-  check('a schema 3 bank is refused as newer', J.v3 === 'newer', J.v3);
+  check('a schema 4 bank is refused as newer', J.v4 === 'newer', J.v4);
+
+
+  /* ---------- K. schema 3: banks, migration from a real v0.2.0 file ---------- */
+  console.log('K. schema 3: banks and migration');
+  const fx2 = fs.readFileSync(require('path').join(__dirname, 'fixtures', 'bank-schema2-v0.2.0.pdf')).toString('base64');
+  const K = await page.evaluate(async fx2 => {
+    const u = Uint8Array.from(atob(fx2), c => c.charCodeAt(0));
+    const raw = await PQ.readPdfPayload(u);
+    const parsed = PQ.parsePayload(raw);
+    const T = '2026-10-01T10:00:00.000Z';
+    const bank = (id, name) => ({ id, name: name || 'Bank ' + id, created: T, updated: T });
+    const q = (id, bankId, extra) => Object.assign({ id, bankId, type: 'tf', prompt: 'p', course: '', unit: '', tags: [], difficulty: 'easy', status: 'ready', stimulusId: null, imageIds: [], table: null, answer: { correct: true }, notes: '', created: T, updated: T }, extra || {});
+    const stim = (id, bankId) => ({ id, bankId, title: 't', text: '', imageIds: [], table: null, created: T, updated: T });
+    const base = () => ({ format: 'prime-questions', schemaVersion: 3, appVersion: '9', requiredFeatures: [], exportedAt: T, banks: [bank('b1'), bank('b2')], questions: [q('a', 'b1'), q('b', 'b2')], stimuli: [stim('s1', 'b1')], tests: [], images: {} });
+    const t = (m) => { const p = base(); m(p); return PQ.parsePayload(p); };
+    const test0 = { id: 't1', title: 'T', course: '', questionIds: [], seed: 1, created: T, updated: T };
+    const r = {};
+    r.v2 = { rawSchema: raw.schemaVersion, ok: parsed.ok, errors: parsed.errors, schema: parsed.payload && parsed.payload.schemaVersion, banks: parsed.payload && parsed.payload.banks,
+      allDefault: parsed.payload && parsed.payload.questions.every(x => x.bankId === PQ.DEFAULT_BANK_ID) && parsed.payload.stimuli.every(x => x.bankId === PQ.DEFAULT_BANK_ID),
+      keep: parsed.payload && parsed.payload.questions[0].keepOrder === true,
+      untouched: parsed.payload && JSON.stringify(parsed.payload.tests) === JSON.stringify(raw.tests) && JSON.stringify(parsed.payload.images) === JSON.stringify(raw.images) };
+    r.defaultStable = parsed.payload && PQ.stable(parsed.payload.banks[0]) === PQ.stable(PQ.defaultBank());
+    const empty = PQ.parsePayload({ format: 'prime-questions', schemaVersion: 2, requiredFeatures: [], questions: [], stimuli: [], tests: [], images: {} });
+    r.emptyV2 = empty.ok && empty.payload.banks.length === 0;
+    r.valid = PQ.parsePayload(base()).ok;
+    r.noBanksList = t(p => { delete p.banks; }).ok;
+    r.noBankId = t(p => { delete p.questions[0].bankId; }).ok;
+    r.badBankRef = t(p => { p.questions[0].bankId = 'nope'; });
+    r.badStimRef = t(p => { p.stimuli[0].bankId = 'nope'; }).ok;
+    r.noName = t(p => { p.banks[0].name = '  '; }).ok;
+    r.longName = t(p => { p.banks[0].name = 'x'.repeat(201); }).ok;
+    r.dupBank = t(p => { p.banks.push(bank('b1')); }).ok;
+    // tests: optional page options
+    const withTest = extra => t(p => { p.tests = [Object.assign({}, test0, extra)]; }).ok;
+    r.testOpts = [withTest({}), withTest({ header: { name: true, class: true, date: false }, paper: 'a4', instructions: 'Answer all questions.' }), withTest({ header: { name: true } }), withTest({ paper: 'tabloid' }), withTest({ instructions: 42 }), withTest({ header: 'yes' })];
+    // merge with banks
+    const local = { banks: [bank('b1', 'Mine')], questions: [], stimuli: [], tests: [], imageIds: new Set() };
+    const incoming = { banks: [bank('b1', 'Theirs'), bank('b2')], questions: [], stimuli: [], tests: [], images: {} };
+    const plan = PQ.planMerge(local, incoming);
+    r.mergeBanks = { newIds: plan.collections.banks.new.map(x => x.id), changed: plan.collections.banks.changed.map(x => x.id + ':' + x.winner), noop: PQ.planIsNoop(plan), write: PQ.recordsToWrite(plan).banks.map(x => x.id) };
+    // buildPayload: full and per bank
+    const imgs = { i1: 'data:image/png;base64,AAAA', i2: 'data:image/png;base64,BBBB', i3: 'data:image/png;base64,CCCC' };
+    const data = { banks: [bank('b1'), bank('b2')], questions: [q('a', 'b1', { imageIds: ['i1'] }), q('b', 'b2', { imageIds: ['i2'] })], stimuli: [stim('s1', 'b1'), Object.assign(stim('s2', 'b2'), { imageIds: ['i3'] })], tests: [test0], images: imgs };
+    const full = PQ.buildPayload(data, { exportedAt: T }), one = PQ.buildPayload(data, { bankId: 'b2', exportedAt: T });
+    r.full = [full.banks.length, full.questions.length, full.stimuli.length, full.tests.length, Object.keys(full.images).join(), PQ.parsePayload(full).ok];
+    r.one = [one.banks.map(b => b.id).join(), one.questions.map(x => x.id).join(), one.stimuli.map(x => x.id).join(), one.tests.length, Object.keys(one.images).join(), PQ.parsePayload(one).ok, one.schemaVersion];
+    return r;
+  }, fx2);
+  check('fixture really is a schema 2 bank written by v0.2.0', K.v2.rawSchema === 2, K.v2.rawSchema);
+  check('the v0.2.0 bank imports (migrated 2 -> 3): one default bank, every question and stimulus filed in it', K.v2.ok && K.v2.schema === 3 && K.v2.allDefault && K.v2.banks.length === 1 && K.v2.banks[0].name === 'My Questions', K.v2.errors || K.v2);
+  check('migration keeps keepOrder, tests and images exactly', K.v2.keep && K.v2.untouched);
+  check('the migrated default bank is identical to the one a local database gets (so a re-import is "unchanged")', K.defaultStable);
+  check('a v2 file with no questions or stimuli gets no default bank', K.emptyV2);
+  check('a valid schema 3 payload is accepted', K.valid);
+  check('a schema 3 file must list its banks, and every question needs a bank', !K.noBanksList && !K.noBankId);
+  check('a question whose bank is not in the file is refused with a clear message', !K.badBankRef.ok && K.badBankRef.errors.some(e => /belongs to a question bank that is not in the file/.test(e)), K.badBankRef.errors);
+  check('a stimulus whose bank is not in the file is refused', !K.badStimRef);
+  check('bank names must be non-empty and at most 200 characters; duplicate bank ids refused', !K.noName && !K.longName && !K.dupBank);
+  check('test page options: valid ones accepted; bad header / paper / instructions refused', K.testOpts[0] && K.testOpts[1] && !K.testOpts[2] && !K.testOpts[3] && !K.testOpts[4] && !K.testOpts[5], K.testOpts);
+  check('merge treats banks like other records (new, newer wins, written)', JSON.stringify(K.mergeBanks.newIds) === '["b2"]' && K.mergeBanks.write.join() === 'b2' && !K.mergeBanks.noop && K.mergeBanks.changed.join() === 'b1:local', K.mergeBanks);
+  check('export of everything: all banks, questions, stimuli, tests and images, and it validates', K.full[0] === 2 && K.full[1] === 2 && K.full[2] === 2 && K.full[3] === 1 && K.full[4] === 'i1,i2,i3' && K.full[5] === true, K.full);
+  check('export of one bank: only that bank, its questions/stimuli and the images they use, no tests, and it validates', K.one[0] === 'b2' && K.one[1] === 'b' && K.one[2] === 's2' && K.one[3] === 0 && K.one[4] === 'i2,i3' && K.one[5] === true && K.one[6] === 3, K.one);
+
+  /* ---------- L. multipart questions ---------- */
+  console.log('L. multipart questions');
+  const Lr = await page.evaluate(() => {
+    const T = '2026-10-01T10:00:00.000Z';
+    const part = (type, prompt, answer, extra) => Object.assign({ type, prompt, answer }, extra || {});
+    const mkq = (id, parts, extra) => Object.assign({ id, bankId: PQ.DEFAULT_BANK_ID, type: 'multipart', prompt: 'Read the situation.', course: '', unit: '', tags: [], difficulty: 'medium', status: 'ready', stimulusId: null, imageIds: [], table: null, answer: { parts }, notes: '', created: T, updated: T }, extra || {});
+    const good = [part('mc', 'Pick one', { options: ['alpha', 'beta', 'gamma', 'delta'], correct: 2 }), part('tf', 'True?', { correct: false }), part('numeric', 'Value?', { value: '3.5', units: 'm', tolerance: 0.1 }), part('short', 'Explain', { lines: 3, rubric: 'Any reason' }), part('matching', 'Match', { pairs: [{ left: 'a', right: 'A' }, { left: 'b', right: 'B' }, { left: 'c', right: 'C' }] })];
+    const payload = q => ({ format: 'prime-questions', schemaVersion: 3, appVersion: '9', requiredFeatures: [], exportedAt: T, banks: [PQ.defaultBank()], questions: [q], stimuli: [], tests: [], images: {} });
+    const r = {};
+    const q = mkq('m1', good);
+    r.valid = PQ.parsePayload(payload(q)).ok;
+    r.nested = PQ.parsePayload(payload(mkq('m2', [part('multipart', 'x', { parts: [] })]))).ok;
+    r.noParts = PQ.parsePayload(payload(mkq('m3', []))).ok;
+    r.tooMany = PQ.parsePayload(payload(mkq('m4', Array.from({ length: 13 }, () => part('tf', 'x', { correct: true }))))).ok;
+    r.badPart = PQ.parsePayload(payload(mkq('m5', [part('tf', 'x', { correct: 'yes' })]))).ok;
+    r.noPartPrompt = PQ.parsePayload(payload(mkq('m6', [{ type: 'tf', answer: { correct: true } }]))).ok;
+    r.badKeep = PQ.parsePayload(payload(mkq('m7', [part('mc', 'x', { options: ['a', 'b'], correct: 0 }, { keepOrder: 'no' })]))).ok;
+    r.okKeep = PQ.parsePayload(payload(mkq('m8', [part('mc', 'x', { options: ['a', 'b'], correct: 0 }, { keepOrder: true })]))).ok;
+    r.defaultAnswer = PQ.defaultAnswer('multipart').parts.length === 2 && PQ.emptyQuestion('multipart').type === 'multipart';
+    // readiness
+    r.complete = PQ.checkQuestion(q);
+    const bad = mkq('m9', [part('mc', '', { options: ['a', '', '', ''], correct: 0 }), part('mc', 'ok', { options: ['\\(\\frac{1}{\\)', 'b', '', ''], correct: 0 })], { prompt: '' });
+    r.problems = PQ.checkQuestion(bad).map(p => p.kind + ':' + p.field);
+    r.fields = PQ.textFields(q).map(f => f.field).filter(f => /^Part/.test(f));
+    // views and keys
+    const test = { id: 't', title: 'T', course: '', questionIds: ['m1'], seed: 99, created: T, updated: T };
+    const A = PQ.planTest(test, [q], [], 'A'), B = PQ.planTest(test, [q], [], 'B');
+    const vA = A.blocks[0].items[0].view, vB = B.blocks[0].items[0].view;
+    r.partsOrder = [vA.parts.map(p => p.type).join(), vB.parts.map(p => p.type).join()];
+    r.prompts = vB.parts.map(p => p.prompt).join('|');
+    r.aOpts = vA.parts[0].options.map(o => o.text).join();
+    r.bOptsShuffled = vB.parts[0].options.map(o => o.text).join() !== r.aOpts;
+    r.bCorrect = vB.parts[0].options[vB.parts[0].correct].text;
+    r.keyA = PQ.keyEntries(A)[0].text;
+    r.keyB = PQ.keyEntries(B)[0].text;
+    const kq = mkq('m10', [part('mc', 'x', { options: ['one', 'two', 'All of the above'], correct: 2 }, { keepOrder: true }), part('mc', 'y', { options: ['one', 'two', 'three', 'four'], correct: 0 })]);
+    const KB = PQ.planTest(Object.assign({}, test, { questionIds: ['m10'] }), [kq], [], 'B').blocks[0].items[0].view;
+    r.partKeep = KB.parts[0].options.map(o => o.text).join();
+    r.same = JSON.stringify(PQ.planTest(test, [q], [], 'B')) === JSON.stringify(B);
+    // test page options reach the plan
+    r.optsDefault = [JSON.stringify(A.header), A.instructions, A.paper];
+    const opt = PQ.planTest(Object.assign({}, test, { header: { name: false, class: true, date: true }, instructions: 'Answer all.', paper: 'legal' }), [q], [], 'A');
+    r.optsSet = [JSON.stringify(opt.header), opt.instructions, opt.paper];
+    // bank-PDF lines for a multipart question
+    const lines = PQ.blockLines(q, 1, {});
+    r.lines = lines.filter(l => l.label && /^\([a-e]\)$/.test(l.label)).map(l => l.label + ' ' + l.text).join(' | ');
+    r.indented = lines.filter(l => l.ind).length;
+    return r;
+  });
+  check('a multipart question with one part of each type is valid', Lr.valid);
+  check('multipart: parts cannot be nested, at least one part, at most 12, parts must be well-formed', !Lr.nested && !Lr.noParts && !Lr.tooMany && !Lr.badPart && !Lr.noPartPrompt);
+  check('a part may carry keepOrder (boolean only)', Lr.okKeep && !Lr.badKeep);
+  check('multipart defaults', Lr.defaultAnswer);
+  check('a complete multipart question has no problems', Lr.complete.length === 0, Lr.complete);
+  check('problems name the part: empty prompt, missing option, broken maths (the empty shared introduction is fine)', Lr.problems.includes('incomplete:Part (a) Question text') && Lr.problems.includes('incomplete:Part (a) Options') && Lr.problems.includes('math:Part (b) Option A') && !Lr.problems.some(x => x === 'incomplete:Question text'), Lr.problems);
+  check('maths fields are labelled per part', Lr.fields[0] === 'Part (a) Question text' && Lr.fields.includes('Part (a) Option C') && Lr.fields.includes('Part (c) Units'), Lr.fields);
+  check('parts keep their order in Version B, with their prompts', Lr.partsOrder[0] === 'mc,tf,numeric,short,matching' && Lr.partsOrder[0] === Lr.partsOrder[1] && Lr.prompts === 'Pick one|True?|Value?|Explain|Match', Lr.partsOrder);
+  check('Version B shuffles a part\'s options (A does not) and the key follows the shuffle', Lr.aOpts === 'alpha,beta,gamma,delta' && Lr.bOptsShuffled && Lr.bCorrect === 'gamma', Lr);
+  check('a part with keepOrder is not shuffled in B; other parts still are', Lr.partKeep === 'one,two,All of the above', Lr.partKeep);
+  check('multipart key: one line per part, "(a) ... (b) ..."', /^\(a\) C\. gamma\n\(b\) False\n\(c\) 3\.5 m/.test(Lr.keyA) && /^\(a\) [A-D]\. gamma\n\(b\) False\n\(c\) 3\.5 m/.test(Lr.keyB), [Lr.keyA, Lr.keyB]);
+  check('multipart plan is deterministic', Lr.same);
+  check('the plan carries header options (defaults: Name and Date, no Class), instructions and paper', Lr.optsDefault[0] === '{"name":true,"class":false,"date":true}' && Lr.optsDefault[1] === '' && Lr.optsDefault[2] === null && Lr.optsSet[0] === '{"name":false,"class":true,"date":true}' && Lr.optsSet[1] === 'Answer all.' && Lr.optsSet[2] === 'legal', [Lr.optsDefault, Lr.optsSet]);
+  check('bank-PDF lines for a multipart question: (a)..(e) with indented answers', /\(a\) Pick one \| \(b\) True\? \| \(c\) Value\? \| \(d\) Explain \| \(e\) Match/.test(Lr.lines) && Lr.indented >= 8, [Lr.lines, Lr.indented]);
+
+  /* ---------- M. bank PDF with several banks ---------- */
+  console.log('M. bank PDF grouped by bank');
+  const Mr = await page.evaluate(async () => {
+    const T = '2026-10-01T10:00:00.000Z';
+    const bank = (id, name) => ({ id, name, created: T, updated: T });
+    const q = (id, bankId, type, prompt, answer) => ({ id, bankId, type, prompt, course: 'C', unit: 'U', tags: [], difficulty: 'easy', status: 'ready', stimulusId: null, imageIds: [], table: null, answer, notes: '', created: T, updated: T });
+    const payload = PQ.buildPayload({ banks: [bank('b1', 'Science 9 Matter'), bank('b2', 'Math 8 Fractions')],
+      questions: [q('q1', 'b1', 'tf', 'ONE the sky is blue', { correct: true }), q('q2', 'b2', 'multipart', 'TWO intro', { parts: [{ type: 'tf', prompt: 'PARTA first', answer: { correct: true } }, { type: 'numeric', prompt: 'PARTB second', answer: { value: '4.5', units: 'cm', tolerance: 0 } }] }), q('q3', 'b2', 'mc', 'THREE pick', { options: ['a', 'b', 'c', 'd'], correct: 1 })],
+      stimuli: [], tests: [], images: {} }, { exportedAt: T });
+    const one = PQ.buildPayload({ banks: payload.banks, questions: payload.questions, stimuli: [], tests: [], images: {} }, { bankId: 'b2', exportedAt: T });
+    const mk = async p => { const r = await PQ.buildBankPdf(p, {}); let s = ''; for (let i = 0; i < r.bytes.length; i += 32768) s += String.fromCharCode(...r.bytes.subarray(i, i + 32768)); const back = await PQ.readPdfPayload(r.bytes); return { b64: btoa(s), rt: PQ.stable(back) === PQ.stable(p) }; };
+    return { all: await mk(payload), one: await mk(one) };
+  });
+  fs.writeFileSync('banks-all.pdf', Buffer.from(Mr.all.b64, 'base64')); fs.writeFileSync('banks-one.pdf', Buffer.from(Mr.one.b64, 'base64'));
+  const tAll = execFileSync('pdftotext', ['-layout', 'banks-all.pdf', '-']).toString(), tOne = execFileSync('pdftotext', ['-layout', 'banks-one.pdf', '-']).toString();
+  check('both PDFs read back identical (all banks, and one bank)', Mr.all.rt && Mr.one.rt);
+  check('cover of the whole export lists each bank with its question count', /Question Banks/.test(tAll) && /Math 8 Fractions\s*\.+\s*2/.test(tAll) && /Science 9 Matter\s*\.+\s*1/.test(tAll), tAll.slice(0, 500));
+  check('sections are per bank then type, headed with the bank name', /Math 8 Fractions\s+·\s+1 item/.test(tAll) && /Science 9 Matter\s+·\s+1 item/.test(tAll) && /Multipart/.test(tAll), tAll.slice(500, 1200));
+  check('a single-bank export is titled with the bank name', /Math 8 Fractions/.test(tOne.split('\n').slice(0, 12).join('\n')) && !/Science 9 Matter/.test(tOne) && !/ONE the sky/.test(tOne), tOne.slice(0, 300));
+  check('multipart parts and their answers are readable on the page', /\(a\) PARTA first/.test(tAll) && /\(b\) PARTB second/.test(tAll) && /4\.5 cm/.test(tAll));
+  check('poppler agrees the data is intact in the multi-bank PDF', (() => { fs.rmSync('mb', { recursive: true, force: true }); fs.mkdirSync('mb'); execFileSync('pdfdetach', ['-saveall', '-o', 'mb', 'banks-all.pdf']); const d = JSON.parse(fs.readFileSync('mb/prime-questions.pq', 'utf8')); return d.schemaVersion === 3 && d.banks.length === 2 && d.questions.length === 3; })());
+
+  /* ---------- N. IndexedDB upgrade from a real v0.2.0-layout database ---------- */
+  console.log('N. IndexedDB upgrade (version 1 -> 2) keeps existing data');
+  await page.evaluate(() => new Promise(res => { const r = indexedDB.deleteDatabase('prime-questions'); r.onsuccess = r.onerror = r.onblocked = () => res(1); }));
+  await page.evaluate(async () => {
+    // exactly what app v0.2.0 created: database version 1, four stores, records without bankId
+    await new Promise((res, rej) => {
+      const r = indexedDB.open('prime-questions', 1);
+      r.onupgradeneeded = () => { const d = r.result; for (const s of ['questions', 'stimuli', 'tests']) d.createObjectStore(s, { keyPath: 'id' }); d.createObjectStore('images'); };
+      r.onsuccess = () => {
+        const d = r.result, tx = d.transaction(['questions', 'stimuli', 'tests', 'images'], 'readwrite');
+        const T = '2026-09-01T10:00:00.000Z';
+        tx.objectStore('questions').put({ id: 'old-q1', type: 'tf', prompt: 'old question 1', course: 'Old', unit: '', tags: [], difficulty: 'easy', status: 'ready', stimulusId: 'old-s1', imageIds: ['old-img'], table: null, answer: { correct: true }, notes: '', created: T, updated: T });
+        tx.objectStore('questions').put({ id: 'old-q2', type: 'mc', prompt: 'old question 2', course: 'Old', unit: '', tags: [], difficulty: 'easy', status: 'review', stimulusId: null, imageIds: [], table: null, keepOrder: true, answer: { options: ['a', 'b', 'All of the above'], correct: 2 }, notes: '', created: T, updated: T });
+        tx.objectStore('stimuli').put({ id: 'old-s1', title: 'Old stimulus', text: 't', imageIds: [], table: null, created: T, updated: T });
+        tx.objectStore('tests').put({ id: 'old-t1', title: 'Old test', course: 'Old', questionIds: ['old-q1', 'old-q2'], seed: 5, created: T, updated: T });
+        tx.objectStore('images').put(new Blob(['PNGDATA'], { type: 'image/png' }), 'old-img');
+        tx.oncomplete = () => { d.close(); res(); }; tx.onerror = () => rej(tx.error);
+      };
+      r.onerror = () => rej(r.error);
+    });
+  });
+  await page.reload(); await page.waitForFunction(() => window.PQ && PQ.ready === true);
+  const Nr = await page.evaluate(async () => {
+    const [banks, qs, ss, ts, ids] = await Promise.all([PQ.db.getAll('banks'), PQ.db.getAll('questions'), PQ.db.getAll('stimuli'), PQ.db.getAll('tests'), PQ.db.getImageIds()]);
+    const img = await PQ.db.getImage('old-img');
+    const open = await new Promise(res => { const r = indexedDB.open('prime-questions'); r.onsuccess = () => { const v = r.result.version, names = Array.from(r.result.objectStoreNames).sort().join(); r.result.close(); res([v, names]); }; });
+    return {
+      version: open[0], stores: open[1], banks: banks.map(b => b.id + '|' + b.name), qBank: qs.map(q => q.bankId), sBank: ss.map(s => s.bankId),
+      updatedKept: qs.every(q => q.updated === '2026-09-01T10:00:00.000Z') && ss.every(s => s.updated === '2026-09-01T10:00:00.000Z'),
+      keep: qs.find(q => q.id === 'old-q2').keepOrder === true, tests: ts.map(t => t.id + ':' + t.questionIds.length + ':' + t.seed), imgs: ids.join(), imgText: await img.text(),
+      defaultMatches: PQ.stable(banks[0]) === PQ.stable(PQ.defaultBank())
+    };
+  });
+  check('database is now version 2 with banks and testVersions stores', Nr.version === 2 && /banks/.test(Nr.stores) && /testVersions/.test(Nr.stores), [Nr.version, Nr.stores]);
+  check('the default bank was created, identical to the one files are migrated to', Nr.banks.join() === PQ_DEFAULT() && Nr.defaultMatches, Nr.banks);
+  check('every existing question and stimulus was moved into the default bank', Nr.qBank.every(b => b === '00000000-0000-4000-8000-000000000001') && Nr.sBank.every(b => b === '00000000-0000-4000-8000-000000000001') && Nr.qBank.length === 2 && Nr.sBank.length === 1, Nr);
+  check('nothing else changed: updated dates, keepOrder, tests, image bytes', Nr.updatedKept && Nr.keep && Nr.tests.join() === 'old-t1:2:5' && Nr.imgs === 'old-img' && Nr.imgText === 'PNGDATA', Nr);
+  // a second reload must not migrate again or duplicate anything
+  await page.reload(); await page.waitForFunction(() => window.PQ && PQ.ready === true);
+  check('reloading again changes nothing (one bank, same data)', await page.evaluate(async () => (await PQ.db.getAll('banks')).length === 1 && (await PQ.db.getAll('questions')).length === 2));
+  // a brand-new database gets the default bank too
+  await page.evaluate(() => new Promise(res => { const r = indexedDB.deleteDatabase('prime-questions'); r.onsuccess = r.onerror = r.onblocked = () => res(1); }));
+  await page.reload(); await page.waitForFunction(() => window.PQ && PQ.ready === true);
+  check('a fresh database starts with the default bank "My Questions"', await page.evaluate(async () => { const b = await PQ.db.getAll('banks'); return b.length === 1 && b[0].name === 'My Questions' && b[0].id === PQ.DEFAULT_BANK_ID; }));
 
   check('no console errors during the whole suite', problems.length === 0, problems);
   const fails = summary();
