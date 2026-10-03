@@ -16,7 +16,7 @@ inside the repo.
 ## Run
 ```
 node tests/run.js          # everything
-node tests/run.js unit     # one script (smoke, unit, ui, phase2, phase3, format, ai or layout)
+node tests/run.js unit     # one script (smoke, unit, ui, phase2, phase3, format, ai, layout or wording)
 ```
 Output files (exported PDFs, screenshots) go to a temporary folder. Set
 `PQ_TEST_OUT` to choose where, for example to look at the rendered pages. They are
@@ -73,6 +73,10 @@ checks were written for the Phase 2 interface and now drive the Phase 3 one.
   re-anchoring when a question is removed, Version B, Check), the font (dialog, typed
   names, a mocked local-font list, printed fonts checked with `pdffonts`) and a property test
   that nothing splits across pages with all of these in play.
+
+- `wording.js`: the site says "assessment", never "test", in any visible text: every page,
+  menu, submenu, dialog, tooltip and label, the printed paper and the bank PDF's readable
+  pages. Stored field names and the `tests/` folder are not visible text and are not checked.
 
 `fixtures/bank-schema1-v0.1.0.pdf` (app v0.1.0), `fixtures/bank-schema2-v0.2.0.pdf`
 (app v0.2.0) and `fixtures/bank-schema3-v0.3.0.pdf` (app v0.3.0) and `fixtures/bank-schema4-v0.5.0.pdf` (app v0.5.0) were produced by those versions before the schema moved on. Do not

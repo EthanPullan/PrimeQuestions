@@ -1,6 +1,6 @@
 # Prime Questions
 
-A question bank and test builder for the classroom, mostly maths and science.
+A question bank and assessment builder for the classroom, mostly maths and science.
 It is one file, `index.html`, and it works offline: open it by double-clicking,
 or use the hosted copy at <https://ethanpullan.github.io/PrimeQuestions/>.
 
@@ -8,7 +8,7 @@ There are no accounts and no server. Your questions are stored in your browser.
 
 ## What it does today (v0.6.0)
 
-The sidebar has four places, like Test Parrot: **Home**, **Tests**,
+The sidebar has four places, like Test Parrot: **Home**, **Assessments**,
 **Question Banks** and **Imports**.
 
 **Question banks**
@@ -27,8 +27,8 @@ The sidebar has four places, like Test Parrot: **Home**, **Tests**,
 - **Stimuli**: a passage, data table or picture that several questions share.
 - Search by text, type and status.
 
-**Tests**
-- The test editor is the paper itself, with your question banks beside it. Drag
+**Assessments**
+- The assessment editor is the paper itself, with your question banks beside it. Drag
   questions from the bank onto the paper (or press *Add*), drag blocks to reorder
   them, and click the title, course, instructions and the Name / Class / Date lines
   to edit them where they are. Questions that share a stimulus always print
@@ -37,10 +37,10 @@ The sidebar has four places, like Test Parrot: **Home**, **Tests**,
   restored.
 - **Version A** is the order you chose. **Version B** shuffles the question order
   and each multiple-choice question's options, the same way every time you print
-  it (the shuffle is saved with the test). A multiple-choice question can be set
+  it (the shuffle is saved with the assessment). A multiple-choice question can be set
   to keep its options in order in Version B (for “All of the above”).
 - **Right-click a question** on the paper (or use its ⋯ button) to change just that
-  question for this test: **Answer area** (for numeric and short-answer questions, and
+  question for this assessment: **Answer area** (for numeric and short-answer questions, and
   for each part of a multipart question: the normal answer line or ruled lines, plain
   **blank space** with no “Answer:” label, or nothing), **Work space** (extra writing
   space after the question: Small, Medium, Large, or your own size in millimetres),
@@ -50,7 +50,7 @@ The sidebar has four places, like Test Parrot: **Home**, **Tests**,
   Answer: Show all work”) above the question where you start it. Edit it directly on
   the paper. Question numbers keep counting across sections, and Version B shuffles
   the questions only inside each section, so the sections stay in your order.
-- The **Format** menu sets how the paper looks, per test: paper size (Letter, Legal,
+- The **Format** menu sets how the paper looks, per assessment: paper size (Letter, Legal,
   A4), **font** (choose from your computer's fonts where the browser allows it, or
   type a font name; if it is not installed where you print, Helvetica is used),
   heading size and text size (Small, Medium, Large), margins (Narrow, Normal,
@@ -58,8 +58,8 @@ The sidebar has four places, like Test Parrot: **Home**, **Tests**,
   the letter or T/F), **Classic** (a blank before each multiple-choice and
   true/false number, ruled lines for written answers) or **Condensed** (tighter
   spacing, short options across the page, closer-ruled lines to save paper).
-  A test you have not changed prints exactly as before.
-- Print the test or the answer key for either version. The page is plain black on
+  An assessment you have not changed prints exactly as before.
+- Print the assessment or the answer key for either version. The page is plain black on
   white so it copies cleanly, and no question is split across pages. Nothing about
   students is stored.
 - The Version B answer key says which Version A question each one is and shows the
@@ -78,7 +78,7 @@ The sidebar has four places, like Test Parrot: **Home**, **Tests**,
 
 **Backup**
 - **Export everything** (bottom of the sidebar) saves all banks, stimuli, images
-  and tests as one PDF. A bank page also has **Export this bank**. The PDF is
+  and assessments as one PDF. A bank page also has **Export this bank**. The PDF is
   readable (cover page, questions, answers) and also carries the full data inside
   it.
 - **Import** reads that PDF back in (use the Import button on Home, the Imports

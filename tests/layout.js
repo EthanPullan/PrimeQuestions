@@ -187,7 +187,7 @@ const MM = 72 / 25.4;
   check('Version B shuffles only within the sections: the first three questions are still QONE, QTWO and QTHREE in some order', bq.split(',').slice(0, 3).sort().join() === ['QONE ', 'QTWO ', 'QTHRE'].sort().join(), bq);
   await page.click('#pv-a');
   // remove the question a section starts at: it moves to the next question
-  await page.locator('button[aria-label="Remove question 4 from the test"]').click();
+  await page.locator('button[aria-label="Remove question 4 from the assessment"]').click();
   check('removing the question a section starts at moves the section to the next question', (await D()).sections[0].startId === 'q5' && (await q('QFIVE').evaluate(e => e.closest('.tp-block').firstElementChild.classList.contains('tp-section'))));
   await page.click('#btn-undo');
   check('Undo puts the question back and the section on it', (await D()).sections[0].startId === 'q4' && (await D()).questionIds.includes('q4'));
@@ -198,7 +198,7 @@ const MM = 72 / 25.4;
   check('the × on a heading removes the heading and keeps the questions', (await D()).sections.length === 1 && (await page.locator('#sheet-preview .tp-q').count()) === 7);
   // removing the last question removes a section that has nothing after it
   await page.click('#btn-undo');
-  await page.locator('button[aria-label="Remove question 7 from the test"]').click();
+  await page.locator('button[aria-label="Remove question 7 from the assessment"]').click();
   check('removing the last question removes a section that started there (nothing is left to start at)', (await D()).sections.length === 1 && (await D()).sections[0].startId === 'q4');
   await page.click('#btn-undo');
   // Check lists a section whose question is gone

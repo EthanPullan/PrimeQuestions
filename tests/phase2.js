@@ -149,7 +149,7 @@ const pdfPages = file => Number((/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [
   const after = await idsOf();
   check('move up swaps the last question with the one before it', after[8] === before[7] && after[7] === before[8], { before, after });
   check('first row cannot move up, last cannot move down', await page.locator('button[aria-label="Move question 1 up"]').isDisabled() && await page.locator('button[aria-label="Move question ' + lastN + ' down"]').isDisabled());
-  await page.click('button[aria-label="Remove question ' + lastN + ' from the test"]');
+  await page.click('button[aria-label="Remove question ' + lastN + ' from the assessment"]');
   check('remove takes a question out of the test but not the bank', (await idsOf()).length === 8 && (await page.evaluate(() => PQ.state.questions.length)) === 9);
   await page.locator('#panel-list .qcard button.primary').first().click();
   check('re-added question goes to the end', (await idsOf()).length === 9);
@@ -273,7 +273,7 @@ const pdfPages = file => Number((/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [
   await page.fill('input[aria-label="Search questions"]', 'Water boils');
   await page.locator('.qrow').first().click(); await page.click('#btn-delete');
   const delText = await modal.innerText();
-  check('deleting a question names the saved tests it will be removed from', /saved test/.test(delText) && /Matter Unit Test/.test(delText), delText);
+  check('deleting a question names the saved tests it will be removed from', /saved assessment/.test(delText) && /Matter Unit Test/.test(delText), delText);
   await modal.locator('button.danger').click(); await page.waitForFunction(() => !PQ.state.questions.some(q => q.id === 'q-d'));
   const tAfter = await page.evaluate(() => PQ.state.tests[0].questionIds);
   check('the deleted question was removed from the test in the same step', !tAfter.includes('q-d') && tAfter.length === inTest - 1, tAfter);
@@ -295,7 +295,7 @@ const pdfPages = file => Number((/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [
   await page.reload(); await page.waitForFunction(() => window.PQ && PQ.ready);
   await page.setInputFiles('#file-input', FIXTURE); await modal.waitFor();
   const sum = (await modal.innerText()).replace(/\s+/g, ' ');
-  check('the old file is accepted and summarised: 7 questions, 1 stimulus, 1 test, 1 image, all new', /Import this bank/.test(sum) && /Questions 7 0 0 0/.test(sum) && /Shared stimuli 1/.test(sum) && /Saved tests 1/.test(sum) && /Images 1/.test(sum), sum);
+  check('the old file is accepted and summarised: 7 questions, 1 stimulus, 1 test, 1 image, all new', /Import this bank/.test(sum) && /Questions 7 0 0 0/.test(sum) && /Shared stimuli 1/.test(sum) && /Saved assessments 1/.test(sum) && /Images 1/.test(sum), sum);
   await modal.locator('button:has-text("Apply")').click(); await page.waitForFunction(() => PQ.state.tests.length === 1);
   check('everything arrived intact', await page.evaluate(() => PQ.state.questions.length === 7 && PQ.state.stimuli.length === 1 && PQ.state.stimuli[0].table.rows.length === 4 && PQ.state.imageIds.size === 1));
   check('records from the old version were stored exactly as written (no keepOrder invented)', await page.evaluate(() => PQ.state.questions.every(q => !('keepOrder' in q))));

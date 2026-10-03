@@ -52,7 +52,7 @@ The top level is an object. Only `questions` is required.
   "unit": "Matter",
   "tags": ["density", "calculations"],
   "difficulty": "medium",
-  "notes": "Anything the teacher should know. Not printed on the test.",
+  "notes": "Anything the teacher should know. Not printed on the assessment.",
   "stimulus": "s1",
   "table": { "headers": ["A", "B"], "rows": [["1", "2"]], "caption": "" },
   "keepOrder": true
