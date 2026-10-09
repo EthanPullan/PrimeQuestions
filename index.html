@@ -820,8 +820,8 @@ document.addEventListener('DOMContentLoaded', () => {
 'use strict';
 
 /* === CONSTANTS === */
-const APP_VERSION = '0.6.1';
-const SCHEMA_VERSION = 5;
+const APP_VERSION = '0.7.0';
+const SCHEMA_VERSION = 6;
 const DB_VERSION = 2;                      // IndexedDB version (2 adds banks and test version history)
 const FORMAT = 'prime-questions';
 const KNOWN_FEATURES = [];                 // payload.requiredFeatures entries this app understands
@@ -846,7 +846,8 @@ const MARGIN_PRESETS = { narrow: { top: 10, right: 10, bottom: 10, left: 10 }, n
 const MARGIN_MIN = 5, MARGIN_MAX = 40;
 // Writing space after a question (mm), per-question answer styles and sections (schema 5): all optional on a test.
 const SPACE_PRESETS = { small: 20, medium: 40, large: 70 }, SPACE_MIN = 5, SPACE_MAX = 200, SPACE_REST_FALLBACK = 60;
-const ANSWER_STYLES = ['blank', 'none'];                                        // absent = the question's normal answer area
+const ANSWER_STYLES = ['lines', 'blank', 'none'];                               // absent = follow the assessment's answerArea; 'lines' = the normal answer area even when that default is blank
+const ANSWER_AREAS = ['lines', 'blank'];                                        // a test's answerArea (schema 6): the default for numeric and short answers; only 'blank' is ever stored
 const FONT_RE = /^[\p{L}\p{N} ._()+&'-]{1,100}$/u;                              // a font family name: letters, digits, spaces and a little punctuation
 const DEFAULT_FONT_STACK = 'Helvetica,Arial,"Liberation Sans",sans-serif';
 const fontStack = name => (name && FONT_RE.test(name) ? '"' + name + '",' + DEFAULT_FONT_STACK : DEFAULT_FONT_STACK);
@@ -1315,7 +1316,8 @@ const MIGRATIONS = {
     return Object.assign({}, p, { schemaVersion: 3, banks, questions: Array.isArray(qs) ? qs.map(fix) : qs, stimuli: Array.isArray(ss) ? ss.map(fix) : ss });
   },
   3: p => Object.assign({}, p, { schemaVersion: 4 }),    // schema 4 only adds optional fields on tests
-  4: p => Object.assign({}, p, { schemaVersion: 5 })     // so does schema 5
+  4: p => Object.assign({}, p, { schemaVersion: 5 }),    // so does schema 5
+  5: p => Object.assign({}, p, { schemaVersion: 6 })     // and schema 6 (answerArea)
 };
 
 function migrate(p, migrations, target) {
@@ -1397,6 +1399,7 @@ function recordProblems(kind, r) {
     need(r.font === undefined || (typeof r.font === 'string' && FONT_RE.test(r.font)), 'has an invalid font name');
     need(r.sections === undefined || sectionsOk(r.sections), 'has invalid sections');
     need(r.questionOptions === undefined || qoptionsOk(r.questionOptions), 'has invalid question options');
+    need(r.answerArea === undefined || ANSWER_AREAS.includes(r.answerArea), 'has an invalid answer area');
     need(r.instructions === undefined || (isStr(r.instructions) && r.instructions.length <= 5000), 'has invalid instructions');
   }
   return e;
@@ -1751,14 +1754,17 @@ function planTest(test, questions, stimuli, version) {
     ordBlocks.push(...part);
   });
   const qopts = test.questionOptions || {};
+  // Effective answer area: an explicit choice on the question (or part) wins; 'lines' means the normal area; else the assessment's default applies to numeric and short only.
+  const dflt = test.answerArea === 'blank' ? 'blank' : undefined;
+  const styleOf = (type, opt) => (opt === 'lines' ? undefined : opt || (type === 'numeric' || type === 'short' ? dflt : undefined));
   let num = 0;
   const out = ordBlocks.map(({ b, secs }) => ({
     stimulus: b.stimulusId ? sById.get(b.stimulusId) : null,
     sections: secs.map(x => ({ id: x.id, title: x.title, instructions: x.instructions })),
     items: b.questions.map(q => {
       const view = questionView(q, test.seed, version), o = qopts[q.id] || {};
-      if (view.type === 'multipart') view.parts.forEach((p, i) => { const po = qopts[q.id + '#' + i]; if (po && po.answerStyle) p.style = po.answerStyle; });
-      else if (o.answerStyle) view.style = o.answerStyle;
+      if (view.type === 'multipart') view.parts.forEach((p, i) => { const st = styleOf(p.type, (qopts[q.id + '#' + i] || {}).answerStyle); if (st) p.style = st; });
+      else { const st = styleOf(view.type, o.answerStyle); if (st) view.style = st; }
       return { q, number: ++num, aNumber: aNumber.get(q.id), view, space: o.space === undefined ? null : o.space };
     })
   }));
@@ -3879,11 +3885,13 @@ function createExam(opts) {
     const items = [{ label: 'Edit question', id: 'mi-q-edit', onclick: () => editQuestion(q.id) }, { hr: true },
       { label: 'Start new section here', id: 'mi-q-section', disabled: (d.sections || []).some(x => x.startId === q.id), onclick: () => addSection(q.id) }, { hr: true }];
     if (target && (target.type === 'numeric' || target.type === 'short')) {
-      const cur = qopt(target.key).answerStyle, normal = target.type === 'numeric' ? 'Answer line' : 'Ruled lines';
+      // Show the effective choice. Picking the assessment's default clears the override (so it keeps following the default); any other pick is stored explicitly.
+      const dflt = d.answerArea === 'blank' ? 'blank' : 'lines', cur = qopt(target.key).answerStyle || dflt, normal = target.type === 'numeric' ? 'Answer line' : 'Ruled lines';
+      const pick = v => setQopt(target.key, 'answerStyle', v === dflt ? undefined : v);
       items.push({ label: (target.label ? target.label + ' answer area' : 'Answer area'), id: 'mi-q-answer', value: cur === 'blank' ? 'Blank space' : cur === 'none' ? 'None' : normal, sub: [
-        { label: normal, desc: target.type === 'numeric' ? 'Prints “Answer:” and a line.' : 'Prints the ruled lines.', id: 'mi-q-answer-line', checked: !cur, onclick: () => setQopt(target.key, 'answerStyle', undefined) },
-        { label: 'Blank space', desc: 'Empty space for students to write in. No label and no lines.', id: 'mi-q-answer-blank', checked: cur === 'blank', onclick: () => setQopt(target.key, 'answerStyle', 'blank') },
-        { label: 'None', desc: 'Nothing is printed after the question.', id: 'mi-q-answer-none', checked: cur === 'none', onclick: () => setQopt(target.key, 'answerStyle', 'none') }] });
+        { label: normal, desc: target.type === 'numeric' ? 'Prints “Answer:” and a line.' : 'Prints the ruled lines.', id: 'mi-q-answer-line', checked: cur === 'lines', onclick: () => pick('lines') },
+        { label: 'Blank space', desc: 'Empty space for students to write in. No label and no lines.', id: 'mi-q-answer-blank', checked: cur === 'blank', onclick: () => pick('blank') },
+        { label: 'None', desc: 'Nothing is printed after the question.', id: 'mi-q-answer-none', checked: cur === 'none', onclick: () => pick('none') }] });
     } else if (q.type === 'multipart' && !target) items.push({ label: 'Answer area: right-click a part', id: 'mi-q-answer-hint', disabled: true });
     const sp = qopt(q.id).space;
     items.push({ label: 'Work space', id: 'mi-q-space', value: sp === undefined ? 'None' : sp === 'rest' ? 'Rest of page' : sp + ' mm', sub: [
@@ -4197,6 +4205,9 @@ function createExam(opts) {
       { label: 'Heading size', id: 'mi-heading', value: SIZE_LABEL[f.headingSize], sub: radio('headingSize', 'medium', SIZE_KEYS, v => SIZE_LABEL[v], 'heading') },
       { label: 'Text size', id: 'mi-text', value: SIZE_LABEL[f.textSize], sub: radio('textSize', 'medium', SIZE_KEYS, v => SIZE_LABEL[v], 'text') },
       { label: 'Questions', id: 'mi-style', value: STYLE_INFO[f.questionStyle][0], sub: STYLE_KEYS.map(k => ({ label: STYLE_INFO[k][0], desc: STYLE_INFO[k][1], id: 'mi-style-' + k, checked: f.questionStyle === k, onclick: () => setFmt('questionStyle', k, 'standard') })) },
+      { label: 'Answer area', id: 'mi-answerarea', value: d.answerArea === 'blank' ? 'Blank space' : 'Lines', sub: [
+        { label: 'Lines', desc: 'Short answers get ruled lines; numeric answers get “Answer:” and a line.', id: 'mi-answerarea-lines', checked: d.answerArea !== 'blank', onclick: () => setFmt('answerArea', 'lines', 'lines') },
+        { label: 'Blank space', desc: 'Short and numeric answers get empty space, with no lines or label. A question can still choose its own.', id: 'mi-answerarea-blank', checked: d.answerArea === 'blank', onclick: () => setFmt('answerArea', 'blank', 'lines') }] },
       { label: 'Margins', id: 'mi-margins', value: presetName ? cap(presetName) : 'Custom', sub: Object.keys(MARGIN_PRESETS).map(k => ({ label: cap(k), desc: 'Top ' + MARGIN_PRESETS[k].top + ', sides ' + MARGIN_PRESETS[k].right + ', bottom ' + MARGIN_PRESETS[k].bottom + ' mm', id: 'mi-margins-' + k, checked: presetName === k, onclick: () => setMargins(MARGIN_PRESETS[k]) }))
         .concat([{ label: 'Custom…', id: 'mi-margins-custom', checked: !presetName, onclick: customMargins }]) },
       { hr: true },

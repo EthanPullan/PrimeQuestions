@@ -6,7 +6,7 @@ or use the hosted copy at <https://ethanpullan.github.io/PrimeQuestions/>.
 
 There are no accounts and no server. Your questions are stored in your browser.
 
-## What it does today (v0.6.0)
+## What it does today (v0.7.0)
 
 The sidebar has four places, like Test Parrot: **Home**, **Assessments**,
 **Question Banks** and **Imports**.
@@ -42,7 +42,7 @@ The sidebar has four places, like Test Parrot: **Home**, **Assessments**,
 - **Right-click a question** on the paper (or use its ⋯ button) to change just that
   question for this assessment: **Answer area** (for numeric and short-answer questions, and
   for each part of a multipart question: the normal answer line or ruled lines, plain
-  **blank space** with no “Answer:” label, or nothing), **Work space** (extra writing
+  **blank space** with no “Answer:” label, or nothing; this overrides the assessment's Answer area), **Work space** (extra writing
   space after the question: Small, Medium, Large, or your own size in millimetres),
   **Fill rest of page** (the space grows to the bottom of the page), and **Start new
   section here**. Your bank questions are not changed.
@@ -58,6 +58,13 @@ The sidebar has four places, like Test Parrot: **Home**, **Assessments**,
   the letter or T/F), **Classic** (a blank before each multiple-choice and
   true/false number, ruled lines for written answers) or **Condensed** (tighter
   spacing, short options across the page, closer-ruled lines to save paper).
+- **Answer area** (also in the Format menu) sets, for the whole assessment, what numeric
+  and short-answer questions (and those parts of a multipart question) print: **Lines**
+  (the usual “Answer:” line or ruled lines) or **Blank space** (empty space, no label or
+  lines; a short answer keeps the height of its lines). Multiple choice, true/false and
+  matching never change. A question you right-click can still choose its own answer
+  area, and that choice wins over the assessment's. The right-click menu shows the choice
+  that is really in effect.
   An assessment you have not changed prints exactly as before.
 - Print the assessment or the answer key for either version. The page is plain black on
   white so it copies cleanly, and no question is split across pages. Nothing about

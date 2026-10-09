@@ -293,6 +293,86 @@ const MM = 72 / 25.4;
     return { bad: bad.slice(0, 5), controls: document.querySelectorAll('#print-root input, #print-root button, #print-root textarea, #print-root .ed-only, #print-root .tp-space-label').length }; }); await page.emulateMedia({ media: null }); return r; })();
   check('the printed paper has no outlines, labels or controls (editing aids never print) and is plain black', greys.bad.length === 0 && greys.controls === 0, greys);
 
+  console.log('7b. the assessment-wide answer area (Format > Answer area)');
+  // a second, untouched assessment with the same questions, so nothing above leaks into these checks
+  await page.evaluate(async () => { const t = new Date().toISOString(); await PQ.db.applyBatch({ tests: [{ id: 'test2', title: 'Area Test', course: '', questionIds: ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7'], seed: 5, created: t, updated: t }] }); await PQ.loadAll(); });
+  await page.reload(); await page.waitForFunction(() => window.PQ && PQ.ready);
+  await page.click('#nav-tests'); await page.locator('.card-tile .ct-main', { hasText: 'Area Test' }).click(); await page.waitForSelector('#sheet-preview .tp-q');
+  const blankCount = t => q(t).locator('.tp-blankarea').count();
+  await page.click('#menu-format');
+  check('Format lists Answer area (after Questions) with its current value, Lines', /Answer area/.test(await page.locator('#mi-answerarea').innerText()) && /Lines/.test(await page.locator('#mi-answerarea').innerText()) && (await page.locator('.menu > .menu-item').allInnerTexts()).findIndex(x => /^Answer area/.test(x)) === 5);
+  await page.click('#mi-answerarea');
+  check('it offers Lines (checked) and Blank space', (await page.locator('#mi-answerarea-lines .menu-check').innerText()) === '✓' && (await page.locator('#mi-answerarea-blank .menu-check').innerText()) === '');
+  await page.click('#mi-answerarea-lines');
+  check('choosing the default Lines changes nothing: no answerArea key, not unsaved', !('answerArea' in (await D())) && !(await page.evaluate(() => PQ.active.exam.isDirty())));
+  await page.click('#menu-format'); await page.click('#mi-answerarea'); await page.click('#mi-answerarea-blank');
+  check('Blank space is stored as answerArea "blank" on the assessment', (await D()).answerArea === 'blank' && !('questionOptions' in (await D())));
+  check('numeric questions lose "Answer:" and the line and get empty space (QTHREE, QFIVE)', (await blankCount('QTHREE')) === 1 && (await blankCount('QFIVE')) === 1 && !/Answer:/.test(await q('QTHREE').innerText()) && (await q('QTHREE').locator('.tp-blankline').count()) === 0);
+  const ba2 = await q('QTHREE').locator('.tp-blankarea').boundingBox();
+  check('the numeric blank is still 14 mm tall', Math.abs(ba2.height - 14 * 96 / 25.4) < 2, ba2.height);
+  check('the short answer has no ruled lines and keeps the height of its 3 lines (3 x 22 pt)', (await q('QFOUR').locator('.tp-rule').count()) === 0 && Math.abs((await q('QFOUR').locator('.tp-blankarea').boundingBox()).height - 3 * 22 * 96 / 72) < 2);
+  check('both the numeric and the short part of the multipart question are blank', (await q('QSIX').locator('.tp-blankarea').count()) === 2 && (await q('QSIX').locator('.tp-rule').count()) === 0);
+  check('multiple choice, true/false and matching are unchanged', (await blankCount('QONE')) === 0 && (await blankCount('QTWO')) === 0 && (await blankCount('QSEVEN')) === 0 && (await q('QONE').locator('.tp-opt').count()) === 4);
+  await page.click('#menu-format'); check('the menu now says Blank space, checked', /Blank space/.test(await page.locator('#mi-answerarea').innerText())); await page.click('#mi-answerarea'); check('and Blank space is the checked row', (await page.locator('#mi-answerarea-blank .menu-check').innerText()) === '✓'); await page.keyboard.press('Escape');
+  // the per-question menu follows the default
+  await rc('QTHREE'); check('the question menu shows the effective choice: Blank space', /Blank space/.test(await page.locator('#mi-q-answer').innerText())); await page.click('#mi-q-answer');
+  check('and Blank space is the checked row in its submenu (not Answer line)', (await page.locator('#mi-q-answer-blank .menu-check').innerText()) === '✓' && (await page.locator('#mi-q-answer-line .menu-check').innerText()) === '');
+  await page.click('#mi-q-answer-line');
+  check('choosing Answer line on one question beats the blank default: that question is back to "Answer:" and a line, stored as an explicit "lines"', /Answer:/.test(await q('QTHREE').innerText()) && (await blankCount('QFIVE')) === 1 && JSON.stringify((await D()).questionOptions) === JSON.stringify({ q3: { answerStyle: 'lines' } }));
+  await rc('QTHREE'); check('the menu now shows Answer line, checked', /Answer line/.test(await page.locator('#mi-q-answer').innerText())); await page.click('#mi-q-answer'); check('Answer line is the checked row', (await page.locator('#mi-q-answer-line .menu-check').innerText()) === '✓' && (await page.locator('#mi-q-answer-blank .menu-check').innerText()) === '');
+  await page.click('#mi-q-answer-blank');
+  check('choosing Blank space again (the default) clears the override, so the question follows the default', !('questionOptions' in (await D())) && (await blankCount('QTHREE')) === 1);
+  await rc('QFOUR'); await page.click('#mi-q-answer'); await page.click('#mi-q-answer-line');
+  check('a short answer can be set back to Ruled lines on its own', (await q('QFOUR').locator('.tp-rule').count()) === 3 && (await D()).questionOptions.q4.answerStyle === 'lines');
+  await page.locator('#sheet-preview .tp-q', { hasText: 'QSIX' }).locator('.tp-part').first().click({ button: 'right', position: { x: 60, y: 6 } });
+  await page.click('#mi-q-answer'); await page.click('#mi-q-answer-none');
+  check('a part can be set to None and the others stay blank', (await D()).questionOptions['q6#0'].answerStyle === 'none' && (await q('QSIX').locator('.tp-blankarea').count()) === 1);
+  // Version B, keys
+  await page.click('#pv-b');
+  check('Version B shows the same answer areas', (await blankCount('QFIVE')) === 1 && (await q('QFOUR').locator('.tp-rule').count()) === 3 && (await q('QSIX').locator('.tp-blankarea').count()) === 1);
+  await page.click('#pv-a');
+  // printing
+  await fmtPrint({ answerArea: 'blank' }, 'a-blank.pdf', ['q3', 'q4']);
+  const tb = pdfText('a-blank.pdf');
+  check('printed (Version A): with the blank default no "Answer:" label and no ruled lines', !/Answer:/.test(tb) && /QTHREE/.test(tb) && /QFOUR/.test(tb) && (await page.evaluate(() => document.querySelectorAll('#print-root .tp-rule, #print-root .tp-blankline').length)) === 0 && (await page.evaluate(() => document.querySelectorAll('#print-root .tp-blankarea').length)) === 2);
+  await fmtPrint({}, 'a-lines.pdf', ['q3', 'q4']);
+  check('printed with no default: exactly as before ("Answer:" and 3 ruled lines)', /Answer:/.test(pdfText('a-lines.pdf')) && (await page.evaluate(() => document.querySelectorAll('#print-root .tp-rule').length)) === 3);
+  await page.evaluate(async () => { await PQ.preparePrint('test', 'B', Object.assign({}, PQ.state.tests.find(t => t.id === 'test2'), { answerArea: 'blank' })); });
+  check('printed (Version B): same', (await page.evaluate(() => document.querySelectorAll('#print-root .tp-blankarea').length)) === 5 && (await page.evaluate(() => document.querySelectorAll('#print-root .tp-rule').length)) === 0);
+  await page.evaluate(async () => { await PQ.preparePrint('key', 'A', Object.assign({}, PQ.state.tests.find(t => t.id === 'test2'), { answerArea: 'blank' })); });
+  const keyTxt = await page.evaluate(() => document.querySelector('#print-root').innerText);
+  check('the answer key still shows every answer (red, 60 km/h, density, 56, the parts, 1-B 2-A) and has no blank areas', /red/.test(keyTxt) && /60 km\/h/.test(keyTxt) && /density/.test(keyTxt) && /56/.test(keyTxt) && /1-B/.test(keyTxt) && (await page.evaluate(() => document.querySelectorAll('#print-root .tp-blankarea').length)) === 0, keyTxt.slice(0, 400));
+  // undo/redo, save, reload
+  await page.click('#btn-undo'); await page.click('#btn-undo'); await page.click('#btn-undo'); await page.click('#btn-undo');
+  check('Undo steps back through the four question choices and stops at the assessment default', (await D()).answerArea === 'blank' && !('questionOptions' in (await D())));
+  await page.click('#btn-undo');
+  check('one more Undo removes the default again: the paper is as it was and the key is gone from the draft', !('answerArea' in (await D())) && (await sheet().locator('.tp-blankarea').count()) === 0 && /Answer:/.test(await q('QTHREE').innerText()));
+  await page.click('#btn-redo');
+  check('Redo brings the blank default back', (await D()).answerArea === 'blank' && (await blankCount('QTHREE')) === 1);
+  await page.click('#btn-save'); await page.waitForFunction(() => !PQ.active.exam.isDirty());
+  // history restore: save a second version with Lines, then restore the blank one
+  await page.click('#menu-format'); await page.click('#mi-answerarea'); await page.click('#mi-answerarea-lines');
+  await page.click('#btn-save'); await page.waitForFunction(() => !PQ.active.exam.isDirty());
+  check('choosing Lines again deletes the key from the saved record', !('answerArea' in (await page.evaluate(() => PQ.state.tests.find(t => t.id === 'test2')))));
+  await page.click('#btn-history'); await page.waitForSelector('.vcard');
+  await page.locator('.vcard').nth(1).locator('button').click();
+  check('History restore brings the blank default back as an unsaved change', (await D()).answerArea === 'blank' && (await blankCount('QTHREE')) === 1 && /Unsaved/.test(await page.locator('#dirty-flag').innerText()));
+  await page.click('#btn-undo');
+  check('and Undo reverses the restore', !('answerArea' in (await D())));
+  await page.click('#menu-format'); await page.click('#mi-answerarea'); await page.click('#mi-answerarea-blank');
+  await page.click('#btn-save'); await page.waitForFunction(() => !PQ.active.exam.isDirty());
+  await page.reload(); await page.waitForFunction(() => window.PQ && PQ.ready);
+  await page.click('#nav-tests'); await page.locator('.card-tile .ct-main', { hasText: 'Area Test' }).click(); await page.waitForSelector('#sheet-preview .tp-q');
+  check('it survives save and reload', (await D()).answerArea === 'blank' && (await blankCount('QTHREE')) === 1 && (await blankCount('QFOUR')) === 1);
+  // export -> wipe -> import round trip, checked with poppler
+  const b64 = await page.evaluate(async () => { const p = await PQ.collectPayload(); const r = await PQ.buildBankPdf(p, { renderBlockImage: PQ.renderBlockImage }); let s = ''; for (let i = 0; i < r.bytes.length; i += 32768) s += String.fromCharCode(...r.bytes.subarray(i, i + 32768)); return btoa(s); });
+  fs.writeFileSync('area.pdf', Buffer.from(b64, 'base64'));
+  fs.rmSync('area', { recursive: true, force: true }); fs.mkdirSync('area'); execFileSync('pdfdetach', ['-saveall', '-o', 'area', 'area.pdf']);
+  const pa = JSON.parse(fs.readFileSync('area/prime-questions.pq', 'utf8')), ta = pa.tests.find(t => t.id === 'test2'), tOther = pa.tests.find(t => t.id === 'test1');
+  check('the exported file (read by poppler) carries answerArea "blank" on that assessment only, as schema 6', pa.schemaVersion === 6 && ta.answerArea === 'blank' && !('answerArea' in tOther), [pa.schemaVersion, ta.answerArea]);
+  const rtArea = await page.evaluate(async b => { const bin = atob(b), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); const raw = await PQ.readPdfPayload(u.buffer), r = PQ.parsePayload(raw); return { ok: r.ok, area: r.ok && r.payload.tests.find(t => t.id === 'test2').answerArea, same: r.ok && JSON.stringify(r.payload.tests.find(t => t.id === 'test2')) === JSON.stringify(raw.tests.find(t => t.id === 'test2')) }; }, b64);
+  check('importing it validates and keeps answerArea exactly', rtArea.ok && rtArea.area === 'blank' && rtArea.same, rtArea);
+
   console.log('8. network and errors');
   check('zero network requests', requests.length === 0, requests);
   check('no console errors or warnings', problems.length === 0, problems);

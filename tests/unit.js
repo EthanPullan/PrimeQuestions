@@ -66,7 +66,7 @@ const PQ_DEFAULT = () => '00000000-0000-4000-8000-000000000001|My Questions';
     r.valid = PQ.parsePayload(base());
     r.notObj = PQ.parsePayload(null); r.arr = PQ.parsePayload([]); r.str = PQ.parsePayload('x');
     r.wrongFmt = PQ.parsePayload(Object.assign(base(), { format: 'test-parrot/package' }));
-    r.newer = PQ.parsePayload(Object.assign(base(), { schemaVersion: 6 }));
+    r.newer = PQ.parsePayload(Object.assign(base(), { schemaVersion: 7 }));
     r.zero = PQ.parsePayload(Object.assign(base(), { schemaVersion: 0 }));
     r.strVer = PQ.parsePayload(Object.assign(base(), { schemaVersion: '1' }));
     r.feat = PQ.parsePayload(Object.assign(base(), { requiredFeatures: ['hologram'] }));
@@ -408,16 +408,16 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
       untouched: parsed.ok && JSON.stringify(parsed.payload.questions.map(q => { const c = Object.assign({}, q); delete c.bankId; return c; })) === JSON.stringify(raw.questions),
       allInDefaultBank: parsed.ok && parsed.payload.questions.every(q => q.bankId === PQ.DEFAULT_BANK_ID) && parsed.payload.stimuli.every(x => x.bankId === PQ.DEFAULT_BANK_ID) && parsed.payload.banks.length === 1,
       keepTrue: PQ.parsePayload(p2({ keepOrder: true })).ok, keepFalse: PQ.parsePayload(p2({ keepOrder: false })).ok, keepAbsent: PQ.parsePayload(p2({})).ok,
-      keepBad: PQ.parsePayload(p2({ keepOrder: 'yes' })).ok, v4: PQ.parsePayload(Object.assign(p2({}), { schemaVersion: 6 })).code,
+      keepBad: PQ.parsePayload(p2({ keepOrder: 'yes' })).ok, v4: PQ.parsePayload(Object.assign(p2({}), { schemaVersion: 7 })).code,
       appSchema: PQ.SCHEMA_VERSION, migrations: Object.keys(PQ.MIGRATIONS).join()
     };
   }, fx);
   check('fixture really is a schema 1 bank written by v0.1.0', J.rawSchema === 1 && J.rawApp === '0.1.0', J);
-  check('the v0.1.0 bank imports (migrated 1 -> 2 -> 3 -> 4 -> 5), keeps every record untouched and files them in the default bank', J.ok && J.migratedSchema === 5 && J.untouched && J.allInDefaultBank, J);
+  check('the v0.1.0 bank imports (migrated 1 -> 2 -> 3 -> 4 -> 5 -> 6), keeps every record untouched and files them in the default bank', J.ok && J.migratedSchema === 6 && J.untouched && J.allInDefaultBank, J);
   check('fixture content: 7 questions, 1 stimulus, 1 test, 1 image', JSON.stringify(J.counts) === '[7,1,1,1]', J.counts);
-  check('schema is 5 with migrations 1->2, 2->3, 3->4 and 4->5', J.appSchema === 5 && J.migrations === '1,2,3,4', J);
+  check('schema is 6 with migrations 1->2, 2->3, 3->4, 4->5 and 5->6', J.appSchema === 6 && J.migrations === '1,2,3,4,5', J);
   check('keepOrder true/false/absent accepted; non-boolean refused', J.keepTrue && J.keepFalse && J.keepAbsent && !J.keepBad);
-  check('a schema 6 bank is refused as newer', J.v4 === 'newer', J.v4);
+  check('a schema 7 bank is refused as newer', J.v4 === 'newer', J.v4);
 
 
   /* ---------- K. schema 3: banks, migration from a real v0.2.0 file ---------- */
@@ -467,7 +467,7 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
     return r;
   }, fx2);
   check('fixture really is a schema 2 bank written by v0.2.0', K.v2.rawSchema === 2, K.v2.rawSchema);
-  check('the v0.2.0 bank imports (migrated 2 -> 3 -> 4 -> 5): one default bank, every question and stimulus filed in it', K.v2.ok && K.v2.schema === 5 && K.v2.allDefault && K.v2.banks.length === 1 && K.v2.banks[0].name === 'My Questions', K.v2.errors || K.v2);
+  check('the v0.2.0 bank imports (migrated 2 -> 3 -> 4 -> 5 -> 6): one default bank, every question and stimulus filed in it', K.v2.ok && K.v2.schema === 6 && K.v2.allDefault && K.v2.banks.length === 1 && K.v2.banks[0].name === 'My Questions', K.v2.errors || K.v2);
   check('migration keeps keepOrder, tests and images exactly', K.v2.keep && K.v2.untouched);
   check('the migrated default bank is identical to the one a local database gets (so a re-import is "unchanged")', K.defaultStable);
   check('a v2 file with no questions or stimuli gets no default bank', K.emptyV2);
@@ -479,7 +479,7 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
   check('test page options: valid ones accepted; bad header / paper / instructions refused', K.testOpts[0] && K.testOpts[1] && !K.testOpts[2] && !K.testOpts[3] && !K.testOpts[4] && !K.testOpts[5], K.testOpts);
   check('merge treats banks like other records (new, newer wins, written)', JSON.stringify(K.mergeBanks.newIds) === '["b2"]' && K.mergeBanks.write.join() === 'b2' && !K.mergeBanks.noop && K.mergeBanks.changed.join() === 'b1:local', K.mergeBanks);
   check('export of everything: all banks, questions, stimuli, tests and images, and it validates', K.full[0] === 2 && K.full[1] === 2 && K.full[2] === 2 && K.full[3] === 1 && K.full[4] === 'i1,i2,i3' && K.full[5] === true, K.full);
-  check('export of one bank: only that bank, its questions/stimuli and the images they use, no tests, and it validates', K.one[0] === 'b2' && K.one[1] === 'b' && K.one[2] === 's2' && K.one[3] === 0 && K.one[4] === 'i2,i3' && K.one[5] === true && K.one[6] === 5, K.one);
+  check('export of one bank: only that bank, its questions/stimuli and the images they use, no tests, and it validates', K.one[0] === 'b2' && K.one[1] === 'b' && K.one[2] === 's2' && K.one[3] === 0 && K.one[4] === 'i2,i3' && K.one[5] === true && K.one[6] === 6, K.one);
 
   /* ---------- L. multipart questions ---------- */
   console.log('L. multipart questions');
@@ -565,7 +565,7 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
   check('sections are per bank then type, headed with the bank name', /Math 8 Fractions\s+·\s+1 item/.test(tAll) && /Science 9 Matter\s+·\s+1 item/.test(tAll) && /Multipart/.test(tAll), tAll.slice(500, 1200));
   check('a single-bank export is titled with the bank name', /Math 8 Fractions/.test(tOne.split('\n').slice(0, 12).join('\n')) && !/Science 9 Matter/.test(tOne) && !/ONE the sky/.test(tOne), tOne.slice(0, 300));
   check('multipart parts and their answers are readable on the page', /\(a\) PARTA first/.test(tAll) && /\(b\) PARTB second/.test(tAll) && /4\.5 cm/.test(tAll));
-  check('poppler agrees the data is intact in the multi-bank PDF', (() => { fs.rmSync('mb', { recursive: true, force: true }); fs.mkdirSync('mb'); execFileSync('pdfdetach', ['-saveall', '-o', 'mb', 'banks-all.pdf']); const d = JSON.parse(fs.readFileSync('mb/prime-questions.pq', 'utf8')); return d.schemaVersion === 5 && d.banks.length === 2 && d.questions.length === 3; })());
+  check('poppler agrees the data is intact in the multi-bank PDF', (() => { fs.rmSync('mb', { recursive: true, force: true }); fs.mkdirSync('mb'); execFileSync('pdfdetach', ['-saveall', '-o', 'mb', 'banks-all.pdf']); const d = JSON.parse(fs.readFileSync('mb/prime-questions.pq', 'utf8')); return d.schemaVersion === 6 && d.banks.length === 2 && d.questions.length === 3; })());
 
   /* ---------- N. IndexedDB upgrade from a real v0.2.0-layout database ---------- */
   console.log('N. IndexedDB upgrade (version 1 -> 2) keeps existing data');
@@ -708,7 +708,7 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
     };
   }, fx3);
   check('fixture is a schema 3 bank written by v0.3.0, with a test that has page options', P.rawSchema === 3 && P.rawApp === '0.3.0', P);
-  check('the v0.3.0 bank imports (3 -> 4 -> 5): 2 banks, 4 questions, 1 test, the test exactly as written, no format fields invented', P.ok && P.schema === 5 && P.sameTest && P.noInvented && P.counts.join() === '2,4,1', P);
+  check('the v0.3.0 bank imports (3 -> 4 -> 5 -> 6): 2 banks, 4 questions, 1 test, the test exactly as written, no format fields invented', P.ok && P.schema === 6 && P.sameTest && P.noInvented && P.counts.join() === '2,4,1', P);
   check('schema 4 fields are accepted when valid, and a test without them is fine', P.good && P.none, P);
   check('invalid heading size, text size, question style and margins are each refused', !P.badHeading && !P.badText && !P.badStyle && P.badMargins.every(v => v === false), P);
   check('testFormat fills in the defaults (medium, medium, standard, 16/14/18/14 mm), partial margins and junk values', JSON.stringify(P.defaults) === JSON.stringify({ font: '', headingSize: 'medium', textSize: 'medium', questionStyle: 'standard', margins: { top: 16, right: 14, bottom: 18, left: 14 } }) && P.partial.textSize === 'large' && P.partial.margins.top === 20 && P.partial.margins.left === 14 && P.junk.headingSize === 'medium' && P.junk.questionStyle === 'standard', [P.defaults, P.partial, P.junk]);
@@ -771,7 +771,7 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
     };
   }, fx4);
   check('fixture is a schema 4 bank written by v0.5.0, with format settings on its test', Q.fixture.schema === 4 && Q.fixture.app === '0.5.0' && Q.fixture.kept.join() === 'condensed,large', Q.fixture);
-  check('the v0.5.0 bank imports (4 -> 5), the test exactly as written, no sections / font / question options invented', Q.fixture.ok && Q.fixture.schemaNow === 5 && Q.fixture.same && Q.fixture.keys.length === 0, Q.fixture);
+  check('the v0.5.0 bank imports (4 -> 5 -> 6), the test exactly as written, no sections / font / question options invented', Q.fixture.ok && Q.fixture.schemaNow === 6 && Q.fixture.same && Q.fixture.keys.length === 0, Q.fixture);
   check('a test with no sections plans exactly as before (same Version B order as the old formula, no headings)', Q.noSec[2] && Q.noSec[0] === 'abcdefgh' && Q.noSec[1] === Q.oldB, Q.noSec);
   check('sections: Version A keeps the order and puts each heading on the block where its question starts', Q.withA === 'abcdefgh' && Q.a === '||X|||Y||', [Q.withA, Q.a]);
   check('Version B shuffles only inside each section: the same questions stay in the same stretch', Q.segs.join('|') === 'ab|cde|fgh', Q.segs);
@@ -785,6 +785,56 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
   check('valid sections, question options and font names are accepted; a test without them is fine', Object.values(Q.valid).every(Boolean), Q.valid);
   check('each invalid section, question option and font name is refused (bad types, lengths, range, quotes, braces, semicolons, newline)', Q.bad.every(v => v === false), Q.bad);
   check('testFormat and fontStack only ever use safe font names', Q.fmt.join('|') === 'Georgia||' && Q.stack[0] === '"Georgia",Helvetica,Arial,"Liberation Sans",sans-serif' && Q.stack.slice(1).every(x => x === 'Helvetica,Arial,"Liberation Sans",sans-serif'), Q.stack);
+
+  /* ---------- R. schema 6: the assessment-wide answer area ---------- */
+  console.log('R. schema 6 (answerArea) and a bank from the previous version');
+  const fx5 = fs.readFileSync(require('path').join(__dirname, 'fixtures', 'bank-schema5-v0.6.1.pdf')).toString('base64');
+  const R = await page.evaluate(async b64 => {
+    const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    const raw = await PQ.readPdfPayload(u.buffer), parsed = PQ.parsePayload(raw);
+    const T = '2026-10-01T15:00:00Z';
+    const q = (id, type, answer, extra) => Object.assign({ id, bankId: PQ.DEFAULT_BANK_ID, type, prompt: id, course: '', unit: '', tags: [], difficulty: 'medium', status: 'ready', stimulusId: null, imageIds: [], table: null, answer, notes: '', created: T, updated: T }, extra || {});
+    const qs = [q('mc', 'mc', { options: ['a', 'b'], correct: 0 }), q('tf', 'tf', { correct: true }), q('num', 'numeric', { value: '1', units: '', tolerance: 0 }), q('sh', 'short', { lines: 4, rubric: '' }),
+      q('ma', 'matching', { pairs: [{ left: 'a', right: 'b' }, { left: 'c', right: 'd' }] }),
+      q('mp', 'multipart', { parts: [{ type: 'numeric', prompt: 'n', answer: { value: '1', units: '', tolerance: 0 } }, { type: 'short', prompt: 's', answer: { lines: 3, rubric: '' } }, { type: 'mc', prompt: 'm', answer: { options: ['x', 'y'], correct: 1 } }, { type: 'tf', prompt: 't', answer: { correct: false } }] })];
+    const test = extra => Object.assign({ id: 't', title: 'T', course: '', questionIds: qs.map(x => x.id), seed: 7, created: T, updated: T }, extra || {});
+    // [numeric, short, mc, tf, matching] styles then the four parts' styles, on one version
+    const styles = (t, v) => { const p = PQ.planTest(t, qs, [], v), it = {}; p.blocks.forEach(b => b.items.forEach(i => { it[i.q.id] = i; })); return [it.num.view.style || '', it.sh.view.style || '', it.mc.view.style || '', it.tf.view.style || '', it.ma.view.style || '', it.mp.view.parts.map(x => x.style || '').join('/')].join(','); };
+    const def = test({ answerArea: 'blank' }), opts = (o, extra) => test(Object.assign({ questionOptions: o }, extra || {}));
+    const withTest = extra => ({ format: 'prime-questions', schemaVersion: 6, appVersion: '9', requiredFeatures: [], exportedAt: T, banks: [PQ.defaultBank()], questions: [], stimuli: [], tests: [Object.assign({ id: 't1', title: 'T', course: '', questionIds: [], seed: 1, created: T, updated: T }, extra)], images: {} });
+    const ok = extra => PQ.parsePayload(withTest(extra)).ok;
+    const planKeys = PQ.keyEntries(PQ.planTest(def, qs, [], 'B')).map(e => (e.text && e.text.length ? 1 : 0));
+    return {
+      fixture: { schema: raw.schemaVersion, app: raw.appVersion, ok: parsed.ok, schemaNow: parsed.ok && parsed.payload.schemaVersion, same: parsed.ok && JSON.stringify(parsed.payload.tests[0]) === JSON.stringify(raw.tests[0]), noArea: parsed.ok && !('answerArea' in parsed.payload.tests[0]), hasFont: raw.tests[0].font, hasSections: raw.tests[0].sections.length, qo: Object.keys(raw.tests[0].questionOptions).length },
+      plain: styles(test(), 'A'), plainB: styles(test(), 'B'),
+      lines: styles(test({ answerArea: 'lines' }), 'A'),
+      blankA: styles(def, 'A'), blankB: styles(def, 'B'),
+      lineOverride: styles(opts({ num: { answerStyle: 'lines' }, 'mp#1': { answerStyle: 'lines' } }, { answerArea: 'blank' }), 'A'),
+      noneOverride: styles(opts({ sh: { answerStyle: 'none' }, 'mp#0': { answerStyle: 'none' } }, { answerArea: 'blank' }), 'A'),
+      blankOverrideNoDefault: styles(opts({ sh: { answerStyle: 'blank' } }), 'A'),
+      linesNoDefault: styles(opts({ sh: { answerStyle: 'lines' } }), 'A'),
+      spaceKeeps: PQ.planTest(opts({ num: { space: 30 } }, { answerArea: 'blank' }), qs, [], 'A').blocks.flatMap(b => b.items).find(i => i.q.id === 'num').space,
+      keyHasAnswers: PQ.keyEntries(PQ.planTest(def, qs, [], 'A')).length === 6 && planKeys.every(x => x === 1),
+      fmtUntouched: JSON.stringify(PQ.testFormat(def)) === JSON.stringify(PQ.testFormat(test())),
+      valid: [ok({}), ok({ answerArea: 'blank' }), ok({ answerArea: 'lines' })],
+      bad: [ok({ answerArea: 'none' }), ok({ answerArea: '' }), ok({ answerArea: true }), ok({ answerArea: null }), ok({ answerArea: 7 })],
+      qoLines: ok({ questionOptions: { a: { answerStyle: 'lines' } } }),
+      newer: PQ.parsePayload(Object.assign(withTest({}), { schemaVersion: 7 })).code
+    };
+  }, fx5);
+  check('fixture is a schema 5 bank written by v0.6.1, with a font, a section and question options on its test', R.fixture.schema === 5 && R.fixture.app === '0.6.1' && R.fixture.hasFont === 'Georgia' && R.fixture.hasSections === 1 && R.fixture.qo === 3, R.fixture);
+  check('the v0.6.1 bank imports (5 -> 6), the test exactly as written, no answerArea invented', R.fixture.ok && R.fixture.schemaNow === 6 && R.fixture.same && R.fixture.noArea, R.fixture);
+  check('a test with no answerArea plans exactly as before (no styles anywhere), in Version A and Version B', R.plain === ',,,,,///' && R.plainB === R.plain, [R.plain, R.plainB]);
+  check('answerArea "lines" is the same as nothing', R.lines === R.plain, R.lines);
+  check('answerArea "blank": numeric, short and the numeric and short parts of a multipart are blank; mc, tf, matching and the mc/tf parts are not', R.blankA === 'blank,blank,,,,blank/blank//', R.blankA);
+  check('and Version B gets the same styles; the key still lists every answer', R.blankB === R.blankA && R.keyHasAnswers, [R.blankB, R.keyHasAnswers]);
+  check('an explicit "lines" on a question or part beats a blank default (both are back to normal; the rest stay blank)', R.lineOverride === ',blank,,,,blank///', R.lineOverride);
+  check('an explicit "none" beats a blank default', R.noneOverride === 'blank,none,,,,none/blank//', R.noneOverride);
+  check('with no default, an explicit "blank" still works as before and an explicit "lines" changes nothing', R.blankOverrideNoDefault === ',blank,,,,///' && R.linesNoDefault === R.plain, [R.blankOverrideNoDefault, R.linesNoDefault]);
+  check('writing space is unaffected by the default', R.spaceKeeps === 30);
+  check('testFormat does not gain an answerArea key', R.fmtUntouched);
+  check('answerArea accepts "lines" and "blank" (and absent); anything else is refused; "lines" is a valid per-question style', R.valid.every(Boolean) && R.bad.every(v => v === false) && R.qoLines, [R.valid, R.bad, R.qoLines]);
+  check('a schema 7 bank is refused as newer', R.newer === 'newer', R.newer);
 
   check('no console errors during the whole suite', problems.length === 0, problems);
   const fails = summary();
