@@ -177,7 +177,7 @@ const MM = 72 / 25.4;
   console.log('7. no question or stimulus group splits across pages, in every style and size');
   const gen = await page.evaluate(async () => {
     const T = '2026-10-01T10:00:00.000Z';
-    const base = (id, type, prompt, answer, extra) => Object.assign({ id, bankId: PQ.DEFAULT_BANK_ID, type, prompt, course: '', unit: '', tags: [], difficulty: 'medium', status: 'ready', stimulusId: null, imageIds: [], table: null, answer, notes: '', created: T, updated: T }, extra || {});
+    const base = (id, type, prompt, answer, extra) => Object.assign({ id, bankId: PQ.DEFAULT_BANK_ID, type, prompt, course: '', unit: '', tags: [], level: 3, status: 'ready', stimulusId: null, imageIds: [], table: null, answer, notes: '', created: T, updated: T }, extra || {});
     const qs = [];
     for (let i = 0; i < 30; i++) {
       const n = String(i).padStart(2, '0'), kind = i % 5;

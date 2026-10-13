@@ -369,9 +369,46 @@ const MM = 72 / 25.4;
   fs.writeFileSync('area.pdf', Buffer.from(b64, 'base64'));
   fs.rmSync('area', { recursive: true, force: true }); fs.mkdirSync('area'); execFileSync('pdfdetach', ['-saveall', '-o', 'area', 'area.pdf']);
   const pa = JSON.parse(fs.readFileSync('area/prime-questions.pq', 'utf8')), ta = pa.tests.find(t => t.id === 'test2'), tOther = pa.tests.find(t => t.id === 'test1');
-  check('the exported file (read by poppler) carries answerArea "blank" on that assessment only, as schema 6', pa.schemaVersion === 6 && ta.answerArea === 'blank' && !('answerArea' in tOther), [pa.schemaVersion, ta.answerArea]);
+  check('the exported file (read by poppler) carries answerArea "blank" on that assessment only, as schema 6', pa.schemaVersion === 7 && ta.answerArea === 'blank' && !('answerArea' in tOther), [pa.schemaVersion, ta.answerArea]);
   const rtArea = await page.evaluate(async b => { const bin = atob(b), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); const raw = await PQ.readPdfPayload(u.buffer), r = PQ.parsePayload(raw); return { ok: r.ok, area: r.ok && r.payload.tests.find(t => t.id === 'test2').answerArea, same: r.ok && JSON.stringify(r.payload.tests.find(t => t.id === 'test2')) === JSON.stringify(raw.tests.find(t => t.id === 'test2')) }; }, b64);
   check('importing it validates and keeps answerArea exactly', rtArea.ok && rtArea.area === 'blank' && rtArea.same, rtArea);
+
+  console.log('7c. "+ Add section" between questions, and sorting the bank panel by level');
+  await page.evaluate(async () => {
+    const t = new Date().toISOString(), qs = PQ.state.questions.filter(x => ['q1', 'q3', 'q4'].includes(x.id)).map(x => Object.assign({}, x, { level: { q1: 4, q3: 2, q4: 1 }[x.id] }));
+    await PQ.db.applyBatch({ questions: qs, tests: [{ id: 'test3', title: 'Bars Test', course: '', questionIds: ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7'], seed: 9, created: t, updated: t }] }); await PQ.loadAll();
+  });
+  await page.reload(); await page.waitForFunction(() => window.PQ && PQ.ready);
+  await page.click('#nav-tests'); await page.locator('.card-tile .ct-main', { hasText: 'Bars Test' }).click(); await page.waitForSelector('#sheet-preview .tp-q');
+  check('every question has a "+ Add section" bar above it on the editable paper (7 questions, 7 bars)', (await page.locator('#sheet-preview .tp-addsec').count()) === 7 && /Add a section before question 1/.test(await page.locator('#sheet-preview .tp-addsec').first().getAttribute('aria-label')));
+  check('the bars are invisible until pointed at, and never in the printed paper', (await page.locator('#sheet-preview .tp-addsec').first().evaluate(e => getComputedStyle(e).color)) === 'rgba(0, 0, 0, 0)' && (await page.evaluate(async () => { await PQ.preparePrint('test', 'A', PQ.state.tests.find(t => t.id === 'test3')); return document.querySelectorAll('#print-root .tp-addsec').length; })) === 0);
+  await page.click('#pv-b'); check('Version B (read-only) has no bars', (await page.locator('#sheet-preview .tp-addsec').count()) === 0); await page.click('#pv-a');
+  await page.locator('#sheet-preview .tp-addsec[data-before="q3"]').hover();
+  check('pointing at a bar shows "+ Add section"', await page.locator('#sheet-preview .tp-addsec[data-before="q3"] span').isVisible() && (await page.locator('#sheet-preview .tp-addsec[data-before="q3"]').evaluate(e => getComputedStyle(e).color)) !== 'rgba(0, 0, 0, 0)');
+  await page.locator('#sheet-preview .tp-addsec[data-before="q3"]').click();
+  await page.keyboard.type('Part B');
+  check('clicking it puts a heading right above that question, with its title ready to type over', (await D()).sections.length === 1 && (await D()).sections[0].startId === 'q3' && (await D()).sections[0].title === 'Part B' && (await q('QTHREE').evaluate(e => !!e.closest('.tp-block').querySelector('.tp-section'))) && (await page.locator('#sheet-preview .tp-block', { hasText: 'QTHREE' }).locator('.tp-sec-title').inputValue()) === 'Part B');
+  check('the number of bars did not change and the heading is before QTHREE and after QTWO', (await page.locator('#sheet-preview .tp-addsec').count()) === 7 && await page.evaluate(() => { const els = [...document.querySelectorAll('#sheet-preview .sheet > *')]; const i = els.findIndex(e => e.querySelector && e.querySelector('.tp-sec-title')); return /QTWO/.test(els[i - 2].innerText) && /QTHREE/.test(els[i].innerText); }));
+  await page.locator('#sheet-preview .tp-addsec[data-before="q1"]').click(); await page.keyboard.type('Part A');
+  check('a bar above the very first question works too', (await D()).sections.map(x => x.startId + ':' + x.title).join() === 'q1:Part A,q3:Part B');
+  await page.locator('#sheet-preview .tp-addsec[data-before="q3"]').click(); await page.keyboard.type('Intro to B');
+  check('a bar above a question that already has a heading adds the new one above it (where the bar is)', (await D()).sections.length === 3 && (await page.locator('#sheet-preview .tp-block', { hasText: 'QTHREE' }).locator('.tp-sec-title').evaluateAll(els => els.map(e => e.value))).join() === 'Intro to B,Part B');
+  await page.click('#btn-undo'); await page.click('#btn-undo');
+  check('Undo (the typing, then the heading) removes only the last heading', (await D()).sections.map(x => x.title).join() === 'Part A,Part B');
+  await page.click('#btn-redo'); await page.click('#btn-redo');
+  check('Redo brings it back above Part B', (await page.locator('#sheet-preview .tp-block', { hasText: 'QTHREE' }).locator('.tp-sec-title').evaluateAll(els => els.map(e => e.value))).join() === 'Intro to B,Part B');
+  await page.click('#btn-save'); await page.waitForFunction(() => !PQ.active.exam.isDirty());
+  await page.evaluate(() => PQ.preparePrint('test', 'A', PQ.state.tests.find(t => t.id === 'test3'))); await page.pdf({ path: 'bars-a.pdf', preferCSSPageSize: true }); const tbars = pdfText('bars-a.pdf');
+  check('printed: the headings print in that order and the bar prints nothing', tbars.indexOf('Part A') < tbars.indexOf('QONE') && tbars.indexOf('Intro to B') < tbars.indexOf('Part B') && tbars.indexOf('Part B') < tbars.indexOf('QTHREE') && !/Add section/.test(tbars));
+  await page.evaluate(() => PQ.preparePrint('test', 'B', PQ.state.tests.find(t => t.id === 'test3')));
+  const bTxt = await page.evaluate(() => document.querySelector('#print-root').innerText);
+  check('Version B keeps the headings where they are (it shuffles only inside each section)', bTxt.indexOf('Part A') < bTxt.indexOf('Part B') && bTxt.indexOf('Intro to B') < bTxt.indexOf('Part B') && /Part B[\s\S]*QTHREE/.test(bTxt));
+  // bank panel sort by level
+  const panelIds = async how => { await page.selectOption('#panel-sort', how); return page.locator('.qcard').evaluateAll(els => els.map(e => e.getAttribute('data-id'))); };
+  check('the bank panel offers the level sorts', (await page.locator('#panel-sort option').allInnerTexts()).join('|') === 'Newest|Oldest|A to Z|Level, 1 to 4|Level, 4 to 1');
+  const up = await panelIds('levelUp'), down = await panelIds('levelDown');
+  check('sorting the panel by level 1 to 4 lists q4 (level 1), q3 (2) first and q1 (4) last; 4 to 1 reverses the ends', up.slice(0, 2).join() === 'q4,q3' && up[up.length - 1] === 'q1' && down[0] === 'q1' && down.slice(-2).join() === 'q3,q4', [up, down]);
+  check('and the cards say which level each question is', /Level 4/.test(await page.locator('.qcard[data-id="q1"]').innerText()) && /Level 1/.test(await page.locator('.qcard[data-id="q4"]').innerText()));
 
   console.log('8. network and errors');
   check('zero network requests', requests.length === 0, requests);

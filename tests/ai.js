@@ -40,7 +40,8 @@ const SCRIPT = path.join(ROOT, 'tools', 'draft_to_bank_pdf.py');
       ids: new Set(p.questions.map(q => q.id).concat(p.stimuli.map(s => s.id), p.banks.map(b => b.id))).size === p.questions.length + p.stimuli.length + 1,
       letter: p.questions[0].answer.correct, keep: p.questions[0].keepOrder, noKeep: 'keepOrder' in p.questions[1],
       stim: p.questions[2].stimulusId === p.stimuli[0].id && p.questions[3].stimulusId === p.stimuli[0].id, tbl: p.stimuli[0].table.rows.length,
-      tolerance: p.questions[2].answer.tolerance, defaults: [p.questions[4].course, p.questions[4].difficulty, p.questions[4].tags.length, p.questions[4].notes],
+      tolerance: p.questions[2].answer.tolerance, defaults: [p.questions[4].course, p.questions[4].level, p.questions[4].tags.length, p.questions[4].notes],
+      levels: [run(base({ level: 1 })).payload.questions[0].level, run(base({ level: '4' })).payload.questions[0].level, run(base({ difficulty: 'easy' })).payload.questions[0].level, run(base({ difficulty: 'Medium' })).payload.questions[0].level, run(base({ difficulty: 'hard' })).payload.questions[0].level, run(base({ level: 2, difficulty: 'hard' })).payload.questions[0].level, 'difficulty' in run(base({ difficulty: 'hard' })).payload.questions[0]],
       mp: p.questions[6].answer.parts.map(x => x.type).join(), unusedStim: r.unusedStimuli, schema: p.schemaVersion,
       bare: run([{ type: 'tf', prompt: 'x', answer: { correct: 'False' } }]).payload.questions[0].answer.correct,
       lower: run(base({ type: ' MC ', answer: { options: ['a', 'b'], correct: 'b' } })).payload.questions[0].answer.correct,
@@ -54,7 +55,7 @@ const SCRIPT = path.join(ROOT, 'tools', 'draft_to_bank_pdf.py');
         tf: errs(base({ answer: { correct: 'maybe' } })), numNoValue: errs(base({ type: 'numeric', answer: {} })), numTol: errs(base({ type: 'numeric', answer: { value: '1', tolerance: -1 } })),
         lines: errs(base({ type: 'short', answer: { lines: 99 } })), pairs: errs(base({ type: 'matching', answer: { pairs: [{ left: 'a', right: 'b' }] } })),
         parts0: errs(base({ type: 'multipart', answer: { parts: [] } })), nested: errs(base({ type: 'multipart', answer: { parts: [{ type: 'multipart', prompt: 'x', answer: {} }] } })),
-        stim: errs(base({ stimulus: 'nope' })), diff: errs(base({ difficulty: 'impossible' })), tableCols: errs(base({ table: { headers: ['a', 'b'], rows: [['1']] } })),
+        stim: errs(base({ stimulus: 'nope' })), diff: errs(base({ level: 5 })), diffOld: errs(base({ difficulty: 'impossible' })), diffZero: errs(base({ level: 0 })), diffFrac: errs(base({ level: 2.5 })), tableCols: errs(base({ table: { headers: ['a', 'b'], rows: [['1']] } })),
         dupKey: errs({ stimuli: [{ key: 'k', title: 't' }, { key: 'k', title: 'u' }], questions: [{ type: 'tf', prompt: 'p', answer: { correct: true } }] }),
         ctrl: errs(base({ prompt: 'x\fy' })), tab: errs(base({ type: 'mc', answer: { options: ['a\tb', 'c'], correct: 'A' } })),
         many: (() => { const x = run({ questions: Array.from({ length: 60 }, () => ({ type: 'zzz' })) }); return x.errors.length; })()
@@ -63,15 +64,16 @@ const SCRIPT = path.join(ROOT, 'tools', 'draft_to_bank_pdf.py');
       noThrow: (() => { let n = 0; for (const v of [null, undefined, 5, 'x', [], {}, [null], [[]], { questions: [null] }, { questions: [[]] }, { questions: [{ type: 'mc', answer: null }] }, { stimuli: 5, questions: [{ type: 'tf', prompt: 'a', answer: { correct: true } }] }]) { try { run(v); } catch (e) { n++; } } return n; })()
     };
   }, ex);
-  check('the document\'s example converts to a payload that passes the strict validator', U.ok && U.valid && U.count === 8 && U.schema === 6, U.parseErrors || U);
+  check('the document\'s example converts to a payload that passes the strict validator', U.ok && U.valid && U.count === 8 && U.schema === 7, U.parseErrors || U);
   check('every question is marked "Needs review", all land in the named bank, and all ids are new and unique', U.statuses.join() === 'review' && U.banks.join() === 'Science 9: Matter' && U.allInBank && U.ids, U);
   check('a letter answer becomes the right index; keepOrder only where asked; stimulus keys resolve; tables and tolerance kept', U.letter === 0 && U.keep === true && U.noKeep === false && U.stim && U.tbl === 3 && U.tolerance === 0.05, U);
-  check('optional fields default sensibly (difficulty medium, no tags, no notes) and multipart parts keep their types', U.defaults[1] === 'medium' && U.defaults[2] === 0 && U.mp === 'numeric,tf', U.defaults);
+  check('optional fields default sensibly (level 3, no tags, no notes) and multipart parts keep their types', U.defaults[1] === 3 && U.defaults[2] === 0 && U.mp === 'numeric,tf', U.defaults);
+  check('a draft\'s level is 1 to 4 (a number or digit text); an older difficulty word converts easy 1, medium 3, hard 4; level wins over difficulty; the record has no difficulty', U.levels.join() === '1,4,1,3,4,2,false', U.levels);
   check('lenient where an AI is likely to vary: "False" text, lower-case/padded type, number as value, empty short answer, tags as a string', U.bare === false && U.lower === 1 && U.num.value === '9.8' && U.short.lines === 4 && U.tagsStr.join() === 'a,b', [U.bare, U.lower, U.num, U.short, U.tagsStr]);
   check('a bank with the same name (any case) is reused instead of making a duplicate', U.reuse[0] === 'existing-bank' && U.reuse[1] === 'existing-bank', U.reuse);
   const e = U.e;
   check('bad drafts are refused with messages that name the item and say what to do', e.notObj && e.empty && e.badFormat && /questions\[1\]\.answer\.correct/.test(U.msgHasPath) && /letter/.test(U.msgHasPath) && /questions\[1\]\.type/.test(e.badType.join()) && /prompt/.test(e.noPrompt.join()), U.msgHasPath);
-  check('each kind of mistake is caught: letter, option count, true/false, numeric value and tolerance, lines, pairs, parts, nesting, stimulus key, difficulty, table width, duplicate key', [e.badLetter, e.fewOpts, e.tf, e.numNoValue, e.numTol, e.lines, e.pairs, e.parts0, e.nested, e.stim, e.diff, e.tableCols, e.dupKey].every(Boolean), e);
+  check('each kind of mistake is caught: letter, option count, true/false, numeric value and tolerance, lines, pairs, parts, nesting, stimulus key, level, table width, duplicate key', [e.badLetter, e.fewOpts, e.tf, e.numNoValue, e.numTol, e.lines, e.pairs, e.parts0, e.nested, e.stim, e.diff, e.diffOld, e.diffZero, e.diffFrac, e.tableCols, e.dupKey].every(Boolean), e);
   check('a LaTeX command written with one backslash (form feed, tab) is refused with the fix, not silently corrupted', e.ctrl && /doubled/.test(e.ctrl.join()) && e.tab && /doubled/.test(e.tab.join()), [e.ctrl, e.tab]);
   check('at most 40 messages, and nothing ever throws on odd input', e.many === 40 && U.noThrow === 0, [e.many, U.noThrow]);
 

@@ -109,7 +109,7 @@ const pdfPages = file => Number((/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [
   // more questions straight into the database (the editor itself is covered in ui.js)
   await page.evaluate(async () => {
     const T = '2026-10-01T10:00:00.000Z'; const sid = PQ.state.stimuli[0].id;
-    const base = (id, type, prompt, answer, extra) => Object.assign({ id, bankId: PQ.DEFAULT_BANK_ID, type, prompt, course: 'Science 9', unit: 'Matter', tags: [], difficulty: 'medium', status: 'ready', stimulusId: null, imageIds: [], table: null, answer, notes: '', created: T, updated: T }, extra || {});
+    const base = (id, type, prompt, answer, extra) => Object.assign({ id, bankId: PQ.DEFAULT_BANK_ID, type, prompt, course: 'Science 9', unit: 'Matter', tags: [], level: 3, status: 'ready', stimulusId: null, imageIds: [], table: null, answer, notes: '', created: T, updated: T }, extra || {});
     const recs = [
       base('q-b', 'mc', 'Greatest mass? (second question on the passage)', { options: ['A', 'B', 'C', 'D'], correct: 1 }, { stimulusId: sid }),
       base('q-c', 'mc', 'What is \\(\\frac{1}{2}+\\frac{1}{4}\\)?', { options: ['\\(\\frac{3}{4}\\)', '\\(\\frac{2}{6}\\)', '\\(\\frac{1}{4}\\)', '\\(\\frac{1}{2}\\)'], correct: 0 }),
@@ -214,7 +214,7 @@ const pdfPages = file => Number((/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [
   // property test: across many layouts and the three sizes, no question and no stimulus group splits across pages
   const gen = await page.evaluate(async () => {
     const T = '2026-10-01T10:00:00.000Z';
-    const base = (id, type, prompt, answer, extra) => Object.assign({ id, bankId: PQ.DEFAULT_BANK_ID, type, prompt, course: '', unit: '', tags: [], difficulty: 'medium', status: 'ready', stimulusId: null, imageIds: [], table: null, answer, notes: '', created: T, updated: T }, extra || {});
+    const base = (id, type, prompt, answer, extra) => Object.assign({ id, bankId: PQ.DEFAULT_BANK_ID, type, prompt, course: '', unit: '', tags: [], level: 3, status: 'ready', stimulusId: null, imageIds: [], table: null, answer, notes: '', created: T, updated: T }, extra || {});
     const qs = [], ids = [];
     for (let i = 0; i < 40; i++) {
       const n = String(i).padStart(2, '0');
@@ -316,7 +316,7 @@ const pdfPages = file => Number((/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [
   const keyA0 = await planKey('A'), keyB0 = await planKey('B');
   const snap = async () => page.evaluate(async () => { const p = await PQ.collectPayload(); delete p.exportedAt; return JSON.parse(JSON.stringify(p)); });
   const before2 = await snap();
-  check('payload carries schema 2, keepOrder on exactly one question, tables, a stimulus, a test and an image', before2.schemaVersion === 6 && before2.banks.length === 1 && before2.questions.filter(q => q.keepOrder === true).length === 1 && before2.questions.some(q => q.table) && before2.stimuli.length === 1 && before2.tests.length === 1 && Object.keys(before2.images).length === 1);
+  check('payload carries schema 2, keepOrder on exactly one question, tables, a stimulus, a test and an image', before2.schemaVersion === 7 && before2.banks.length === 1 && before2.questions.filter(q => q.keepOrder === true).length === 1 && before2.questions.some(q => q.table) && before2.stimuli.length === 1 && before2.tests.length === 1 && Object.keys(before2.images).length === 1);
   const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 90000 }), page.click('#btn-export')]);
   await dl.saveAs('p2-export.pdf'); await page.waitForSelector('.toast.ok');
   const list = execFileSync('pdfdetach', ['-list', 'p2-export.pdf']).toString();

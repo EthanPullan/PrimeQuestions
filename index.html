@@ -413,6 +413,11 @@
   .sheet .tp-blankarea{height:14mm;}
   .sheet .tp-blankarea.lines{height:calc(var(--lines,3) * 22pt);}
   .sheet.style-condensed .tp-blankarea.lines{height:calc(var(--lines,3) * 16pt);}
+  .sheet .tp-addsec{display:block;width:100%;height:14pt;margin:0;padding:0;border:none;background:none;font:inherit;font-size:9pt;color:transparent;cursor:pointer;text-align:center;position:relative;}
+  .sheet .tp-addsec::before{content:"";position:absolute;left:0;right:0;top:50%;border-top:1px dashed transparent;}
+  .sheet .tp-addsec span{position:relative;background:#fff;padding:0 8pt;}
+  .sheet .tp-addsec:hover,.sheet .tp-addsec:focus-visible{color:var(--board);}
+  .sheet .tp-addsec:hover::before,.sheet .tp-addsec:focus-visible::before{border-top-color:var(--board);}
   .sheet .tp-section{margin:4pt 0 8pt;position:relative;}
   .sheet .tp-sec-title{font-weight:700;font-size:calc(var(--tp-fs,11pt) * 1.3);line-height:1.25;margin-bottom:2pt;}
   .sheet .tp-sec-instr{font-style:italic;white-space:pre-wrap;overflow-wrap:anywhere;}
@@ -820,9 +825,9 @@ document.addEventListener('DOMContentLoaded', () => {
 'use strict';
 
 /* === CONSTANTS === */
-const APP_VERSION = '0.7.0';
-const SCHEMA_VERSION = 6;
-const DB_VERSION = 2;                      // IndexedDB version (2 adds banks and test version history)
+const APP_VERSION = '0.8.0';
+const SCHEMA_VERSION = 7;
+const DB_VERSION = 3;                      // IndexedDB version (2 adds banks and test version history; 3 turns difficulty into a level)
 const FORMAT = 'prime-questions';
 const KNOWN_FEATURES = [];                 // payload.requiredFeatures entries this app understands
 const DB_NAME = 'prime-questions';
@@ -869,7 +874,10 @@ const marginsOk = m => m && typeof m === 'object' && ['top', 'right', 'bottom', 
 const DEFAULT_BANK_ID = '00000000-0000-4000-8000-000000000001';
 const DEFAULT_BANK_TIME = '2000-01-01T00:00:00.000Z';
 const defaultBank = () => ({ id: DEFAULT_BANK_ID, name: 'My Questions', created: DEFAULT_BANK_TIME, updated: DEFAULT_BANK_TIME });
-const DIFFICULTIES = ['easy', 'medium', 'hard'];
+const LEVELS = [1, 2, 3, 4], DEFAULT_LEVEL = 3;                    // schema 7: a question's level replaces easy / medium / hard
+const LEVEL_FROM_DIFFICULTY = { easy: 1, medium: 3, hard: 4 };      // how old files and drafts convert (own keys only, see levelFromDifficulty)
+const levelFromDifficulty = d => (typeof d === 'string' && Object.prototype.hasOwnProperty.call(LEVEL_FROM_DIFFICULTY, d) ? LEVEL_FROM_DIFFICULTY[d] : undefined);
+const levelOk = n => Number.isInteger(n) && n >= 1 && n <= 4;
 const STATUSES = ['ready', 'review'];
 const STATUS_LABEL = { ready: 'Ready', review: 'Needs review' };
 
@@ -1217,7 +1225,7 @@ function emptyQuestion(type, bankId) {
   const t = nowIso();
   return {
     id: uuid(), bankId: bankId || DEFAULT_BANK_ID, type: type || 'mc', prompt: '', course: '', unit: '', tags: [],
-    difficulty: 'medium', status: 'review', stimulusId: null, imageIds: [], table: null,
+    level: DEFAULT_LEVEL, status: 'review', stimulusId: null, imageIds: [], table: null,
     answer: defaultAnswer(type || 'mc'), notes: '', created: t, updated: t
   };
 }
@@ -1317,7 +1325,15 @@ const MIGRATIONS = {
   },
   3: p => Object.assign({}, p, { schemaVersion: 4 }),    // schema 4 only adds optional fields on tests
   4: p => Object.assign({}, p, { schemaVersion: 5 }),    // so does schema 5
-  5: p => Object.assign({}, p, { schemaVersion: 6 })     // and schema 6 (answerArea)
+  5: p => Object.assign({}, p, { schemaVersion: 6 }),    // and schema 6 (answerArea)
+  // schema 7: difficulty (easy / medium / hard) becomes level 1 to 4. An unknown difficulty leaves no level, so validation refuses the file.
+  6: p => Object.assign({}, p, { schemaVersion: 7, questions: Array.isArray(p.questions) ? p.questions.map(q => {
+    if (!q || typeof q !== 'object' || Array.isArray(q) || 'level' in q) return q;
+    const r = Object.assign({}, q), lv = levelFromDifficulty(q.difficulty);
+    delete r.difficulty;
+    if (lv !== undefined) r.level = lv;
+    return r;
+  }) : p.questions })
 };
 
 function migrate(p, migrations, target) {
@@ -1373,7 +1389,7 @@ function recordProblems(kind, r) {
     need(TYPES.includes(r.type), 'has an unknown type');
     need(isStr(r.prompt) && isStr(r.course) && isStr(r.unit) && isStr(r.notes), 'has a text field that is not text');
     need(isStrArr(r.tags), 'has invalid tags');
-    need(DIFFICULTIES.includes(r.difficulty), 'has an invalid difficulty');
+    need(levelOk(r.level), 'has an invalid level (it must be 1, 2, 3 or 4)');
     need(STATUSES.includes(r.status), 'has an invalid status');
     need(r.stimulusId === null || isStr(r.stimulusId), 'has an invalid stimulusId');
     need(isStrArr(r.imageIds), 'has invalid imageIds');
@@ -1644,14 +1660,15 @@ function draftToPayload(input, opts) {
       const st = stimById.get(String(q.stimulus));
       if (!st) err(path + '.stimulus', '"' + q.stimulus + '" is not the key of any item in "stimuli".'); else stimulusId = st.id;
     }
-    const difficulty = q.difficulty === undefined || q.difficulty === null ? 'medium' : String(q.difficulty).toLowerCase();
-    if (!DIFFICULTIES.includes(difficulty)) err(path + '.difficulty', 'must be easy, medium or hard.');
+    let level = DEFAULT_LEVEL;   // "level": 1 to 4. An older draft's "difficulty": easy / medium / hard still converts.
+    if (q.level !== undefined && q.level !== null && q.level !== '') { level = Number(q.level); if (!levelOk(level)) { err(path + '.level', 'must be 1, 2, 3 or 4.'); level = DEFAULT_LEVEL; } }
+    else if (q.difficulty !== undefined && q.difficulty !== null) { const lv = levelFromDifficulty(String(q.difficulty).toLowerCase()); if (lv === undefined) err(path + '.difficulty', 'is no longer used. Use "level": 1, 2, 3 or 4.'); else level = lv; }
     let tags = q.tags === undefined || q.tags === null ? [] : q.tags;
     if (typeof tags === 'string') tags = tags.split(',');
     if (!Array.isArray(tags) || !tags.every(isStr)) { err(path + '.tags', 'must be a list of text.'); tags = []; }
     const rec = {
       id: uid(), bankId: bank.id, type, prompt, course: str(q.course, path + '.course', '', 200).trim(), unit: str(q.unit, path + '.unit', '', 200).trim(),
-      tags: Array.from(new Set(tags.map(x => x.trim()).filter(Boolean))), difficulty, status: 'review', stimulusId, imageIds: [], table: table(q.table, path + '.table'),
+      tags: Array.from(new Set(tags.map(x => x.trim()).filter(Boolean))), level, status: 'review', stimulusId, imageIds: [], table: table(q.table, path + '.table'),
       answer: ans, notes: str(q.notes, path + '.notes', '', 5000).trim(), created: now, updated: now
     };
     if (type === 'mc' && q.keepOrder === true) rec.keepOrder = true;
@@ -1999,7 +2016,7 @@ function answerLines(type, a, ind) {
 function blockLines(q, num, ctx) {
   const L = [];
   L.push({ k: 'title', text: 'Question ' + num });
-  const meta = ['Difficulty: ' + cap(q.difficulty)];
+  const meta = ['Level: ' + q.level];
   if (q.course) meta.push('Course: ' + q.course);
   if (q.unit) meta.push('Unit: ' + q.unit);
   meta.push('Topics: ' + (q.tags.length ? q.tags.join(', ') : 'None'));
@@ -2249,16 +2266,22 @@ const db = (() => {
         if (!d.objectStoreNames.contains('images')) d.createObjectStore('images');   // Blobs keyed by id
         // version 2 (schema 3): every question and stimulus belongs to a bank. Existing records move to the default bank
         // inside this same upgrade transaction, so a failure leaves the old database exactly as it was.
-        if (ev.oldVersion < 2) {
-          tx.objectStore('banks').put(defaultBank());
-          if (ev.oldVersion >= 1) for (const name of ['questions', 'stimuli']) {
-            tx.objectStore(name).openCursor().onsuccess = e => {
-              const c = e.target.result;
-              if (!c) return;
-              if (!c.value.bankId) { const v = c.value; v.bankId = DEFAULT_BANK_ID; c.update(v); }
-              c.continue();
-            };
-          }
+        // version 2 (schema 3): every question and stimulus belongs to a bank. Existing records move to the default bank.
+        // version 3 (schema 7): a question's difficulty becomes a level.
+        // Both happen in this one upgrade transaction (a failure leaves the old database exactly as it was), in a single pass
+        // over each store: two cursors on one store would each write back the value they read first and undo each other.
+        if (ev.oldVersion < 2) tx.objectStore('banks').put(defaultBank());
+        if (ev.oldVersion >= 1 && ev.oldVersion < 3) for (const name of ['questions', 'stimuli']) {
+          tx.objectStore(name).openCursor().onsuccess = e => {
+            const c = e.target.result;
+            if (!c) return;
+            const v = c.value;
+            let changed = false;
+            if (!v.bankId) { v.bankId = DEFAULT_BANK_ID; changed = true; }
+            if (name === 'questions' && !('level' in v)) { const lv = levelFromDifficulty(v.difficulty); v.level = lv === undefined ? DEFAULT_LEVEL : lv; delete v.difficulty; changed = true; }
+            if (changed) c.update(v);
+            c.continue();
+          };
         }
       };
       r.onsuccess = () => {
@@ -3170,7 +3193,9 @@ function createQuestionEditor(opts) {
     R.answerHost = h('div'); R.answerTitle = h('h3', { class: 'section-title' }, 'Answer');
     const coursesList = Array.from(new Set(state.questions.map(q => q.course).filter(Boolean)));
     const unitsList = Array.from(new Set(state.questions.map(q => q.unit).filter(Boolean)));
-    const diff = h('select', { id: 'f-difficulty', onchange: e => { d.difficulty = e.target.value; touch(); } }, DIFFICULTIES.map(x => h('option', { value: x }, cap(x)))); diff.value = d.difficulty;
+    const diff = h('div', { class: 'seg', id: 'f-level', role: 'group', 'aria-label': 'Level' }, LEVELS.map(n =>
+      h('button', { type: 'button', id: 'f-level-' + n, class: d.level === n ? 'active' : '', 'aria-pressed': String(d.level === n), onclick: e => {
+        d.level = n; diff.querySelectorAll('button').forEach(b => { const on = b === e.currentTarget; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); }); touch(); } }, String(n))));
     R.statusSel = h('select', { id: 'f-status', onchange: e => { d.status = e.target.value; touch(); } }, STATUSES.map(x => h('option', { value: x }, STATUS_LABEL[x]))); R.statusSel.value = d.status;
     const bankSel = h('select', { id: 'f-bank', onchange: e => {
       d.bankId = e.target.value;
@@ -3199,7 +3224,7 @@ function createQuestionEditor(opts) {
       h('datalist', { id: 'dl-courses' }, coursesList.map(c => h('option', { value: c }))),
       h('datalist', { id: 'dl-units' }, unitsList.map(c => h('option', { value: c }))),
       field('Topics (separate with commas)', h('input', { type: 'text', class: 'in', id: 'f-tags', value: d.tags.join(', '), oninput: e => { d.tags = e.target.value.split(',').map(x => x.trim()).filter(Boolean); touch(); } }), 'f-tags'),
-      h('div', { class: 'row2' }, field('Difficulty', diff, 'f-difficulty'), field('Status', R.statusSel, 'f-status')),
+      h('div', { class: 'row2' }, field('Level (1 to 4)', diff, 'f-level'), field('Status', R.statusSel, 'f-status')),
       h('p', { class: 'hint', style: 'margin:-4px 0 12px' }, '“Needs review” is for questions that still need a human check. A question can only be “Ready” when nothing is wrong with it (see Problems).'),
       field('Notes (not shown to students)', h('textarea', { id: 'f-notes', 'data-math': '', rows: '3', value: d.notes, oninput: e => { d.notes = e.target.value; touch(); } }), 'f-notes'));
     const grid = h('div', { class: 'editor-grid' },
@@ -3371,11 +3396,12 @@ function createStimulusEditor(opts) {
 }
 
 /* === BANK WORKSPACE: a bank's questions and stimuli, with the editor beside the list === */
-const SORTS = { newest: 'Newest', oldest: 'Oldest', az: 'A to Z' };
+const SORTS = { newest: 'Newest', oldest: 'Oldest', az: 'A to Z', levelUp: 'Level, 1 to 4', levelDown: 'Level, 4 to 1' };
 function sortQuestions(list, how) {
   const l = list.slice();
   if (how === 'oldest') l.sort((a, b) => Date.parse(a.created) - Date.parse(b.created));
   else if (how === 'az') l.sort((a, b) => snippet(a.prompt).localeCompare(snippet(b.prompt)));
+  else if (how === 'levelUp' || how === 'levelDown') { const sign = how === 'levelUp' ? 1 : -1; l.sort((a, b) => sign * (a.level - b.level) || Date.parse(b.updated) - Date.parse(a.updated)); }   // same level: newest first
   else l.sort((a, b) => Date.parse(b.updated) - Date.parse(a.updated));
   return l;
 }
@@ -3424,7 +3450,7 @@ VIEWS.bank = v => {
       count.textContent = rows.length === all.length ? String(rows.length) : rows.length + ' of ' + all.length;
       if (!rows.length) listHost.append(h('li', { class: 'empty' }, all.length ? 'No questions match these filters.' : 'No questions in this bank yet. Choose “New question”.'));
       for (const q of rows) listHost.append(h('li', null, h('button', { type: 'button', class: 'qrow' + (q.id === bw.selectedId ? ' sel' : ''), 'data-id': q.id, onclick: () => openQuestion(q.id) },
-        h('span', { class: 'top' }, h('span', { class: 'badge' }, TYPE_SHORT[q.type]), q.status === 'review' ? h('span', { class: 'badge review' }, 'REVIEW') : null, h('span', { class: 'badge' }, cap(q.difficulty))),
+        h('span', { class: 'top' }, h('span', { class: 'badge' }, TYPE_SHORT[q.type]), q.status === 'review' ? h('span', { class: 'badge review' }, 'REVIEW') : null, h('span', { class: 'badge' }, 'Level ' + q.level)),
         h('span', { class: 'snip' }, snippet(q.prompt)),
         (q.course || q.unit) ? h('span', { class: 'sub' }, [q.course, q.unit].filter(Boolean).join(' · ')) : null)));
     } else {
@@ -3570,6 +3596,7 @@ function buildSheet(plan, kind, ed) {
   root.append(head);
   if (kind === 'test') {
     plan.blocks.forEach((b, bi) => {
+      if (ed && ed.sectionBar) root.append(ed.sectionBar(b.items[0].q.id, b.items[0].number));
       const wrap = h('section', { class: 'tp-block', 'data-bi': String(bi), 'data-stim': b.stimulus ? b.stimulus.id : null });
       for (const sec of b.sections) { const sd = sectionDom(sec, ed); if (sd) wrap.append(sd); }
       if (b.stimulus) {
@@ -3831,7 +3858,8 @@ function createExam(opts) {
     if (Object.keys(cur).length) o[key] = cur; else delete o[key];
     if (Object.keys(o).length) d.questionOptions = o; else delete d.questionOptions;
   });
-  const addSection = qid => { const id = uuid(); ui.focusSection = id; mutate(() => { d.sections = (d.sections || []).concat([{ id, startId: qid, title: 'New section', instructions: '' }]); }); };
+  // atTop: the new header goes before any header already on that question (the "+ Add section" bar is drawn above them)
+  const addSection = (qid, atTop) => { const id = uuid(), sec = { id, startId: qid, title: 'New section', instructions: '' }; ui.focusSection = id; mutate(() => { d.sections = atTop ? [sec].concat(d.sections || []) : (d.sections || []).concat([sec]); }); };
 
   /* ---- the paper ---- */
   const edApi = {
@@ -3842,6 +3870,7 @@ function createExam(opts) {
     addInstructions: () => { mutate(() => { d.instructions = ''; }); const f = document.getElementById('f-test-instructions'); if (f) f.focus(); },
     toggleLine: k => mutate(() => { const x = hdr(); x[k] = !x[k]; d.header = x; }),
     setSection: (id, field, v) => mutate(() => { d.sections = (d.sections || []).map(x => (x.id === id ? Object.assign({}, x, { [field]: v }) : x)); }, { key: 'sec-' + id + field }),
+    sectionBar: (qid, n) => h('button', { type: 'button', class: 'ed-only tp-addsec', 'data-before': qid, 'aria-label': 'Add a section before question ' + n, title: 'Add a section header here', onclick: () => addSection(qid, true) }, h('span', null, '+ Add section')),
     removeSection: id => mutate(() => { const secs = (d.sections || []).filter(x => x.id !== id); if (secs.length) d.sections = secs; else delete d.sections; }),
     tools(kind, bi, it) {
       const ids = paintIds, n = ids.length;
@@ -4056,7 +4085,7 @@ function createExam(opts) {
         list.append(h('div', { class: 'qcard' + (used ? ' used' : ''), 'data-id': q.id, draggable: used ? null : 'true',
           ondragstart: e => { ui.drag = { kind: 'question', id: q.id }; e.dataTransfer.effectAllowed = 'copy'; e.dataTransfer.setData('text/plain', q.id); node.classList.add('is-dragging'); },
           ondragend: () => endDrag() },
-          h('div', { class: 'top' }, h('span', { class: 'badge' }, TYPE_SHORT[q.type]), q.status === 'review' ? h('span', { class: 'badge review' }, 'REVIEW') : null, h('span', { class: 'badge' }, cap(q.difficulty)),
+          h('div', { class: 'top' }, h('span', { class: 'badge' }, TYPE_SHORT[q.type]), q.status === 'review' ? h('span', { class: 'badge review' }, 'REVIEW') : null, h('span', { class: 'badge' }, 'Level ' + q.level),
             q.stimulusId && sById.has(q.stimulusId) ? h('span', { class: 'badge' }, 'STIMULUS') : null),
           h('div', { class: 'snip' }, snippet(q.prompt)),
           h('div', { class: 'acts' },
@@ -4441,7 +4470,7 @@ window.PQ = {
   hashSeed, mulberry32, shuffled, newSeed, formBlocks, questionView, planTest, keyText, keyEntries,
   isTextSafe, needsImage, textWidth, wrapText, blockLines, layoutText,
   buildBankPdf, readPdfPayload, renderBlockImage, buildSheet, preparePrint, processImageFile, ensureImageUrls,
-  dataUrlToBlob, blobToDataUrl, db, collectPayload, loadAll, state, active, navigate, render, checkTest, testFormat, MARGIN_DEFAULT, MARGIN_PRESETS, acrossOk, fontStack, FONT_RE
+  dataUrlToBlob, blobToDataUrl, db, collectPayload, loadAll, state, active, navigate, render, checkTest, testFormat, MARGIN_DEFAULT, MARGIN_PRESETS, acrossOk, fontStack, FONT_RE, sortQuestions, SORTS, LEVELS, DEFAULT_LEVEL
 };
 
 /* === START === */

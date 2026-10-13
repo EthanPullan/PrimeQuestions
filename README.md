@@ -6,7 +6,7 @@ or use the hosted copy at <https://ethanpullan.github.io/PrimeQuestions/>.
 
 There are no accounts and no server. Your questions are stored in your browser.
 
-## What it does today (v0.7.0)
+## What it does today (v0.8.0)
 
 The sidebar has four places, like Test Parrot: **Home**, **Assessments**,
 **Question Banks** and **Imports**.
@@ -25,7 +25,11 @@ The sidebar has four places, like Test Parrot: **Home**, **Assessments**,
 - Tables (cells can hold maths) and images (PNG, JPEG or SVG; large photos are
   resized to about 1600 px) on a question.
 - **Stimuli**: a passage, data table or picture that several questions share.
-- Search by text, type and status.
+- **Levels 1 to 4**: every question has a level (four buttons in the editor, shown as
+  “Level 3” in the lists; new questions start at 3). Search by text, type and status, and
+  sort by newest, oldest, A to Z, **Level 1 to 4** or **Level 4 to 1** (in the bank page and
+  in the bank panel of the assessment editor). Older files with easy / medium / hard
+  convert on import: easy becomes 1, medium 3 and hard 4.
 
 **Assessments**
 - The assessment editor is the paper itself, with your question banks beside it. Drag
@@ -46,7 +50,8 @@ The sidebar has four places, like Test Parrot: **Home**, **Assessments**,
   space after the question: Small, Medium, Large, or your own size in millimetres),
   **Fill rest of page** (the space grows to the bottom of the page), and **Start new
   section here**. Your bank questions are not changed.
-- **Sections**: a heading with an optional line of instructions (for example “Short
+- **Sections**: hover between any two questions on the paper (or above the first) and press
+  **+ Add section** to put a heading there. It is a heading with an optional line of instructions (for example “Short
   Answer: Show all work”) above the question where you start it. Edit it directly on
   the paper. Question numbers keep counting across sections, and Version B shuffles
   the questions only inside each section, so the sections stay in your order.

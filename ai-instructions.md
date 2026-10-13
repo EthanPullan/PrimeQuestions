@@ -51,7 +51,7 @@ The top level is an object. Only `questions` is required.
   "course": "Science 9",
   "unit": "Matter",
   "tags": ["density", "calculations"],
-  "difficulty": "medium",
+  "level": 3,
   "notes": "Anything the teacher should know. Not printed on the assessment.",
   "stimulus": "s1",
   "table": { "headers": ["A", "B"], "rows": [["1", "2"]], "caption": "" },
@@ -66,7 +66,7 @@ The top level is an object. Only `questions` is required.
 | `answer` | yes | Its shape depends on `type` (below). |
 | `course`, `unit` | no | Short text, for example `"Math 8"` and `"Fractions"`. Use them if the teacher said or the source shows them. |
 | `tags` | no | A few topic words. |
-| `difficulty` | no | `easy`, `medium` (default) or `hard`. Only set it if it is clear. |
+| `level` | no | A whole number from `1` to `4` (default `3`). Only set it if the teacher gave one or it is clear. |
 | `notes` | no | Marking guidance, source, or doubts. Not printed for students. |
 | `stimulus` | no | The `key` of an item in `stimuli`. |
 | `table` | no | A data table that belongs to this question (see "Tables"). |
@@ -227,7 +227,7 @@ Use a table only for real rows and columns of data, never to lay out a question.
       "type": "mc",
       "prompt": "What is \\(\\frac{1}{2} + \\frac{1}{4}\\)?",
       "answer": { "options": ["\\(\\frac{3}{4}\\)", "\\(\\frac{2}{6}\\)", "\\(\\frac{1}{4}\\)", "All of the above"], "correct": "A" },
-      "course": "Math 8", "unit": "Fractions", "tags": ["adding fractions"], "difficulty": "easy", "keepOrder": true
+      "course": "Math 8", "unit": "Fractions", "tags": ["adding fractions"], "level": 1, "keepOrder": true
     },
     {
       "type": "tf",

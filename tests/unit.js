@@ -66,7 +66,7 @@ const PQ_DEFAULT = () => '00000000-0000-4000-8000-000000000001|My Questions';
     r.valid = PQ.parsePayload(base());
     r.notObj = PQ.parsePayload(null); r.arr = PQ.parsePayload([]); r.str = PQ.parsePayload('x');
     r.wrongFmt = PQ.parsePayload(Object.assign(base(), { format: 'test-parrot/package' }));
-    r.newer = PQ.parsePayload(Object.assign(base(), { schemaVersion: 7 }));
+    r.newer = PQ.parsePayload(Object.assign(base(), { schemaVersion: 8 }));
     r.zero = PQ.parsePayload(Object.assign(base(), { schemaVersion: 0 }));
     r.strVer = PQ.parsePayload(Object.assign(base(), { schemaVersion: '1' }));
     r.feat = PQ.parsePayload(Object.assign(base(), { requiredFeatures: ['hologram'] }));
@@ -405,19 +405,22 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
     return {
       rawSchema: raw.schemaVersion, rawApp: raw.appVersion, ok: parsed.ok, errors: parsed.errors,
       migratedSchema: parsed.ok && parsed.payload.schemaVersion, counts: parsed.ok && [parsed.payload.questions.length, parsed.payload.stimuli.length, parsed.payload.tests.length, Object.keys(parsed.payload.images).length],
-      untouched: parsed.ok && JSON.stringify(parsed.payload.questions.map(q => { const c = Object.assign({}, q); delete c.bankId; return c; })) === JSON.stringify(raw.questions),
+      untouched: parsed.ok && parsed.payload.questions.every((q, i) => { const c = Object.assign({}, q); delete c.bankId; c.difficulty = ({ 1: 'easy', 3: 'medium', 4: 'hard' })[c.level]; delete c.level; return PQ.stable(c) === PQ.stable(raw.questions[i]); }),
+      levels: parsed.ok && parsed.payload.questions.map(q => q.level + (('difficulty' in q) ? '!' : '')).join(),
+      rawDifficulties: raw.questions.map(q => q.difficulty).join(),
       allInDefaultBank: parsed.ok && parsed.payload.questions.every(q => q.bankId === PQ.DEFAULT_BANK_ID) && parsed.payload.stimuli.every(x => x.bankId === PQ.DEFAULT_BANK_ID) && parsed.payload.banks.length === 1,
       keepTrue: PQ.parsePayload(p2({ keepOrder: true })).ok, keepFalse: PQ.parsePayload(p2({ keepOrder: false })).ok, keepAbsent: PQ.parsePayload(p2({})).ok,
-      keepBad: PQ.parsePayload(p2({ keepOrder: 'yes' })).ok, v4: PQ.parsePayload(Object.assign(p2({}), { schemaVersion: 7 })).code,
+      keepBad: PQ.parsePayload(p2({ keepOrder: 'yes' })).ok, v4: PQ.parsePayload(Object.assign(p2({}), { schemaVersion: 8 })).code,
       appSchema: PQ.SCHEMA_VERSION, migrations: Object.keys(PQ.MIGRATIONS).join()
     };
   }, fx);
   check('fixture really is a schema 1 bank written by v0.1.0', J.rawSchema === 1 && J.rawApp === '0.1.0', J);
-  check('the v0.1.0 bank imports (migrated 1 -> 2 -> 3 -> 4 -> 5 -> 6), keeps every record untouched and files them in the default bank', J.ok && J.migratedSchema === 6 && J.untouched && J.allInDefaultBank, J);
+  check('every difficulty became a level (easy 1, medium 3, hard 4), the difficulty field is gone, and the fixture really had difficulties', J.rawDifficulties.split(',').every(x => ['easy', 'medium', 'hard'].includes(x)) && J.levels.split(',').every((x, k) => x === String({ easy: 1, medium: 3, hard: 4 }[J.rawDifficulties.split(',')[k]])), [J.rawDifficulties, J.levels]);
+  check('the v0.1.0 bank imports (migrated 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7), keeps every record untouched and files them in the default bank', J.ok && J.migratedSchema === 7 && J.untouched && J.allInDefaultBank, J);
   check('fixture content: 7 questions, 1 stimulus, 1 test, 1 image', JSON.stringify(J.counts) === '[7,1,1,1]', J.counts);
-  check('schema is 6 with migrations 1->2, 2->3, 3->4, 4->5 and 5->6', J.appSchema === 6 && J.migrations === '1,2,3,4,5', J);
+  check('schema is 7 with migrations 1->2, 2->3, 3->4, 4->5, 5->6 and 6->7', J.appSchema === 7 && J.migrations === '1,2,3,4,5,6', J);
   check('keepOrder true/false/absent accepted; non-boolean refused', J.keepTrue && J.keepFalse && J.keepAbsent && !J.keepBad);
-  check('a schema 7 bank is refused as newer', J.v4 === 'newer', J.v4);
+  check('a schema 8 bank is refused as newer', J.v4 === 'newer', J.v4);
 
 
   /* ---------- K. schema 3: banks, migration from a real v0.2.0 file ---------- */
@@ -429,7 +432,7 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
     const parsed = PQ.parsePayload(raw);
     const T = '2026-10-01T10:00:00.000Z';
     const bank = (id, name) => ({ id, name: name || 'Bank ' + id, created: T, updated: T });
-    const q = (id, bankId, extra) => Object.assign({ id, bankId, type: 'tf', prompt: 'p', course: '', unit: '', tags: [], difficulty: 'easy', status: 'ready', stimulusId: null, imageIds: [], table: null, answer: { correct: true }, notes: '', created: T, updated: T }, extra || {});
+    const q = (id, bankId, extra) => Object.assign({ id, bankId, type: 'tf', prompt: 'p', course: '', unit: '', tags: [], level: 1, status: 'ready', stimulusId: null, imageIds: [], table: null, answer: { correct: true }, notes: '', created: T, updated: T }, extra || {});
     const stim = (id, bankId) => ({ id, bankId, title: 't', text: '', imageIds: [], table: null, created: T, updated: T });
     const base = () => ({ format: 'prime-questions', schemaVersion: 3, appVersion: '9', requiredFeatures: [], exportedAt: T, banks: [bank('b1'), bank('b2')], questions: [q('a', 'b1'), q('b', 'b2')], stimuli: [stim('s1', 'b1')], tests: [], images: {} });
     const t = (m) => { const p = base(); m(p); return PQ.parsePayload(p); };
@@ -467,7 +470,7 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
     return r;
   }, fx2);
   check('fixture really is a schema 2 bank written by v0.2.0', K.v2.rawSchema === 2, K.v2.rawSchema);
-  check('the v0.2.0 bank imports (migrated 2 -> 3 -> 4 -> 5 -> 6): one default bank, every question and stimulus filed in it', K.v2.ok && K.v2.schema === 6 && K.v2.allDefault && K.v2.banks.length === 1 && K.v2.banks[0].name === 'My Questions', K.v2.errors || K.v2);
+  check('the v0.2.0 bank imports (migrated 2 -> 3 -> 4 -> 5 -> 6 -> 7): one default bank, every question and stimulus filed in it', K.v2.ok && K.v2.schema === 7 && K.v2.allDefault && K.v2.banks.length === 1 && K.v2.banks[0].name === 'My Questions', K.v2.errors || K.v2);
   check('migration keeps keepOrder, tests and images exactly', K.v2.keep && K.v2.untouched);
   check('the migrated default bank is identical to the one a local database gets (so a re-import is "unchanged")', K.defaultStable);
   check('a v2 file with no questions or stimuli gets no default bank', K.emptyV2);
@@ -479,14 +482,14 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
   check('test page options: valid ones accepted; bad header / paper / instructions refused', K.testOpts[0] && K.testOpts[1] && !K.testOpts[2] && !K.testOpts[3] && !K.testOpts[4] && !K.testOpts[5], K.testOpts);
   check('merge treats banks like other records (new, newer wins, written)', JSON.stringify(K.mergeBanks.newIds) === '["b2"]' && K.mergeBanks.write.join() === 'b2' && !K.mergeBanks.noop && K.mergeBanks.changed.join() === 'b1:local', K.mergeBanks);
   check('export of everything: all banks, questions, stimuli, tests and images, and it validates', K.full[0] === 2 && K.full[1] === 2 && K.full[2] === 2 && K.full[3] === 1 && K.full[4] === 'i1,i2,i3' && K.full[5] === true, K.full);
-  check('export of one bank: only that bank, its questions/stimuli and the images they use, no tests, and it validates', K.one[0] === 'b2' && K.one[1] === 'b' && K.one[2] === 's2' && K.one[3] === 0 && K.one[4] === 'i2,i3' && K.one[5] === true && K.one[6] === 6, K.one);
+  check('export of one bank: only that bank, its questions/stimuli and the images they use, no tests, and it validates', K.one[0] === 'b2' && K.one[1] === 'b' && K.one[2] === 's2' && K.one[3] === 0 && K.one[4] === 'i2,i3' && K.one[5] === true && K.one[6] === 7, K.one);
 
   /* ---------- L. multipart questions ---------- */
   console.log('L. multipart questions');
   const Lr = await page.evaluate(() => {
     const T = '2026-10-01T10:00:00.000Z';
     const part = (type, prompt, answer, extra) => Object.assign({ type, prompt, answer }, extra || {});
-    const mkq = (id, parts, extra) => Object.assign({ id, bankId: PQ.DEFAULT_BANK_ID, type: 'multipart', prompt: 'Read the situation.', course: '', unit: '', tags: [], difficulty: 'medium', status: 'ready', stimulusId: null, imageIds: [], table: null, answer: { parts }, notes: '', created: T, updated: T }, extra || {});
+    const mkq = (id, parts, extra) => Object.assign({ id, bankId: PQ.DEFAULT_BANK_ID, type: 'multipart', prompt: 'Read the situation.', course: '', unit: '', tags: [], level: 3, status: 'ready', stimulusId: null, imageIds: [], table: null, answer: { parts }, notes: '', created: T, updated: T }, extra || {});
     const good = [part('mc', 'Pick one', { options: ['alpha', 'beta', 'gamma', 'delta'], correct: 2 }), part('tf', 'True?', { correct: false }), part('numeric', 'Value?', { value: '3.5', units: 'm', tolerance: 0.1 }), part('short', 'Explain', { lines: 3, rubric: 'Any reason' }), part('matching', 'Match', { pairs: [{ left: 'a', right: 'A' }, { left: 'b', right: 'B' }, { left: 'c', right: 'C' }] })];
     const payload = q => ({ format: 'prime-questions', schemaVersion: 3, appVersion: '9', requiredFeatures: [], exportedAt: T, banks: [PQ.defaultBank()], questions: [q], stimuli: [], tests: [], images: {} });
     const r = {};
@@ -550,7 +553,7 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
   const Mr = await page.evaluate(async () => {
     const T = '2026-10-01T10:00:00.000Z';
     const bank = (id, name) => ({ id, name, created: T, updated: T });
-    const q = (id, bankId, type, prompt, answer) => ({ id, bankId, type, prompt, course: 'C', unit: 'U', tags: [], difficulty: 'easy', status: 'ready', stimulusId: null, imageIds: [], table: null, answer, notes: '', created: T, updated: T });
+    const q = (id, bankId, type, prompt, answer) => ({ id, bankId, type, prompt, course: 'C', unit: 'U', tags: [], level: 1, status: 'ready', stimulusId: null, imageIds: [], table: null, answer, notes: '', created: T, updated: T });
     const payload = PQ.buildPayload({ banks: [bank('b1', 'Science 9 Matter'), bank('b2', 'Math 8 Fractions')],
       questions: [q('q1', 'b1', 'tf', 'ONE the sky is blue', { correct: true }), q('q2', 'b2', 'multipart', 'TWO intro', { parts: [{ type: 'tf', prompt: 'PARTA first', answer: { correct: true } }, { type: 'numeric', prompt: 'PARTB second', answer: { value: '4.5', units: 'cm', tolerance: 0 } }] }), q('q3', 'b2', 'mc', 'THREE pick', { options: ['a', 'b', 'c', 'd'], correct: 1 })],
       stimuli: [], tests: [], images: {} }, { exportedAt: T });
@@ -565,7 +568,7 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
   check('sections are per bank then type, headed with the bank name', /Math 8 Fractions\s+·\s+1 item/.test(tAll) && /Science 9 Matter\s+·\s+1 item/.test(tAll) && /Multipart/.test(tAll), tAll.slice(500, 1200));
   check('a single-bank export is titled with the bank name', /Math 8 Fractions/.test(tOne.split('\n').slice(0, 12).join('\n')) && !/Science 9 Matter/.test(tOne) && !/ONE the sky/.test(tOne), tOne.slice(0, 300));
   check('multipart parts and their answers are readable on the page', /\(a\) PARTA first/.test(tAll) && /\(b\) PARTB second/.test(tAll) && /4\.5 cm/.test(tAll));
-  check('poppler agrees the data is intact in the multi-bank PDF', (() => { fs.rmSync('mb', { recursive: true, force: true }); fs.mkdirSync('mb'); execFileSync('pdfdetach', ['-saveall', '-o', 'mb', 'banks-all.pdf']); const d = JSON.parse(fs.readFileSync('mb/prime-questions.pq', 'utf8')); return d.schemaVersion === 6 && d.banks.length === 2 && d.questions.length === 3; })());
+  check('poppler agrees the data is intact in the multi-bank PDF', (() => { fs.rmSync('mb', { recursive: true, force: true }); fs.mkdirSync('mb'); execFileSync('pdfdetach', ['-saveall', '-o', 'mb', 'banks-all.pdf']); const d = JSON.parse(fs.readFileSync('mb/prime-questions.pq', 'utf8')); return d.schemaVersion === 7 && d.banks.length === 2 && d.questions.length === 3; })());
 
   /* ---------- N. IndexedDB upgrade from a real v0.2.0-layout database ---------- */
   console.log('N. IndexedDB upgrade (version 1 -> 2) keeps existing data');
@@ -594,19 +597,39 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
     const img = await PQ.db.getImage('old-img');
     const open = await new Promise(res => { const r = indexedDB.open('prime-questions'); r.onsuccess = () => { const v = r.result.version, names = Array.from(r.result.objectStoreNames).sort().join(); r.result.close(); res([v, names]); }; });
     return {
+      levels: qs.map(q => q.id + ':' + q.level + ':' + ('difficulty' in q)).sort().join(),
       version: open[0], stores: open[1], banks: banks.map(b => b.id + '|' + b.name), qBank: qs.map(q => q.bankId), sBank: ss.map(s => s.bankId),
       updatedKept: qs.every(q => q.updated === '2026-09-01T10:00:00.000Z') && ss.every(s => s.updated === '2026-09-01T10:00:00.000Z'),
       keep: qs.find(q => q.id === 'old-q2').keepOrder === true, tests: ts.map(t => t.id + ':' + t.questionIds.length + ':' + t.seed), imgs: ids.join(), imgText: await img.text(),
       defaultMatches: PQ.stable(banks[0]) === PQ.stable(PQ.defaultBank())
     };
   });
-  check('database is now version 2 with banks and testVersions stores', Nr.version === 2 && /banks/.test(Nr.stores) && /testVersions/.test(Nr.stores), [Nr.version, Nr.stores]);
+  check('database is now version 3 with banks and testVersions stores', Nr.version === 3 && /banks/.test(Nr.stores) && /testVersions/.test(Nr.stores), [Nr.version, Nr.stores]);
+  check('the local upgrade turned each question\'s difficulty into a level in the same step (easy 1) and removed the old field', Nr.levels === 'old-q1:1:false,old-q2:1:false', Nr.levels);
   check('the default bank was created, identical to the one files are migrated to', Nr.banks.join() === PQ_DEFAULT() && Nr.defaultMatches, Nr.banks);
   check('every existing question and stimulus was moved into the default bank', Nr.qBank.every(b => b === '00000000-0000-4000-8000-000000000001') && Nr.sBank.every(b => b === '00000000-0000-4000-8000-000000000001') && Nr.qBank.length === 2 && Nr.sBank.length === 1, Nr);
   check('nothing else changed: updated dates, keepOrder, tests, image bytes', Nr.updatedKept && Nr.keep && Nr.tests.join() === 'old-t1:2:5' && Nr.imgs === 'old-img' && Nr.imgText === 'PNGDATA', Nr);
   // a second reload must not migrate again or duplicate anything
   await page.reload(); await page.waitForFunction(() => window.PQ && PQ.ready === true);
   check('reloading again changes nothing (one bank, same data)', await page.evaluate(async () => (await PQ.db.getAll('banks')).length === 1 && (await PQ.db.getAll('questions')).length === 2));
+  // what a v0.7.0 user has: database version 2 (banks and history, questions with a difficulty). Opening it with this app upgrades 2 -> 3.
+  await page.evaluate(() => new Promise(res => { const r = indexedDB.deleteDatabase('prime-questions'); r.onsuccess = r.onerror = r.onblocked = () => res(1); }));
+  await page.evaluate(async () => {
+    await new Promise((res, rej) => {
+      const r = indexedDB.open('prime-questions', 2);
+      r.onupgradeneeded = () => { const d = r.result; for (const s of ['questions', 'stimuli', 'tests', 'banks', 'testVersions']) d.createObjectStore(s, { keyPath: 'id' }); d.createObjectStore('images'); };
+      r.onsuccess = () => {
+        const d = r.result, tx = d.transaction(['questions', 'banks'], 'readwrite'), T = '2026-10-01T10:00:00.000Z';
+        tx.objectStore('banks').put({ id: '00000000-0000-4000-8000-000000000001', name: 'My Questions', created: '2000-01-01T00:00:00.000Z', updated: '2000-01-01T00:00:00.000Z' });
+        for (const [id, diff] of [['v2-e', 'easy'], ['v2-m', 'medium'], ['v2-h', 'hard']]) tx.objectStore('questions').put({ id, bankId: '00000000-0000-4000-8000-000000000001', type: 'tf', prompt: id, course: '', unit: '', tags: [], difficulty: diff, status: 'ready', stimulusId: null, imageIds: [], table: null, answer: { correct: true }, notes: '', created: T, updated: T });
+        tx.oncomplete = () => { d.close(); res(); }; tx.onerror = () => rej(tx.error);
+      };
+      r.onerror = () => rej(r.error);
+    });
+  });
+  await page.reload(); await page.waitForFunction(() => window.PQ && PQ.ready === true);
+  const V2 = await page.evaluate(async () => { const qs = await PQ.db.getAll('questions'); return { lv: qs.map(q => q.id + ':' + q.level + ':' + ('difficulty' in q) + ':' + q.updated).sort().join(), ver: await new Promise(res => { const r = indexedDB.open('prime-questions'); r.onsuccess = () => { const v = r.result.version; r.result.close(); res(v); }; }), state: PQ.state.questions.map(q => q.level).sort().join() }; });
+  check('opening a version 2 database (v0.7.0) upgrades it to 3: easy 1, medium 3, hard 4, no difficulty left, dates untouched', V2.ver === 3 && V2.lv === 'v2-e:1:false:2026-10-01T10:00:00.000Z,v2-h:4:false:2026-10-01T10:00:00.000Z,v2-m:3:false:2026-10-01T10:00:00.000Z' && V2.state === '1,3,4', V2);
   // a brand-new database gets the default bank too
   await page.evaluate(() => new Promise(res => { const r = indexedDB.deleteDatabase('prime-questions'); r.onsuccess = r.onerror = r.onblocked = () => res(1); }));
   await page.reload(); await page.waitForFunction(() => window.PQ && PQ.ready === true);
@@ -708,7 +731,7 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
     };
   }, fx3);
   check('fixture is a schema 3 bank written by v0.3.0, with a test that has page options', P.rawSchema === 3 && P.rawApp === '0.3.0', P);
-  check('the v0.3.0 bank imports (3 -> 4 -> 5 -> 6): 2 banks, 4 questions, 1 test, the test exactly as written, no format fields invented', P.ok && P.schema === 6 && P.sameTest && P.noInvented && P.counts.join() === '2,4,1', P);
+  check('the v0.3.0 bank imports (3 -> 4 -> 5 -> 6 -> 7): 2 banks, 4 questions, 1 test, the test exactly as written, no format fields invented', P.ok && P.schema === 7 && P.sameTest && P.noInvented && P.counts.join() === '2,4,1', P);
   check('schema 4 fields are accepted when valid, and a test without them is fine', P.good && P.none, P);
   check('invalid heading size, text size, question style and margins are each refused', !P.badHeading && !P.badText && !P.badStyle && P.badMargins.every(v => v === false), P);
   check('testFormat fills in the defaults (medium, medium, standard, 16/14/18/14 mm), partial margins and junk values', JSON.stringify(P.defaults) === JSON.stringify({ font: '', headingSize: 'medium', textSize: 'medium', questionStyle: 'standard', margins: { top: 16, right: 14, bottom: 18, left: 14 } }) && P.partial.textSize === 'large' && P.partial.margins.top === 20 && P.partial.margins.left === 14 && P.junk.headingSize === 'medium' && P.junk.questionStyle === 'standard', [P.defaults, P.partial, P.junk]);
@@ -722,7 +745,7 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
     const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
     const raw = await PQ.readPdfPayload(u.buffer), parsed = PQ.parsePayload(raw);
     const T = '2026-10-01T15:00:00Z';
-    const q = (id, extra) => Object.assign({ id, bankId: PQ.DEFAULT_BANK_ID, type: 'tf', prompt: id, course: '', unit: '', tags: [], difficulty: 'medium', status: 'ready', stimulusId: null, imageIds: [], table: null, answer: { correct: true }, notes: '', created: T, updated: T }, extra || {});
+    const q = (id, extra) => Object.assign({ id, bankId: PQ.DEFAULT_BANK_ID, type: 'tf', prompt: id, course: '', unit: '', tags: [], level: 3, status: 'ready', stimulusId: null, imageIds: [], table: null, answer: { correct: true }, notes: '', created: T, updated: T }, extra || {});
     const qs = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map(id => q(id)); qs.push(q('s1', { stimulusId: 'st', type: 'numeric', answer: { value: '1', units: '', tolerance: 0 } }), q('s2', { stimulusId: 'st' }));
     const stim = [{ id: 'st', bankId: PQ.DEFAULT_BANK_ID, title: 'T', text: 'x', imageIds: [], table: null, created: T, updated: T }];
     const mc = q('m', { type: 'multipart', answer: { parts: [{ type: 'numeric', prompt: 'n', answer: { value: '1', units: '', tolerance: 0 } }, { type: 'short', prompt: 's', answer: { lines: 3, rubric: '' } }] } });
@@ -771,7 +794,7 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
     };
   }, fx4);
   check('fixture is a schema 4 bank written by v0.5.0, with format settings on its test', Q.fixture.schema === 4 && Q.fixture.app === '0.5.0' && Q.fixture.kept.join() === 'condensed,large', Q.fixture);
-  check('the v0.5.0 bank imports (4 -> 5 -> 6), the test exactly as written, no sections / font / question options invented', Q.fixture.ok && Q.fixture.schemaNow === 6 && Q.fixture.same && Q.fixture.keys.length === 0, Q.fixture);
+  check('the v0.5.0 bank imports (4 -> 5 -> 6 -> 7), the test exactly as written, no sections / font / question options invented', Q.fixture.ok && Q.fixture.schemaNow === 7 && Q.fixture.same && Q.fixture.keys.length === 0, Q.fixture);
   check('a test with no sections plans exactly as before (same Version B order as the old formula, no headings)', Q.noSec[2] && Q.noSec[0] === 'abcdefgh' && Q.noSec[1] === Q.oldB, Q.noSec);
   check('sections: Version A keeps the order and puts each heading on the block where its question starts', Q.withA === 'abcdefgh' && Q.a === '||X|||Y||', [Q.withA, Q.a]);
   check('Version B shuffles only inside each section: the same questions stay in the same stretch', Q.segs.join('|') === 'ab|cde|fgh', Q.segs);
@@ -793,7 +816,7 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
     const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
     const raw = await PQ.readPdfPayload(u.buffer), parsed = PQ.parsePayload(raw);
     const T = '2026-10-01T15:00:00Z';
-    const q = (id, type, answer, extra) => Object.assign({ id, bankId: PQ.DEFAULT_BANK_ID, type, prompt: id, course: '', unit: '', tags: [], difficulty: 'medium', status: 'ready', stimulusId: null, imageIds: [], table: null, answer, notes: '', created: T, updated: T }, extra || {});
+    const q = (id, type, answer, extra) => Object.assign({ id, bankId: PQ.DEFAULT_BANK_ID, type, prompt: id, course: '', unit: '', tags: [], level: 3, status: 'ready', stimulusId: null, imageIds: [], table: null, answer, notes: '', created: T, updated: T }, extra || {});
     const qs = [q('mc', 'mc', { options: ['a', 'b'], correct: 0 }), q('tf', 'tf', { correct: true }), q('num', 'numeric', { value: '1', units: '', tolerance: 0 }), q('sh', 'short', { lines: 4, rubric: '' }),
       q('ma', 'matching', { pairs: [{ left: 'a', right: 'b' }, { left: 'c', right: 'd' }] }),
       q('mp', 'multipart', { parts: [{ type: 'numeric', prompt: 'n', answer: { value: '1', units: '', tolerance: 0 } }, { type: 'short', prompt: 's', answer: { lines: 3, rubric: '' } }, { type: 'mc', prompt: 'm', answer: { options: ['x', 'y'], correct: 1 } }, { type: 'tf', prompt: 't', answer: { correct: false } }] })];
@@ -819,11 +842,11 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
       valid: [ok({}), ok({ answerArea: 'blank' }), ok({ answerArea: 'lines' })],
       bad: [ok({ answerArea: 'none' }), ok({ answerArea: '' }), ok({ answerArea: true }), ok({ answerArea: null }), ok({ answerArea: 7 })],
       qoLines: ok({ questionOptions: { a: { answerStyle: 'lines' } } }),
-      newer: PQ.parsePayload(Object.assign(withTest({}), { schemaVersion: 7 })).code
+      newer: PQ.parsePayload(Object.assign(withTest({}), { schemaVersion: 8 })).code
     };
   }, fx5);
   check('fixture is a schema 5 bank written by v0.6.1, with a font, a section and question options on its test', R.fixture.schema === 5 && R.fixture.app === '0.6.1' && R.fixture.hasFont === 'Georgia' && R.fixture.hasSections === 1 && R.fixture.qo === 3, R.fixture);
-  check('the v0.6.1 bank imports (5 -> 6), the test exactly as written, no answerArea invented', R.fixture.ok && R.fixture.schemaNow === 6 && R.fixture.same && R.fixture.noArea, R.fixture);
+  check('the v0.6.1 bank imports (5 -> 6 -> 7), the test exactly as written, no answerArea invented', R.fixture.ok && R.fixture.schemaNow === 7 && R.fixture.same && R.fixture.noArea, R.fixture);
   check('a test with no answerArea plans exactly as before (no styles anywhere), in Version A and Version B', R.plain === ',,,,,///' && R.plainB === R.plain, [R.plain, R.plainB]);
   check('answerArea "lines" is the same as nothing', R.lines === R.plain, R.lines);
   check('answerArea "blank": numeric, short and the numeric and short parts of a multipart are blank; mc, tf, matching and the mc/tf parts are not', R.blankA === 'blank,blank,,,,blank/blank//', R.blankA);
@@ -834,7 +857,41 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
   check('writing space is unaffected by the default', R.spaceKeeps === 30);
   check('testFormat does not gain an answerArea key', R.fmtUntouched);
   check('answerArea accepts "lines" and "blank" (and absent); anything else is refused; "lines" is a valid per-question style', R.valid.every(Boolean) && R.bad.every(v => v === false) && R.qoLines, [R.valid, R.bad, R.qoLines]);
-  check('a schema 7 bank is refused as newer', R.newer === 'newer', R.newer);
+  check('a schema 8 bank is refused as newer', R.newer === 'newer', R.newer);
+
+  /* ---------- S. schema 7: a question's level (1 to 4) replaces easy / medium / hard ---------- */
+  console.log('S. schema 7 (levels) and a bank from the previous version');
+  const fx6 = fs.readFileSync(require('path').join(__dirname, 'fixtures', 'bank-schema6-v0.7.0.pdf')).toString('base64');
+  const S7 = await page.evaluate(async b64 => {
+    const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    const raw = await PQ.readPdfPayload(u.buffer), parsed = PQ.parsePayload(raw);
+    const T = '2026-10-01T15:00:00Z';
+    const q = (id, level, extra) => Object.assign({ id, bankId: PQ.DEFAULT_BANK_ID, type: 'tf', prompt: id, course: '', unit: '', tags: [], level, status: 'ready', stimulusId: null, imageIds: [], table: null, answer: { correct: true }, notes: '', created: T, updated: T }, extra || {});
+    const pay = qs => ({ format: 'prime-questions', schemaVersion: 7, appVersion: '9', requiredFeatures: [], exportedAt: T, banks: [PQ.defaultBank()], questions: qs, stimuli: [], tests: [], images: {} });
+    const ok = l => PQ.parsePayload(pay([q('a', l)])).ok;
+    const old = (d, sv) => PQ.parsePayload({ format: 'prime-questions', schemaVersion: sv || 6, appVersion: '0.7.0', requiredFeatures: [], exportedAt: T, banks: [PQ.defaultBank()], questions: [Object.assign(q('a'), { difficulty: d }, d === undefined ? {} : {})].map(x => { delete x.level; return x; }), stimuli: [], tests: [], images: {} });
+    const lv = r => (r.ok ? r.payload.questions[0].level + ('difficulty' in r.payload.questions[0] ? '!' : '') : 'refused');
+    const list = [q('a', 3, { updated: '2026-01-01T00:00:00Z' }), q('b', 1, { updated: '2026-01-02T00:00:00Z' }), q('c', 4, { updated: '2026-01-03T00:00:00Z' }), q('d', 1, { updated: '2026-01-05T00:00:00Z' }), q('e', 2, { updated: '2026-01-04T00:00:00Z' })];
+    const ids = how => PQ.sortQuestions(list, how).map(x => x.id).join('');
+    const mc = PQ.emptyQuestion('mc', PQ.DEFAULT_BANK_ID);
+    return {
+      fixture: { schema: raw.schemaVersion, app: raw.appVersion, ok: parsed.ok, schemaNow: parsed.ok && parsed.payload.schemaVersion, levels: parsed.ok && parsed.payload.questions.map(x => x.level).join(), raw: raw.questions.map(x => x.difficulty).join(), noDifficulty: parsed.ok && parsed.payload.questions.every(x => !('difficulty' in x)),
+        testSame: parsed.ok && JSON.stringify(parsed.payload.tests[0]) === JSON.stringify(raw.tests[0]), area: parsed.ok && parsed.payload.tests[0].answerArea, lines: parsed.ok && parsed.payload.tests[0].questionOptions['aaaaaaaa-0000-4000-8000-000000000013#1'].answerStyle },
+      conv: [lv(old('easy')), lv(old('medium')), lv(old('hard')), lv(old('impossible')), lv(old(undefined)), lv(old('constructor')), lv(old('__proto__'))],
+      conv1: lv(old('hard', 1)),
+      keepsLevel: (() => { const r = PQ.parsePayload({ format: 'prime-questions', schemaVersion: 6, appVersion: '9', requiredFeatures: [], exportedAt: T, banks: [PQ.defaultBank()], questions: [q('a', 2)], stimuli: [], tests: [], images: {} }); return lv(r); })(),
+      valid: [1, 2, 3, 4].map(ok), bad: [0, 5, 2.5, '2', null, undefined, NaN, -1, true].map(ok),
+      sortUp: ids('levelUp'), sortDown: ids('levelDown'), sortNew: ids('newest'), sortKeys: Object.keys(PQ.SORTS).join(),
+      fresh: mc.level, freshDiff: 'difficulty' in mc, levels: PQ.LEVELS.join(), dflt: PQ.DEFAULT_LEVEL
+    };
+  }, fx6);
+  check('fixture is a schema 6 bank written by v0.7.0, with easy, medium and hard questions and an answerArea', S7.fixture.schema === 6 && S7.fixture.app === '0.7.0' && S7.fixture.raw === 'easy,medium,hard,medium' && S7.fixture.area === 'blank', S7.fixture);
+  check('the v0.7.0 bank imports (6 -> 7): easy 1, medium 3, hard 4, no difficulty left, the test exactly as written (answerArea and an explicit "lines" kept)', S7.fixture.ok && S7.fixture.schemaNow === 7 && S7.fixture.levels === '1,3,4,3' && S7.fixture.noDifficulty && S7.fixture.testSame && S7.fixture.lines === 'lines', S7.fixture);
+  check('migration 6 -> 7: easy 1, medium 3, hard 4; a bad, missing or inherited-name difficulty is refused rather than guessed; the same from schema 1', S7.conv.join() === '1,3,4,refused,refused,refused,refused' && S7.conv1 === '4', [S7.conv, S7.conv1]);
+  check('a schema 6 question that already has a level is left alone', S7.keepsLevel === '2', S7.keepsLevel);
+  check('levels 1 to 4 are accepted; 0, 5, 2.5, "2", null, missing, NaN, -1 and true are refused', S7.valid.every(Boolean) && S7.bad.every(v => v === false), [S7.valid, S7.bad]);
+  check('sort by level: 1 to 4 and 4 to 1, newest first inside the same level; the other sorts are unchanged', S7.sortUp === 'dbeac' && S7.sortDown === 'caedb' && S7.sortNew === 'decba' && S7.sortKeys === 'newest,oldest,az,levelUp,levelDown', [S7.sortUp, S7.sortDown, S7.sortNew, S7.sortKeys]);
+  check('new questions start at level 3 and have no difficulty; the levels are 1 to 4', S7.fresh === 3 && !S7.freshDiff && S7.levels === '1,2,3,4' && S7.dflt === 3);
 
   check('no console errors during the whole suite', problems.length === 0, problems);
   const fails = summary();

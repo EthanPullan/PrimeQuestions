@@ -11,7 +11,7 @@ Questions are added with the status "review": a person must check every answer.
 """
 import json, re, sys, uuid, zlib, datetime
 
-FORMAT, SCHEMA, APP = 'prime-questions', 6, '0.7.0'
+FORMAT, SCHEMA, APP = 'prime-questions', 7, '0.8.0'
 TYPES = ['mc', 'tf', 'numeric', 'short', 'matching', 'multipart']
 PART_TYPES = TYPES[:-1]
 DRAFT_FORMAT = 'prime-questions-draft'
@@ -242,9 +242,21 @@ def convert(d, now=None):
                 err(path + '.stimulus', '"%s" is not the key of any item in "stimuli".' % q['stimulus'])
             else:
                 stim_id = st['id']
-        diff = 'medium' if q.get('difficulty') is None else str(q['difficulty']).lower()
-        if diff not in ('easy', 'medium', 'hard'):
-            err(path + '.difficulty', 'must be easy, medium or hard.')
+        level = 3   # "level": 1 to 4. An older draft's "difficulty": easy / medium / hard still converts.
+        lv = q.get('level')
+        if lv is not None and lv != '':
+            try:
+                level = int(lv) if not isinstance(lv, bool) and float(lv) == int(float(lv)) else 0
+            except (TypeError, ValueError):
+                level = 0
+            if level not in (1, 2, 3, 4):
+                err(path + '.level', 'must be 1, 2, 3 or 4.')
+                level = 3
+        elif q.get('difficulty') is not None:
+            level = {'easy': 1, 'medium': 3, 'hard': 4}.get(str(q['difficulty']).lower(), 0)
+            if level == 0:
+                err(path + '.difficulty', 'is no longer used. Use "level": 1, 2, 3 or 4.')
+                level = 3
         tags = q.get('tags') or []
         if isinstance(tags, str):
             tags = tags.split(',')
@@ -258,7 +270,7 @@ def convert(d, now=None):
                 tags_clean.append(x)
         rec = {'id': str(uuid.uuid4()), 'bankId': bank['id'], 'type': typ, 'prompt': prompt,
                'course': text(q.get('course'), path + '.course', '', 200).strip(), 'unit': text(q.get('unit'), path + '.unit', '', 200).strip(),
-               'tags': tags_clean, 'difficulty': diff, 'status': 'review', 'stimulusId': stim_id, 'imageIds': [],
+               'tags': tags_clean, 'level': level, 'status': 'review', 'stimulusId': stim_id, 'imageIds': [],
                'table': table(q.get('table'), path + '.table'), 'answer': ans, 'notes': text(q.get('notes'), path + '.notes', '', 5000).strip(),
                'created': now, 'updated': now}
         if typ == 'mc' and q.get('keepOrder') is True:
