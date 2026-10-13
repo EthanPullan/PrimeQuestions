@@ -1771,9 +1771,10 @@ function planTest(test, questions, stimuli, version) {
     ordBlocks.push(...part);
   });
   const qopts = test.questionOptions || {};
-  // Effective answer area: an explicit choice on the question (or part) wins; 'lines' means the normal area; else the assessment's default applies to numeric and short only.
+  // Effective answer area, only for numeric and short (the other types have no choosable area, so a stale option left on a question
+  // whose type changed is ignored). An explicit choice on the question (or part) wins; 'lines' means the normal area; else the assessment's default.
   const dflt = test.answerArea === 'blank' ? 'blank' : undefined;
-  const styleOf = (type, opt) => (opt === 'lines' ? undefined : opt || (type === 'numeric' || type === 'short' ? dflt : undefined));
+  const styleOf = (type, opt) => (type !== 'numeric' && type !== 'short' ? undefined : opt === 'lines' ? undefined : opt || dflt);
   let num = 0;
   const out = ordBlocks.map(({ b, secs }) => ({
     stimulus: b.stimulusId ? sById.get(b.stimulusId) : null,
@@ -3529,7 +3530,8 @@ const blankBefore = v => v.type === 'mc' || v.type === 'tf';
 function answerAreaDom(v, st) {
   if (v.type === 'mc') return h('div', { class: 'tp-opts' + (st === 'condensed' && acrossOk(v.options) ? ' across' : '') }, v.options.map((o, i) => h('div', { class: 'tp-opt' }, h('span', { class: 'tp-let' }, letter(i) + '.'), h('span', { class: 'tp-text' }, o.text))));
   if (v.type === 'tf') return st === 'classic' ? null : h('div', { class: 'tp-tf' }, 'Circle one:', h('span', { class: 'tp-tfopt' }, 'True'), h('span', { class: 'tp-tfopt' }, 'False'));
-  // v.style (from the test's question options): 'blank' = empty space and no printed line or label, 'none' = nothing at all
+  // v.style is set by planTest only: 'blank' = empty space and no printed line or label, 'none' = nothing at all, absent = the normal area
+  // (an explicit 'lines' choice and the assessment default both arrive here already resolved).
   if (v.type === 'numeric') return v.style === 'none' ? null : v.style === 'blank' ? h('div', { class: 'tp-blankarea' }) : h('div', { class: 'tp-numeric' }, 'Answer:', h('span', { class: 'tp-blankline' }));
   if (v.type === 'short') return v.style === 'none' ? null : v.style === 'blank' ? h('div', { class: 'tp-blankarea lines', style: '--lines:' + v.lines }) : h('div', { class: 'tp-rules' }, Array.from({ length: v.lines }, () => h('div', { class: 'tp-rule' })));
   return h('div', { class: 'tp-match' },

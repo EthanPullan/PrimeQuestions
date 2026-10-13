@@ -22,8 +22,9 @@ const MM = 72 / 25.4;
   const q = t => page.locator('#sheet-preview .tp-q', { hasText: t });
   const rc = async (t, pos) => { await q(t).click({ button: 'right', position: pos || { x: 80, y: 8 } }); };
   const menuIds = () => page.locator('.menu .menu-item').evaluateAll(els => els.map(e => e.id));
-  const fmtPrint = async (extra, file, ids) => {
-    await page.evaluate(async ([extra, ids]) => { const t = Object.assign({}, PQ.state.tests[0], extra); if (ids) t.questionIds = ids; await PQ.preparePrint('test', 'A', t); }, [extra, ids || null]);
+  // Prints a saved assessment (test1 unless testId says otherwise) with `extra` laid over it, optionally with another question list.
+  const fmtPrint = async (extra, file, ids, testId) => {
+    await page.evaluate(async ([extra, ids, id]) => { const t = Object.assign({}, PQ.state.tests.find(x => x.id === id), extra); if (ids) t.questionIds = ids; await PQ.preparePrint('test', 'A', t); }, [extra, ids || null, testId || 'test1']);
     await page.pdf({ path: file, preferCSSPageSize: true });
   };
 
@@ -332,10 +333,10 @@ const MM = 72 / 25.4;
   check('Version B shows the same answer areas', (await blankCount('QFIVE')) === 1 && (await q('QFOUR').locator('.tp-rule').count()) === 3 && (await q('QSIX').locator('.tp-blankarea').count()) === 1);
   await page.click('#pv-a');
   // printing
-  await fmtPrint({ answerArea: 'blank' }, 'a-blank.pdf', ['q3', 'q4']);
+  await fmtPrint({ answerArea: 'blank' }, 'a-blank.pdf', ['q3', 'q4'], 'test2');
   const tb = pdfText('a-blank.pdf');
   check('printed (Version A): with the blank default no "Answer:" label and no ruled lines', !/Answer:/.test(tb) && /QTHREE/.test(tb) && /QFOUR/.test(tb) && (await page.evaluate(() => document.querySelectorAll('#print-root .tp-rule, #print-root .tp-blankline').length)) === 0 && (await page.evaluate(() => document.querySelectorAll('#print-root .tp-blankarea').length)) === 2);
-  await fmtPrint({}, 'a-lines.pdf', ['q3', 'q4']);
+  await fmtPrint({}, 'a-lines.pdf', ['q3', 'q4'], 'test2');
   check('printed with no default: exactly as before ("Answer:" and 3 ruled lines)', /Answer:/.test(pdfText('a-lines.pdf')) && (await page.evaluate(() => document.querySelectorAll('#print-root .tp-rule').length)) === 3);
   await page.evaluate(async () => { await PQ.preparePrint('test', 'B', Object.assign({}, PQ.state.tests.find(t => t.id === 'test2'), { answerArea: 'blank' })); });
   check('printed (Version B): same', (await page.evaluate(() => document.querySelectorAll('#print-root .tp-blankarea').length)) === 5 && (await page.evaluate(() => document.querySelectorAll('#print-root .tp-rule').length)) === 0);
@@ -398,7 +399,7 @@ const MM = 72 / 25.4;
   await page.click('#btn-redo'); await page.click('#btn-redo');
   check('Redo brings it back above Part B', (await page.locator('#sheet-preview .tp-block', { hasText: 'QTHREE' }).locator('.tp-sec-title').evaluateAll(els => els.map(e => e.value))).join() === 'Intro to B,Part B');
   await page.click('#btn-save'); await page.waitForFunction(() => !PQ.active.exam.isDirty());
-  await page.evaluate(() => PQ.preparePrint('test', 'A', PQ.state.tests.find(t => t.id === 'test3'))); await page.pdf({ path: 'bars-a.pdf', preferCSSPageSize: true }); const tbars = pdfText('bars-a.pdf');
+  await fmtPrint({}, 'bars-a.pdf', null, 'test3'); const tbars = pdfText('bars-a.pdf');
   check('printed: the headings print in that order and the bar prints nothing', tbars.indexOf('Part A') < tbars.indexOf('QONE') && tbars.indexOf('Intro to B') < tbars.indexOf('Part B') && tbars.indexOf('Part B') < tbars.indexOf('QTHREE') && !/Add section/.test(tbars));
   await page.evaluate(() => PQ.preparePrint('test', 'B', PQ.state.tests.find(t => t.id === 'test3')));
   const bTxt = await page.evaluate(() => document.querySelector('#print-root').innerText);

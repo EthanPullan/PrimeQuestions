@@ -836,6 +836,7 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
       noneOverride: styles(opts({ sh: { answerStyle: 'none' }, 'mp#0': { answerStyle: 'none' } }, { answerArea: 'blank' }), 'A'),
       blankOverrideNoDefault: styles(opts({ sh: { answerStyle: 'blank' } }), 'A'),
       linesNoDefault: styles(opts({ sh: { answerStyle: 'lines' } }), 'A'),
+      staleOpts: styles(opts({ mc: { answerStyle: 'none' }, tf: { answerStyle: 'blank' }, ma: { answerStyle: 'blank' }, 'mp#2': { answerStyle: 'none' }, 'mp#3': { answerStyle: 'blank' } }, { answerArea: 'blank' }), 'A'),
       spaceKeeps: PQ.planTest(opts({ num: { space: 30 } }, { answerArea: 'blank' }), qs, [], 'A').blocks.flatMap(b => b.items).find(i => i.q.id === 'num').space,
       keyHasAnswers: PQ.keyEntries(PQ.planTest(def, qs, [], 'A')).length === 6 && planKeys.every(x => x === 1),
       fmtUntouched: JSON.stringify(PQ.testFormat(def)) === JSON.stringify(PQ.testFormat(test())),
@@ -854,6 +855,7 @@ for name, mode in (('bank-img-objstm.pdf', pikepdf.ObjectStreamMode.generate), (
   check('an explicit "lines" on a question or part beats a blank default (both are back to normal; the rest stay blank)', R.lineOverride === ',blank,,,,blank///', R.lineOverride);
   check('an explicit "none" beats a blank default', R.noneOverride === 'blank,none,,,,none/blank//', R.noneOverride);
   check('with no default, an explicit "blank" still works as before and an explicit "lines" changes nothing', R.blankOverrideNoDefault === ',blank,,,,///' && R.linesNoDefault === R.plain, [R.blankOverrideNoDefault, R.linesNoDefault]);
+  check('options left on types with no answer area (mc, tf, matching, and those parts) are ignored, even with a blank default', R.staleOpts === 'blank,blank,,,,blank/blank//', R.staleOpts);
   check('writing space is unaffected by the default', R.spaceKeeps === 30);
   check('testFormat does not gain an answerArea key', R.fmtUntouched);
   check('answerArea accepts "lines" and "blank" (and absent); anything else is refused; "lines" is a valid per-question style', R.valid.every(Boolean) && R.bad.every(v => v === false) && R.qoLines, [R.valid, R.bad, R.qoLines]);
