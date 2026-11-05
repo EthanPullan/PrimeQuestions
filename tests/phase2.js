@@ -30,6 +30,7 @@ const pdfPages = file => Number((/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [
   fs.writeFileSync('tall.jpg', Buffer.from(await mk(900, 2000, 'image/jpeg'), 'base64'));
   fs.writeFileSync('small.png', Buffer.from(await mk(300, 200, 'image/png'), 'base64'));
   fs.writeFileSync('pic.svg', '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="120"><rect width="200" height="120" fill="#ddd"/><script>window.__svgran = 1</script></svg>');
+  for (let k = 1; k <= 5; k++) fs.writeFileSync('extra' + k + '.png', Buffer.from(await mk(300 + k, 200, 'image/png'), 'base64'));   // five more, all different pictures
   fs.writeFileSync('bad.png', 'not really an image');
   fs.writeFileSync('evil.svg', '<svg xmlns="http://www.w3.org/2000/svg"><unclosed></svg>');
 
@@ -73,8 +74,19 @@ const pdfPages = file => Number((/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [
   await page.waitForFunction(() => PQ.active.sed.getDraft().imageIds.length === 2);
   const dims = await page.evaluate(async () => { const e = PQ.active.sed, out = []; for (const id of e.getDraft().imageIds) { const b = e.pending.get(id); const m = await createImageBitmap(b); out.push([b.type, m.width, m.height]); } return out; });
   check('a small PNG is kept at its size; a tall JPEG is scaled by its long edge (2000 -> 1600)', dims[0][0] === 'image/png' && dims[0][1] === 300 && dims[1][0] === 'image/jpeg' && dims[1][2] === 1600 && dims[1][1] === 720, dims);
+  // the same picture twice is one image: its id is the hash of its bytes
+  const hashes = await page.evaluate(async () => { const e = PQ.active.sed, ids = e.getDraft().imageIds; const ok = []; for (const id of ids) ok.push(PQ.IMAGE_HASH_RE.test(id) && id === await PQ.imageHash(e.pending.get(id))); return ok; });
+  check('a new image\'s id is the SHA-256 of its stored bytes', hashes.length === 2 && hashes.every(Boolean), hashes);
+  await page.setInputFiles('#f-image-file', ['small.png']);
+  await page.waitForFunction(() => /already here/.test(document.getElementById('toasts').innerText));
+  check('adding the same picture again to the same stimulus keeps one copy and says so', (await page.evaluate(() => PQ.active.sed.getDraft().imageIds.length)) === 2);
+  // Copy ID gives the image's id (or, where the browser refuses the clipboard, shows it)
+  await page.locator('.copy-image-id').first().click();
+  const firstId = await page.evaluate(() => PQ.active.sed.getDraft().imageIds[0]);
+  await page.waitForFunction(id => new RegExp('Image id copied|' + id).test(document.getElementById('toasts').innerText), firstId);
+  check('each image has a Copy ID button that copies (or shows) its hash id', true);
   // limit of six
-  await page.setInputFiles('#f-image-file', ['small.png', 'small.png', 'small.png', 'small.png', 'small.png']);
+  await page.setInputFiles('#f-image-file', ['extra1.png', 'extra2.png', 'extra3.png', 'extra4.png', 'extra5.png']);
   await page.waitForTimeout(600);
   check('at most 6 images per record', (await page.evaluate(() => PQ.active.sed.getDraft().imageIds.length)) === 6 && /At most 6/.test(await toastText()));
   // discarding must not leave orphan images behind
@@ -316,7 +328,7 @@ const pdfPages = file => Number((/Pages:\s+(\d+)/.exec(execFileSync('pdfinfo', [
   const keyA0 = await planKey('A'), keyB0 = await planKey('B');
   const snap = async () => page.evaluate(async () => { const p = await PQ.collectPayload(); delete p.exportedAt; return JSON.parse(JSON.stringify(p)); });
   const before2 = await snap();
-  check('payload carries schema 2, keepOrder on exactly one question, tables, a stimulus, a test and an image', before2.schemaVersion === 8 && before2.banks.length === 1 && before2.questions.filter(q => q.keepOrder === true).length === 1 && before2.questions.some(q => q.table) && before2.stimuli.length === 1 && before2.tests.length === 1 && Object.keys(before2.images).length === 1);
+  check('payload carries schema 2, keepOrder on exactly one question, tables, a stimulus, a test and an image', before2.schemaVersion === 9 && before2.banks.length === 1 && before2.questions.filter(q => q.keepOrder === true).length === 1 && before2.questions.some(q => q.table) && before2.stimuli.length === 1 && before2.tests.length === 1 && Object.keys(before2.images).length === 1);
   const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 90000 }), page.click('#btn-export')]);
   await dl.saveAs('p2-export.pdf'); await page.waitForSelector('.toast.ok');
   const list = execFileSync('pdfdetach', ['-list', 'p2-export.pdf']).toString();

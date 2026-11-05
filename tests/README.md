@@ -27,7 +27,7 @@ never written into the repo.
   requests, Temml and mhchem work.
 - `unit.js`: the pure logic on `window.PQ`: maths checking and the required notation
   list, readiness rules, payload validation against hostile input, migrations,
-  merge planning, the PDF text/image rule, text widths, the PDF writer and reader
+  merge planning, hash image ids (SHA-256 against the browser's, the schema 8 to 9 migration, the local database re-key), the PDF text/image rule, text widths, the PDF writer and reader
   (checked with poppler and, if present, `pikepdf` re-saves), and the reader's
   refusal of printed, foreign, truncated, corrupted and decompression-bomb files.
 - `ui.js`: the app end to end with the network off: create and edit questions of
@@ -63,7 +63,7 @@ checks were written for the Phase 2 interface and now drive the Phase 3 one.
   line, 2×2 grid): fallbacks, per-question and per-part overrides, Version B, print positions
   measured with poppler, save/reload and the bank file.
 
-- `ai.js`: `ai-instructions.md` and the JSON draft import. It extracts the example from
+- `ai.js`: `ai-instructions.md` and the JSON draft import (including pictures named by image id, in the app and in the script). It extracts the example from
   the document and imports it for real (pasted, as a file, dropped, and through
   `tools/draft_to_bank_pdf.py`), checks the converter's refusals and leniencies, that a
   single-backslash LaTeX slip is repaired or refused (never silently corrupted), and that
@@ -82,7 +82,7 @@ checks were written for the Phase 2 interface and now drive the Phase 3 one.
   pages. Stored field names and the `tests/` folder are not visible text and are not checked.
 
 `fixtures/bank-schema1-v0.1.0.pdf` (app v0.1.0), `fixtures/bank-schema2-v0.2.0.pdf`
-(app v0.2.0) and `fixtures/bank-schema3-v0.3.0.pdf` (app v0.3.0) and `fixtures/bank-schema4-v0.5.0.pdf` (app v0.5.0) and `fixtures/bank-schema5-v0.6.1.pdf` (app v0.6.1) and `fixtures/bank-schema6-v0.7.0.pdf` (app v0.7.0) and `fixtures/bank-schema7-v0.8.0.pdf` (app v0.8.0) were produced by those versions before the schema moved on. Do not
+(app v0.2.0) and `fixtures/bank-schema3-v0.3.0.pdf` (app v0.3.0) and `fixtures/bank-schema4-v0.5.0.pdf` (app v0.5.0) and `fixtures/bank-schema5-v0.6.1.pdf` (app v0.6.1) and `fixtures/bank-schema6-v0.7.0.pdf` (app v0.7.0) and `fixtures/bank-schema7-v0.8.0.pdf` (app v0.8.0) and `fixtures/bank-schema8-v0.9.0.pdf` (app v0.9.0, three images under random UUID ids) were produced by those versions before the schema moved on. Do not
 regenerate them with a newer app: their job is to be old files.
 
 These run in headless Chromium only. Firefox, Safari and iPad are not covered.

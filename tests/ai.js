@@ -64,7 +64,7 @@ const SCRIPT = path.join(ROOT, 'tools', 'draft_to_bank_pdf.py');
       noThrow: (() => { let n = 0; for (const v of [null, undefined, 5, 'x', [], {}, [null], [[]], { questions: [null] }, { questions: [[]] }, { questions: [{ type: 'mc', answer: null }] }, { stimuli: 5, questions: [{ type: 'tf', prompt: 'a', answer: { correct: true } }] }]) { try { run(v); } catch (e) { n++; } } return n; })()
     };
   }, ex);
-  check('the document\'s example converts to a payload that passes the strict validator', U.ok && U.valid && U.count === 8 && U.schema === 8, U.parseErrors || U);
+  check('the document\'s example converts to a payload that passes the strict validator', U.ok && U.valid && U.count === 8 && U.schema === 9, U.parseErrors || U);
   check('every question is marked "Needs review", all land in the named bank, and all ids are new and unique', U.statuses.join() === 'review' && U.banks.join() === 'Science 9: Matter' && U.allInBank && U.ids, U);
   check('a letter answer becomes the right index; keepOrder only where asked; stimulus keys resolve; tables and tolerance kept', U.letter === 0 && U.keep === true && U.noKeep === false && U.stim && U.tbl === 3 && U.tolerance === 0.05, U);
   check('optional fields default sensibly (level 3, no tags, no notes) and multipart parts keep their types', U.defaults[1] === 3 && U.defaults[2] === 0 && U.mp === 'numeric,tf', U.defaults);
@@ -193,6 +193,46 @@ const SCRIPT = path.join(ROOT, 'tools', 'draft_to_bank_pdf.py');
   check('the script reads a fenced reply with a single-backslash \\( like the app does', fenced.code === 0 && fs.existsSync('fenced.json.pdf'), fenced);
   const ctrl = run('{"questions":[{"type":"tf","prompt":"a \\frac b","answer":{"correct":true}}]}', 'ctrl.json');
   check('the script also refuses a form feed from \\frac', ctrl.code === 1 && /doubled/.test(ctrl.err), ctrl);
+
+  console.log('9b. pictures named by image id');
+  const PNG64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+  const picHash = require('crypto').createHash('sha256').update(Buffer.from(PNG64, 'base64')).digest('hex');
+  const picDraft = JSON.stringify({ bank: 'Pictures', stimuli: [{ key: 's', title: 'Diagram', images: [picHash] }], questions: [{ type: 'tf', prompt: 'Look at the picture.', stimulus: 's', images: [picHash.toUpperCase()], answer: { correct: true } }] });
+  // the app: the picture must already be in the library
+  await wipe();
+  await paste(picDraft); await modal.waitFor();
+  const noPic = await modal.innerText();
+  check('a draft that names a picture the library does not have is refused, naming the question and the id', /cannot be imported yet/.test(noPic) && /stimuli\[0\]\.images\[1\] is an image id that is not in the library/.test(noPic) && /questions\[1\]\.images\[1\] is an image id that is not in the library/.test(noPic) && (await count()) === 0, noPic);
+  await modal.locator('button:has-text("Close")').click();
+  await page.evaluate(async b64 => { const u = Uint8Array.from(atob(b64), c => c.charCodeAt(0)); await PQ.db.applyBatch({ images: [{ id: PQ.sha256Hex(u), blob: new Blob([u], { type: 'image/png' }) }] }); await PQ.loadAll(); }, PNG64);
+  await paste(picDraft); await modal.waitFor();
+  check('once the picture is in the library the same draft imports', /Import these questions/.test(await modal.innerText()));
+  await modal.locator('button:has-text("Apply")').click(); await page.waitForFunction(() => PQ.state.questions.length === 1);
+  check('the question and its stimulus use the stored picture (no second copy was made)', await page.evaluate(h => PQ.state.questions[0].imageIds.join() === h && PQ.state.stimuli[0].imageIds.join() === h && PQ.state.imageIds.size === 1 && [...PQ.state.imageIds][0] === h, picHash));
+  // the script: the picture comes from a folder
+  fs.rmSync('pics', { recursive: true, force: true }); fs.mkdirSync('pics');
+  fs.writeFileSync('pics/diagram.png', Buffer.from(PNG64, 'base64'));
+  fs.writeFileSync('pics/shape.svg', '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10"/></svg>');
+  fs.writeFileSync('pics/notes.txt', 'ignored');
+  const svgHash = require('crypto').createHash('sha256').update(fs.readFileSync('pics/shape.svg')).digest('hex');
+  fs.writeFileSync('pic.json', picDraft);
+  const picRun = execFileSync('python3', [SCRIPT, 'pic.json', 'pic.pdf', '--images', 'pics'], { stdio: 'pipe' }).toString();
+  check('the script prints the id of each picture file (and ignores other files)', picRun.includes(picHash + '  diagram.png') && picRun.includes(svgHash + '  shape.svg') && !/notes\.txt/.test(picRun) && /1 image\(s\)/.test(picRun), picRun);
+  fs.rmSync('picsc', { recursive: true, force: true }); fs.mkdirSync('picsc'); execFileSync('pdfdetach', ['-saveall', '-o', 'picsc', 'pic.pdf']);
+  const pp = JSON.parse(fs.readFileSync('picsc/prime-questions.pq', 'utf8'));
+  check('its PDF carries only the pictures that are used, keyed by their hash, and the questions point at them', JSON.stringify(Object.keys(pp.images)) === JSON.stringify([picHash]) && pp.images[picHash] === 'data:image/png;base64,' + PNG64 && pp.questions[0].imageIds.join() === picHash && pp.stimuli[0].imageIds.join() === picHash && pp.schemaVersion === 9, Object.keys(pp.images));
+  await wipe();
+  await goImports(); await page.setInputFiles('#file-input', 'pic.pdf'); await modal.waitFor();
+  check('the app accepts that PDF (the hash is checked against the bytes)', /Import this bank/.test(await modal.innerText()) && /Images 1 0 0 0/.test((await modal.innerText()).replace(/\s+/g, ' ')), (await modal.innerText()).replace(/\s+/g, ' ').slice(0, 300));
+  await modal.locator('button:has-text("Apply")').click(); await page.waitForFunction(() => PQ.state.questions.length === 1);
+  check('the picture is stored under its hash and renders through the question', await page.evaluate(async h => (await PQ.db.getImageIds()).join() === h && PQ.state.questions[0].imageIds[0] === h, picHash));
+  const run2 = (draft, extra) => { fs.writeFileSync('pic2.json', JSON.stringify(draft)); try { return { code: 0, out: execFileSync('python3', [SCRIPT, 'pic2.json', 'pic2.pdf'].concat(extra), { stdio: 'pipe' }).toString() }; } catch (err) { return { code: err.status, err: String(err.stderr), out: String(err.stdout) }; } };
+  const q1 = images => ({ questions: [{ type: 'tf', prompt: 'p', answer: { correct: true }, images }] });
+  const noFolder = run2(q1([picHash]), []), unknown = run2(q1(['b'.repeat(64)]), ['--images', 'pics']), junk = run2(q1(['abc']), ['--images', 'pics']), twice = run2(q1([picHash, picHash]), ['--images', 'pics']), notList = run2(q1(picHash), ['--images', 'pics']);
+  check('the script refuses an id with no --images folder, an id not in the folder, a made-up id, a repeated id and a non-list', [noFolder, unknown, junk, twice, notList].every(r => r.code === 1) && /not among the files/.test(noFolder.err) && /not among the files/.test(unknown.err) && /is not an image id/.test(junk.err) && /listed twice/.test(twice.err) && /must be a list/.test(notList.err), [noFolder, unknown, junk, twice, notList].map(r => r.err));
+  fs.writeFileSync('pics/broken.svg', '<svg><unclosed></svg>');
+  const brokenPic = run2(q1([]), ['--images', 'pics']);
+  check('a broken picture file in the folder stops the script with its name', brokenPic.code === 1 && /broken\.svg/.test(brokenPic.err), brokenPic);
 
   console.log('10. network and errors');
   check('zero network requests', requests.length === 0, requests);

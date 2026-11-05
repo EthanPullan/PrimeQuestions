@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """Turn a Prime Questions draft (JSON) into a bank PDF that the app can import.
 
-Usage:  python3 draft_to_bank_pdf.py questions.json [output.pdf]
+Usage:  python3 draft_to_bank_pdf.py questions.json [output.pdf] [--images FOLDER]
+
+--images FOLDER lets questions and stimuli use pictures. Put PNG, JPEG or SVG files in FOLDER; the script prints each file's
+image id (the SHA-256 of the file's bytes, 64 letters and digits) and a draft names a picture by listing that id in an "images"
+list. The pictures are stored as they are (not resized). Without --images a draft cannot use pictures.
 
 Only the Python standard library is used. The PDF has one cover page, and the real data
 embedded inside it as prime-questions.pq (that embedded file is all the app reads).
@@ -9,9 +13,12 @@ After importing, use "Export everything" in the app if you want a PDF with the q
 printed on its pages. The draft format is described in ai-instructions.md.
 Questions are added with the status "review": a person must check every answer.
 """
-import json, re, sys, uuid, zlib, datetime
+import base64, hashlib, json, os, re, sys, uuid, zlib, datetime
+import xml.etree.ElementTree as ET
 
-FORMAT, SCHEMA, APP = 'prime-questions', 8, '0.9.0'
+FORMAT, SCHEMA, APP = 'prime-questions', 9, '0.10.0'
+MAX_IMAGES = 6                      # per question or stimulus
+MAX_IMAGE_BYTES, MAX_SVG_BYTES = 25 * 1024 * 1024, 2 * 1024 * 1024
 TYPES = ['mc', 'tf', 'numeric', 'short', 'matching', 'multipart']
 PART_TYPES = TYPES[:-1]
 DRAFT_FORMAT = 'prime-questions-draft'
@@ -51,7 +58,48 @@ def load_text(text):
     raise DraftError(['This is not valid JSON. Return only the JSON, with straight quotes and no comments.'])
 
 
-def convert(d, now=None):
+def load_images(folder):
+    """The PNG, JPEG and SVG files in a folder -> ({image id: data URL}, [(image id, file name)]). The id is the SHA-256 of the bytes."""
+    images, listing, problems = {}, [], []
+    try:
+        names = sorted(os.listdir(folder))
+    except OSError as e:
+        raise DraftError(['Cannot read the images folder: %s' % e])
+    for name in names:
+        path = os.path.join(folder, name)
+        if not os.path.isfile(path) or not re.search(r'\.(png|jpe?g|svg)$', name, re.I):
+            continue
+        with open(path, 'rb') as f:
+            data = f.read()
+        if len(data) > MAX_IMAGE_BYTES:
+            problems.append('%s: bigger than 25 MB.' % name)
+        elif data[:4] == b'\x89PNG':
+            mime = 'image/png'
+        elif data[:3] == b'\xff\xd8\xff':
+            mime = 'image/jpeg'
+        else:
+            mime = 'image/svg+xml'
+            try:
+                if len(data) > MAX_SVG_BYTES:
+                    raise ValueError('an SVG can be up to 2 MB')
+                if not ET.fromstring(data).tag.endswith('svg'):
+                    raise ValueError('not an SVG')
+            except (ET.ParseError, ValueError) as e:
+                problems.append('%s: use a PNG, JPEG or SVG image (%s).' % (name, e))
+                continue
+        if len(data) > MAX_IMAGE_BYTES:
+            continue
+        h = hashlib.sha256(data).hexdigest()
+        images[h] = 'data:%s;base64,%s' % (mime, base64.b64encode(data).decode('ascii'))
+        listing.append((h, name))
+    if problems:
+        raise DraftError(problems)
+    return images, listing
+
+
+def convert(d, now=None, images=None):
+    """images: {image id: data URL} that a draft may name in an "images" list (see load_images); None means no pictures."""
+    images = images or {}
     now = now or datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.000Z')
     errors = []
 
@@ -168,6 +216,32 @@ def convert(d, now=None):
             return {'pairs': out}
         return None
 
+    used_images = {}
+
+    def image_refs(v, path):
+        """A draft names pictures by id. Only ids of files given with --images are accepted."""
+        if v is None:
+            return []
+        if not isinstance(v, list) or not all(isinstance(x, str) for x in v):
+            err(path, 'must be a list of image ids (text).')
+            return []
+        if len(v) > MAX_IMAGES:
+            err(path, 'can have at most %d images.' % MAX_IMAGES)
+            return []
+        out = []
+        for i, x in enumerate(v):
+            p, h = '%s[%d]' % (path, i + 1), x.strip().lower()
+            if not re.fullmatch(r'[0-9a-f]{64}', h):
+                err(p, '"%s" is not an image id. An image id is 64 letters and digits (0-9, a-f) taken from the list the script prints. Never make one up.' % x[:80])
+            elif h not in images:
+                err(p, 'is an image id that is not among the files in the --images folder.')
+            elif h in out:
+                err(p, 'is listed twice.')
+            else:
+                out.append(h)
+                used_images[h] = images[h]
+        return out
+
     bank_name = (text(d.get('bank'), 'bank', '', 200) or '').strip() or 'Imported questions'
     bank = {'id': str(uuid.uuid4()), 'name': bank_name, 'created': now, 'updated': now}
     stim_by_key, stimuli = {}, []
@@ -187,7 +261,7 @@ def convert(d, now=None):
         if not title:
             err(path + '.title', 'is required.')
         rec = {'id': str(uuid.uuid4()), 'bankId': bank['id'], 'title': title, 'text': text(s.get('text'), path + '.text', '').strip(),
-               'imageIds': [], 'table': table(s.get('table'), path + '.table'), 'created': now, 'updated': now}
+               'imageIds': image_refs(s.get('images'), path + '.images'), 'table': table(s.get('table'), path + '.table'), 'created': now, 'updated': now}
         if key:
             stim_by_key[key] = rec
         stimuli.append(rec)
@@ -270,7 +344,7 @@ def convert(d, now=None):
                 tags_clean.append(x)
         rec = {'id': str(uuid.uuid4()), 'bankId': bank['id'], 'type': typ, 'prompt': prompt,
                'course': text(q.get('course'), path + '.course', '', 200).strip(), 'unit': text(q.get('unit'), path + '.unit', '', 200).strip(),
-               'tags': tags_clean, 'level': level, 'status': 'review', 'stimulusId': stim_id, 'imageIds': [],
+               'tags': tags_clean, 'level': level, 'status': 'review', 'stimulusId': stim_id, 'imageIds': image_refs(q.get('images'), path + '.images'),
                'table': table(q.get('table'), path + '.table'), 'answer': ans, 'notes': text(q.get('notes'), path + '.notes', '', 5000).strip(),
                'created': now, 'updated': now}
         if typ == 'mc' and q.get('keepOrder') is True:
@@ -279,7 +353,7 @@ def convert(d, now=None):
     if errors:
         raise DraftError(errors)
     return {'format': FORMAT, 'schemaVersion': SCHEMA, 'appVersion': APP, 'requiredFeatures': [], 'exportedAt': now,
-            'banks': [bank], 'questions': questions, 'stimuli': stimuli, 'tests': [], 'images': {}}
+            'banks': [bank], 'questions': questions, 'stimuli': stimuli, 'tests': [], 'images': dict(sorted(used_images.items()))}
 
 
 def build_pdf(payload):
@@ -320,11 +394,27 @@ def main(argv):
     if len(argv) < 2 or argv[1] in ('-h', '--help'):
         print(__doc__)
         return 2
-    src = argv[1]
-    dst = argv[2] if len(argv) > 2 else re.sub(r'\.[^.]*$', '', src) + '-bank.pdf'
+    args, folder = argv[1:], None
+    if '--images' in args:
+        i = args.index('--images')
+        if i + 1 >= len(args):
+            print('--images needs a folder.', file=sys.stderr)
+            return 2
+        folder = args[i + 1]
+        del args[i:i + 2]
+    src = args[0]
+    dst = args[1] if len(args) > 1 else re.sub(r'\.[^.]*$', '', src) + '-bank.pdf'
     try:
+        images = {}
+        if folder is not None:
+            images, listing = load_images(folder)
+            print('Image ids in %s (use them in a draft\'s "images" lists):' % folder)
+            for h, name in listing:
+                print('  %s  %s' % (h, name))
+            if not listing:
+                print('  (no PNG, JPEG or SVG files found)')
         with open(src, encoding='utf-8') as f:
-            payload = convert(load_text(f.read()))
+            payload = convert(load_text(f.read()), images=images)
     except DraftError as e:
         print('Cannot make the bank file. Fix these and run again:', file=sys.stderr)
         for m in e.errors:
@@ -332,7 +422,7 @@ def main(argv):
         return 1
     with open(dst, 'wb') as f:
         f.write(build_pdf(payload))
-    print('Wrote %s: %d question(s). Import it in Prime Questions (Imports).' % (dst, len(payload['questions'])))
+    print('Wrote %s: %d question(s)%s. Import it in Prime Questions (Imports).' % (dst, len(payload['questions']), (', %d image(s)' % len(payload['images'])) if payload['images'] else ''))
     return 0
 
 

@@ -370,7 +370,7 @@ const MM = 72 / 25.4;
   fs.writeFileSync('area.pdf', Buffer.from(b64, 'base64'));
   fs.rmSync('area', { recursive: true, force: true }); fs.mkdirSync('area'); execFileSync('pdfdetach', ['-saveall', '-o', 'area', 'area.pdf']);
   const pa = JSON.parse(fs.readFileSync('area/prime-questions.pq', 'utf8')), ta = pa.tests.find(t => t.id === 'test2'), tOther = pa.tests.find(t => t.id === 'test1');
-  check('the exported file (read by poppler) carries answerArea "blank" on that assessment only, as schema 8', pa.schemaVersion === 8 && ta.answerArea === 'blank' && !('answerArea' in tOther), [pa.schemaVersion, ta.answerArea]);
+  check('the exported file (read by poppler) carries answerArea "blank" on that assessment only, as schema 9', pa.schemaVersion === 9 && ta.answerArea === 'blank' && !('answerArea' in tOther), [pa.schemaVersion, ta.answerArea]);
   const rtArea = await page.evaluate(async b => { const bin = atob(b), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); const raw = await PQ.readPdfPayload(u.buffer), r = PQ.parsePayload(raw); return { ok: r.ok, area: r.ok && r.payload.tests.find(t => t.id === 'test2').answerArea, same: r.ok && JSON.stringify(r.payload.tests.find(t => t.id === 'test2')) === JSON.stringify(raw.tests.find(t => t.id === 'test2')) }; }, b64);
   check('importing it validates and keeps answerArea exactly', rtArea.ok && rtArea.area === 'blank' && rtArea.same, rtArea);
 

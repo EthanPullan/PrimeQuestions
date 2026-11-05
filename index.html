@@ -826,8 +826,8 @@ document.addEventListener('DOMContentLoaded', () => {
 'use strict';
 
 /* === CONSTANTS === */
-const APP_VERSION = '0.9.0';
-const SCHEMA_VERSION = 8;
+const APP_VERSION = '0.10.0';
+const SCHEMA_VERSION = 9;
 const DB_VERSION = 3;                      // IndexedDB version (2 adds banks and test version history; 3 turns difficulty into a level)
 const FORMAT = 'prime-questions';
 const KNOWN_FEATURES = [];                 // payload.requiredFeatures entries this app understands
@@ -927,6 +927,47 @@ function blobToDataUrl(blob) {
   });
 }
 const IMAGE_URL_RE = /^data:image\/(png|jpeg|gif|webp|svg\+xml);base64,[A-Za-z0-9+/]*={0,2}$/;
+
+/* === IMAGE IDS (schema 9): an image's id is the SHA-256 of its bytes, as 64 lowercase hex characters === */
+// Same picture, same id: adding or importing a picture that is already stored never makes a second copy, and an id can be checked
+// against the bytes. Plain JavaScript and synchronous (not crypto.subtle), because the file migration below has to be synchronous.
+const IMAGE_HASH_RE = /^[0-9a-f]{64}$/;
+const SHA256_K = new Uint32Array([
+  0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+  0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+  0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+  0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2]);
+function sha256Hex(bytes) {
+  const H = new Uint32Array([0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]);
+  const n = bytes.length, total = ((n + 9 + 63) >> 6) << 6, buf = new Uint8Array(total);
+  buf.set(bytes); buf[n] = 0x80;
+  const dv = new DataView(buf.buffer);
+  dv.setUint32(total - 8, Math.floor(n / 0x20000000)); dv.setUint32(total - 4, (n << 3) >>> 0);   // length in bits, 64-bit big-endian
+  const w = new Uint32Array(64);
+  for (let off = 0; off < total; off += 64) {
+    for (let i = 0; i < 16; i++) w[i] = dv.getUint32(off + i * 4);
+    for (let i = 16; i < 64; i++) {
+      const x = w[i - 15], y = w[i - 2];
+      w[i] = w[i - 16] + (((x >>> 7) | (x << 25)) ^ ((x >>> 18) | (x << 14)) ^ (x >>> 3)) + w[i - 7] + (((y >>> 17) | (y << 15)) ^ ((y >>> 19) | (y << 13)) ^ (y >>> 10));
+    }
+    let a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], k = H[7];
+    for (let i = 0; i < 64; i++) {
+      const t1 = (k + (((e >>> 6) | (e << 26)) ^ ((e >>> 11) | (e << 21)) ^ ((e >>> 25) | (e << 7))) + ((e & f) ^ (~e & g)) + SHA256_K[i] + w[i]) | 0;
+      const t2 = ((((a >>> 2) | (a << 30)) ^ ((a >>> 13) | (a << 19)) ^ ((a >>> 22) | (a << 10))) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+      k = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+    }
+    H[0] += a; H[1] += b; H[2] += c; H[3] += d; H[4] += e; H[5] += f; H[6] += g; H[7] += k;
+  }
+  return Array.from(H, v => v.toString(16).padStart(8, '0')).join('');
+}
+// The id of an image blob (async: a Blob is read asynchronously) and of an image data URL (sync). Both hash the stored bytes.
+async function imageHash(blob) { return sha256Hex(new Uint8Array(await blob.arrayBuffer())); }
+function dataUrlHash(url) {
+  const bin = atob(url.slice(url.indexOf(',') + 1));
+  const u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return sha256Hex(u8);
+}
 
 /* === MATH CHECKING (pure, needs the temml global only when called) === */
 // Split text into plain and \( math \) parts; report unbalanced delimiters.
@@ -1338,7 +1379,20 @@ const MIGRATIONS = {
     if (lv !== undefined) r.level = lv;
     return r;
   }) : p.questions }),
-  7: p => Object.assign({}, p, { schemaVersion: 8 })      // schema 8 only adds optionLayout on tests and layout in questionOptions
+  7: p => Object.assign({}, p, { schemaVersion: 8 }),     // schema 8 only adds optionLayout on tests and layout in questionOptions
+  // schema 9: an image's id is the SHA-256 of its bytes. Older random ids are replaced by the hash in the images map and in every
+  // imageIds list, and two images with the same bytes become one. An entry that is not an image data URL is left alone for validation to refuse.
+  8: p => {
+    const imgs = p.images;
+    if (!imgs || typeof imgs !== 'object' || Array.isArray(imgs)) return Object.assign({}, p, { schemaVersion: 9 });
+    const rename = new Map(), images = Object.create(null);
+    for (const id of Object.keys(imgs)) {
+      const url = imgs[id], to = id !== '__proto__' && typeof url === 'string' && IMAGE_URL_RE.test(url) ? dataUrlHash(url) : id;
+      rename.set(id, to); images[to] = url;
+    }
+    const fix = r => (r && typeof r === 'object' && Array.isArray(r.imageIds) ? Object.assign({}, r, { imageIds: r.imageIds.map(x => (rename.has(x) ? rename.get(x) : x)) }) : r);
+    return Object.assign({}, p, { schemaVersion: 9, images, questions: Array.isArray(p.questions) ? p.questions.map(fix) : p.questions, stimuli: Array.isArray(p.stimuli) ? p.stimuli.map(fix) : p.stimuli });
+  }
 };
 
 function migrate(p, migrations, target) {
@@ -1461,6 +1515,7 @@ function parsePayload(p) {
   else for (const id of Object.keys(m.images)) {
     if (id === '__proto__' || id.length > 200) add('An image has an invalid id.');
     else if (!isStr(m.images[id]) || !IMAGE_URL_RE.test(m.images[id])) add('Image "' + id + '" is not a PNG, JPEG, GIF, WebP or SVG data URL.');
+    else if (id !== dataUrlHash(m.images[id])) add('Image "' + id.slice(0, 20) + '" does not match its own id (an image\'s id is the SHA-256 of its bytes).');
   }
   if (errors.length) return { ok: false, code: 'invalid', errors: errors.concat(['Nothing was imported.']) };
   return { ok: true, payload: m };
@@ -1484,7 +1539,7 @@ function planMerge(local, incoming) {
     }
     plan.collections[c] = res;
   }
-  // image ids are never reused and an image's content never changes, so an id we have is unchanged
+  // an image's id is the hash of its bytes, so an id we already have is the same picture
   for (const id of Object.keys(incoming.images)) {
     if (local.imageIds.has(id)) plan.images.existing++; else plan.images.new.push(id);
   }
@@ -1617,6 +1672,22 @@ function draftToPayload(input, opts) {
     return null;
   };
   // stimuli (optional): shared passages or data tables, referred to by a key
+  // "images": a list of image ids (SHA-256 hex) that are already in the library. A draft cannot carry a picture, only point at one.
+  const known = opts.imageIds || new Set();
+  const imageRefs = (v, path) => {
+    if (v === undefined || v === null) return [];
+    if (!Array.isArray(v) || !v.every(isStr)) { err(path, 'must be a list of image ids (text).'); return []; }
+    if (v.length > MAX_IMAGES) { err(path, 'can have at most ' + MAX_IMAGES + ' images.'); return []; }
+    const out = [];
+    v.forEach((x, i) => {
+      const id = x.trim().toLowerCase(), p = path + '[' + (i + 1) + ']';
+      if (!IMAGE_HASH_RE.test(id)) err(p, '"' + x.slice(0, 80) + '" is not an image id. An image id is 64 letters and digits (0-9, a-f) that the teacher copied from Prime Questions. Never make one up.');
+      else if (!known.has(id)) err(p, 'is an image id that is not in the library of this copy of Prime Questions. Add the picture to a question there first, or remove this id.');
+      else if (out.includes(id)) err(p, 'is listed twice.');
+      else out.push(id);
+    });
+    return out;
+  };
   const stimById = new Map(), stimuli = [];
   const bankName = str(d.bank, 'bank', '', 200).trim() || 'Imported questions';
   const local = (opts.banks || []).find(b => b && String(b.name).trim().toLowerCase() === bankName.toLowerCase());
@@ -1629,7 +1700,7 @@ function draftToPayload(input, opts) {
     if (!key) err(path + '.key', 'is required (a short name that questions use to point at this stimulus).');
     else if (stimById.has(key)) err(path + '.key', 'is used twice.');
     if (!title) err(path + '.title', 'is required.');
-    const rec = { id: uid(), bankId: bank.id, title, text: str(s.text, path + '.text', '').trim(), imageIds: [], table: table(s.table, path + '.table'), created: now, updated: now };
+    const rec = { id: uid(), bankId: bank.id, title, text: str(s.text, path + '.text', '').trim(), imageIds: imageRefs(s.images, path + '.images'), table: table(s.table, path + '.table'), created: now, updated: now };
     if (key) stimById.set(key, rec);
     stimuli.push(rec);
   });
@@ -1674,7 +1745,7 @@ function draftToPayload(input, opts) {
     if (!Array.isArray(tags) || !tags.every(isStr)) { err(path + '.tags', 'must be a list of text.'); tags = []; }
     const rec = {
       id: uid(), bankId: bank.id, type, prompt, course: str(q.course, path + '.course', '', 200).trim(), unit: str(q.unit, path + '.unit', '', 200).trim(),
-      tags: Array.from(new Set(tags.map(x => x.trim()).filter(Boolean))), level, status: 'review', stimulusId, imageIds: [], table: table(q.table, path + '.table'),
+      tags: Array.from(new Set(tags.map(x => x.trim()).filter(Boolean))), level, status: 'review', stimulusId, imageIds: imageRefs(q.images, path + '.images'), table: table(q.table, path + '.table'),
       answer: ans, notes: str(q.notes, path + '.notes', '', 5000).trim(), created: now, updated: now
     };
     if (type === 'mc' && q.keepOrder === true) rec.keepOrder = true;
@@ -2321,7 +2392,7 @@ const db = (() => {
     async del(store, id) { const d = await open(); const tx = d.transaction(store, 'readwrite'); tx.objectStore(store).delete(id); return finish(tx); },
     // One transaction, so an import, a save with images, or a delete that also edits other records is all-or-nothing.
     // b = { banks, questions, stimuli, tests, testVersions: [records to put], images: [{id, blob}],
-    //       deletes: { banks, questions, stimuli, tests, testVersions: [ids] } }
+    //       deletes: { banks, questions, stimuli, tests, testVersions, images: [ids] } }
     async applyBatch(b) {
       const d = await open();
       const tx = d.transaction(['banks', 'questions', 'stimuli', 'tests', 'testVersions', 'images'], 'readwrite');
@@ -2329,6 +2400,7 @@ const db = (() => {
         for (const r of (b[c] || [])) tx.objectStore(c).put(r);
         for (const id of ((b.deletes && b.deletes[c]) || [])) tx.objectStore(c).delete(id);
       }
+      for (const id of ((b.deletes && b.deletes.images) || [])) tx.objectStore('images').delete(id);
       for (const im of (b.images || [])) tx.objectStore('images').put(im.blob, im.id);
       return finish(tx);
     }
@@ -2479,6 +2551,21 @@ const effectivePaper = test => (test && PAPERS[test.paper] ? test.paper : paperP
 async function loadAll() {
   const [b, q, s, t, ids] = await Promise.all([db.getAll('banks'), db.getAll('questions'), db.getAll('stimuli'), db.getAll('tests'), db.getImageIds()]);
   state.banks = b; state.questions = q; state.stimuli = s; state.tests = t; state.imageIds = new Set(ids);
+}
+
+// Schema 9: an image's id is the SHA-256 of its bytes. Images stored by older versions have random ids, so on start they are
+// re-keyed once, with the questions and stimuli that use them, in ONE transaction (all or nothing; the records' `updated` dates are
+// kept so a file exported before the change still compares as "same"). It is not part of the IndexedDB upgrade because hashing waits
+// on a promise and an upgrade transaction would close first. Returns how many images were re-keyed.
+async function migrateLocalImages() {
+  const old = (await db.getImageIds()).filter(id => !IMAGE_HASH_RE.test(id));
+  if (!old.length) return 0;
+  const [imgs, questions, stimuli] = await Promise.all([db.getImages(), db.getAll('questions'), db.getAll('stimuli')]);
+  const rename = new Map(), blobs = new Map();
+  for (const im of imgs) if (!IMAGE_HASH_RE.test(im.id)) { const to = await imageHash(im.blob); rename.set(im.id, to); blobs.set(to, im.blob); }
+  const fix = list => list.filter(r => r.imageIds.some(id => rename.has(id))).map(r => Object.assign({}, r, { imageIds: r.imageIds.map(id => (rename.has(id) ? rename.get(id) : id)) }));
+  await db.applyBatch({ questions: fix(questions), stimuli: fix(stimuli), images: Array.from(blobs, ([id, blob]) => ({ id, blob })), deletes: { images: old } });
+  return old.length;
 }
 
 async function ensurePersist() {
@@ -3017,7 +3104,8 @@ function renderImageEditor(host, owner, pending, onChange) {
       if (owner.imageIds.length >= MAX_IMAGES) { toast('At most ' + MAX_IMAGES + ' images here.', 'warn'); break; }
       try {
         const blob = await processImageFile(f);
-        const id = uuid();
+        const id = await imageHash(blob);
+        if (owner.imageIds.includes(id)) { toast(f.name + ': that image is already here.', 'warn'); continue; }
         pending.set(id, blob);
         await ensureImageUrls([id], pending);
         owner.imageIds.push(id);
@@ -3028,7 +3116,10 @@ function renderImageEditor(host, owner, pending, onChange) {
   host.append(
     ids.length ? h('div', { class: 'thumbs' }, ids.map((id, i) => h('div', { class: 'thumb' },
       imgUrls.has(id) ? h('img', { src: imgUrls.get(id), alt: 'Image ' + (i + 1) }) : h('span', { class: 'hint' }, '(not found)'),
-      h('button', { class: 'xbtn', type: 'button', title: 'Remove image', 'aria-label': 'Remove image ' + (i + 1), onclick: () => { owner.imageIds.splice(i, 1); pending.delete(id); renderImageEditor(host, owner, pending, onChange); onChange(); } }, '×')))) : h('p', { class: 'hint' }, 'No images. PNG or JPEG (resized to fit about 1600 px) or SVG.'),
+      h('div', { style: 'display:flex;flex-direction:column;align-items:flex-end;gap:2px' },
+        h('button', { class: 'xbtn', type: 'button', title: 'Remove image', 'aria-label': 'Remove image ' + (i + 1), onclick: () => { owner.imageIds.splice(i, 1); pending.delete(id); renderImageEditor(host, owner, pending, onChange); onChange(); } }, '×'),
+        h('button', { class: 'xbtn copy-image-id', type: 'button', style: 'font-size:11px', title: 'Copy this image\'s id, to refer to it in questions written by an AI', 'aria-label': 'Copy id of image ' + (i + 1),
+          onclick: async () => { try { await navigator.clipboard.writeText(id); toast('Image id copied.', 'ok'); } catch (e) { toast('Could not copy. The id is ' + id, 'warn'); } } }, 'Copy ID'))))) : h('p', { class: 'hint' }, 'No images. PNG or JPEG (resized to fit about 1600 px) or SVG.'),
     h('div', { class: 'opt-row', style: 'margin-top:8px' }, h('button', { class: 'btn small', type: 'button', id: 'btn-add-image', disabled: ids.length >= MAX_IMAGES, onclick: () => file.click() }, '+ Add image'),
       h('span', { class: 'hint' }, plural(ids.length, 'image') + ' of ' + MAX_IMAGES)), file);
 }
@@ -4436,7 +4527,7 @@ async function importDraftText(text, name) {
   if (!j.ok) { await info('Could not read this text', j.error, 'Nothing was changed.'); return; }
   if (!(await guardDirty())) return;
   try { await loadAll(); } catch (e) { toast('Could not read your current bank: ' + (e && e.message || e), 'err'); return; }
-  const r = draftToPayload(j.value, { banks: state.banks });
+  const r = draftToPayload(j.value, { banks: state.banks, imageIds: state.imageIds });
   if (!r.ok) {
     const msgs = r.errors.join('\n');
     for (;;) {
@@ -4494,7 +4585,7 @@ async function importRaw(raw, name, note) {
 /* === PUBLIC (pure logic, for tests and debugging) === */
 window.PQ = {
   APP_VERSION, SCHEMA_VERSION, FORMAT, MIGRATIONS,
-  uuid, stable, splitMath, mathErrors, defaultAnswer, emptyQuestion, textFields, checkQuestion,
+  uuid, stable, sha256Hex, imageHash, dataUrlHash, IMAGE_HASH_RE, migrateLocalImages, splitMath, mathErrors, defaultAnswer, emptyQuestion, textFields, checkQuestion,
   migrate, parsePayload, planMerge, recordsToWrite, planIsNoop,
   asciiToTex, convertBackticksAt, buildPayload, draftToPayload, extractJson, importDraftText, defaultBank, DEFAULT_BANK_ID, TYPES, PART_TYPES, partLabel, newPart, answerLines,
   hashSeed, mulberry32, shuffled, newSeed, formBlocks, questionView, planTest, keyText, keyEntries,
@@ -4508,6 +4599,7 @@ window.PQ = {
   buildShell();
   let failed = null;
   try {
+    try { await migrateLocalImages(); } catch (e) { toast('Could not update your stored images to the new image ids (they still work): ' + (e && e.message || e), 'warn'); }
     await loadAll();
     if (navigator.storage && navigator.storage.persisted) state.persisted = await navigator.storage.persisted().catch(() => null);
   } catch (e) { failed = e; }

@@ -305,7 +305,7 @@ const MM = 72 / 25.4;
   const olB64 = await page.evaluate(async () => { const p = await PQ.collectPayload(); const r = await PQ.buildBankPdf(p, { renderBlockImage: PQ.renderBlockImage }); let s = ''; for (let i = 0; i < r.bytes.length; i += 32768) s += String.fromCharCode(...r.bytes.subarray(i, i + 32768)); return btoa(s); });
   fs.writeFileSync('ol.pdf', Buffer.from(olB64, 'base64')); fs.rmSync('olx', { recursive: true, force: true }); fs.mkdirSync('olx'); execFileSync('pdfdetach', ['-saveall', '-o', 'olx', 'ol.pdf']);
   const olp = JSON.parse(fs.readFileSync('olx/prime-questions.pq', 'utf8')), olt = olp.tests.find(t => t.id === 'oltest');
-  check('the bank file (read by poppler) carries optionLayout and the part\'s layout, as schema 8', olp.schemaVersion === 8 && olt.optionLayout === 'grid' && olt.questionOptions['ol4#1'].layout === 'vertical');
+  check('the bank file (read by poppler) carries optionLayout and the part\'s layout, as schema 8', olp.schemaVersion === 9 && olt.optionLayout === 'grid' && olt.questionOptions['ol4#1'].layout === 'vertical');
   check('and it imports back unchanged', await page.evaluate(async b => { const bin = atob(b), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); const raw = await PQ.readPdfPayload(u.buffer), r = PQ.parsePayload(raw); return r.ok && JSON.stringify(r.payload.tests.find(t => t.id === 'oltest')) === JSON.stringify(raw.tests.find(t => t.id === 'oltest')); }, olB64));
 
   console.log('8. network and errors');

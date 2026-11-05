@@ -6,7 +6,7 @@ or use the hosted copy at <https://ethanpullan.github.io/PrimeQuestions/>.
 
 There are no accounts and no server. Your questions are stored in your browser.
 
-## What it does today (v0.9.0)
+## What it does today (v0.10.0)
 
 The sidebar has four places, like Test Parrot: **Home**, **Assessments**,
 **Question Banks** and **Imports**.
@@ -23,7 +23,12 @@ The sidebar has four places, like Test Parrot: **Home**, **Assessments**,
   text box: `1/2` becomes a fraction when you type the closing backtick. LaTeX
   (`\(\frac{3}{4}\)`) and chemistry (`\(\ce{2H2 + O2 -> 2H2O}\)`) still work.
 - Tables (cells can hold maths) and images (PNG, JPEG or SVG; large photos are
-  resized to about 1600 px) on a question.
+  resized to about 1600 px) on a question. **Every image has an id: the SHA-256 of its
+  bytes.** The same picture is stored once however many questions use it, adding it twice
+  to one question keeps one copy, and importing a file never duplicates a picture you
+  already have. **Copy ID** under a picture copies its id. Pictures from earlier versions
+  (random ids) are renamed to hash ids the first time you open this version, and older
+  files are converted when imported.
 - **Stimuli**: a passage, data table or picture that several questions share.
 - **Levels 1 to 4**: every question has a level (four buttons in the editor, shown as
   “Level 3” in the lists; new questions start at 3). Search by text, type and status, and
@@ -91,9 +96,13 @@ The sidebar has four places, like Test Parrot: **Home**, **Assessments**,
   get right). On the **Imports** page paste it under “Questions written by an AI” (or
   drop a `.json` file). You see a summary first, and every question arrives marked
   “Needs review”, so you check each one before using it.
-- Images and graphs cannot come in this way; add them in the editor afterwards.
+- A draft cannot carry a picture, but it can point at one you already have: give the AI the
+  picture's id (**Copy ID** in the editor) and it lists it in the question's or stimulus's
+  `"images"`. An id that is not in your library is refused with a message naming it. Any
+  other picture is added in the editor afterwards.
 - For an AI that can run Python and a teacher who wants a PDF file,
   `tools/draft_to_bank_pdf.py` turns the same JSON into a bank PDF (standard library only).
+  With `--images FOLDER` it also takes PNG, JPEG and SVG files and prints their ids.
 
 **Backup**
 - **Export everything** (bottom of the sidebar) saves all banks, stimuli, images

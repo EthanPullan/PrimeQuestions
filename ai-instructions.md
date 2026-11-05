@@ -55,6 +55,7 @@ The top level is an object. Only `questions` is required.
   "notes": "Anything the teacher should know. Not printed on the assessment.",
   "stimulus": "s1",
   "table": { "headers": ["A", "B"], "rows": [["1", "2"]], "caption": "" },
+  "images": ["<an image id the teacher gave you>"],
   "keepOrder": true
 }
 ```
@@ -70,6 +71,7 @@ The top level is an object. Only `questions` is required.
 | `notes` | no | Marking guidance, source, or doubts. Not printed for students. |
 | `stimulus` | no | The `key` of an item in `stimuli`. |
 | `table` | no | A data table that belongs to this question (see "Tables"). |
+| `images` | no | Pictures already in the teacher's Prime Questions, named by **image id** (see "Pictures"). Leave it out unless the teacher gave you ids. |
 | `keepOrder` | no | Only for `mc`. `true` stops the options being shuffled on Version B. **Set it to `true` whenever an option says "All of the above", "None of the above", "Both A and B" or otherwise refers to other options.** |
 
 ## Choosing a type
@@ -177,7 +179,7 @@ put it in `stimuli` once and point to it from each question. Do not copy it into
 ```
 
 - `key`: a short name you invent (`s1`, `s2`...). Each key is used once.
-- `title`: required, so the teacher can find it. `text` and `table` are optional.
+- `title`: required, so the teacher can find it. `text`, `table` and `images` (see "Pictures") are optional.
 - Questions that share a stimulus are printed together under it.
 
 ## Tables
@@ -186,11 +188,23 @@ A table is `{ "headers": [...], "rows": [[...], ...], "caption": "" }`. Every ro
 (at most 8 columns and 40 rows). All cells are text (write numbers in quotes). Maths in a cell uses `\\( \\)` like any other text.
 Use a table only for real rows and columns of data, never to lay out a question.
 
+## Pictures
+
+A draft cannot contain a picture, only point at one that is already stored in the teacher's Prime Questions. Every picture there has an
+**image id**: 64 letters and digits (`0-9`, `a-f`), the SHA-256 of the picture's bytes. The same picture always has the same id. The teacher
+copies it with the **Copy ID** button under the picture in the question or stimulus editor and gives it to you.
+
+- Put the ids in an `"images"` list on the question or the stimulus that shows the picture, for example
+  `"images": ["3b4c...64 characters in all...e9f1"]`. At most 6 per question or stimulus, none twice.
+- **Only use an id the teacher gave you, exactly as given. Never invent, guess or shorten one.** If an id is not in the teacher's
+  Prime Questions the whole import is refused and the message names it.
+- If you are an AI that runs the Python script (see the end of this file) with `--images FOLDER`, the script prints the id of each picture file in the folder.
+
 ## What you cannot do
 
-- **Images and graphs cannot be imported this way.** If a question depends on a picture or graph, still include the question, describe
-  what is needed in `notes` (for example `"Needs the diagram of the circuit from page 2."`), and tell the teacher in your closing sentence.
-  The teacher adds the image afterwards in Prime Questions.
+- **You cannot create or upload pictures or graphs.** If a question depends on a picture or graph and the teacher gave you no image id for it,
+  still include the question, describe what is needed in `notes` (for example `"Needs the diagram of the circuit from page 2."`), and
+  tell the teacher in your closing sentence. The teacher adds the image afterwards in Prime Questions.
 - There are no marks or points. Every question counts as one. Do not add a `points` field.
 - Do not add any field that is not listed here. Unknown fields are ignored.
 
@@ -202,6 +216,7 @@ Use a table only for real rows and columns of data, never to lay out a question.
 - Every `numeric` `value` is text. Every `short` has a `rubric`.
 - Every backslash in LaTeX is doubled, every `\\(` has its `\\)`, and no `$` is used for maths.
 - Every table row has as many cells as there are headers. Every `stimulus` names an existing `key`.
+- Every id in an `images` list was given to you by the teacher, copied exactly.
 - Anything you solved or guessed is said so in `notes`.
 
 ## Complete example
@@ -290,3 +305,7 @@ Importing the same JSON twice adds the questions twice (each import makes new qu
 If you are an AI that can run Python and the teacher specifically wants a PDF file: save the JSON as `questions.json`, download
 <https://ethanpullan.github.io/PrimeQuestions/tools/draft_to_bank_pdf.py> and run `python3 draft_to_bank_pdf.py questions.json`.
 It writes a bank PDF that Prime Questions imports. It needs only Python 3, no extra packages. The JSON route above is simpler and works everywhere, so prefer it.
+
+To use pictures with the script, put the PNG, JPEG or SVG files in a folder and add `--images FOLDER`:
+`python3 draft_to_bank_pdf.py questions.json --images pictures`. The script prints each file's image id; list those ids in the draft's `"images"`
+lists. The pictures are stored in the PDF exactly as they are (they are not resized). A question that names an id that is not in the folder is refused.
