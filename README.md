@@ -6,7 +6,7 @@ or use the hosted copy at <https://ethanpullan.github.io/PrimeQuestions/>.
 
 There are no accounts and no server. Your questions are stored in your browser.
 
-## What it does today (v0.8.0)
+## What it does today (v0.9.0)
 
 The sidebar has four places, like Test Parrot: **Home**, **Assessments**,
 **Question Banks** and **Imports**.
@@ -63,6 +63,13 @@ The sidebar has four places, like Test Parrot: **Home**, **Assessments**,
   the letter or T/F), **Classic** (a blank before each multiple-choice and
   true/false number, ruled lines for written answers) or **Condensed** (tighter
   spacing, short options across the page, closer-ruled lines to save paper).
+- **Option layout** (also in the Format menu) sets how multiple-choice options sit on the
+  paper, for the whole assessment: **Automatic** (the Questions style decides, as before),
+  **Vertical** (one under another), **One line** (A B C D side by side) or **2×2 grid** (A B
+  over C D). Two options or ten, they never get squeezed: if a question's options are too long
+  for the layout, that question falls back (one line to 2×2 grid to vertical) and the rest keep
+  your choice. Right-click a multiple-choice question (or one part of a multipart question) to
+  give just that one its own layout.
 - **Answer area** (also in the Format menu) sets, for the whole assessment, what numeric
   and short-answer questions (and those parts of a multipart question) print: **Lines**
   (the usual “Answer:” line or ruled lines) or **Blank space** (empty space, no label or

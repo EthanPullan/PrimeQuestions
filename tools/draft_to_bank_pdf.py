@@ -11,7 +11,7 @@ Questions are added with the status "review": a person must check every answer.
 """
 import json, re, sys, uuid, zlib, datetime
 
-FORMAT, SCHEMA, APP = 'prime-questions', 7, '0.8.0'
+FORMAT, SCHEMA, APP = 'prime-questions', 8, '0.9.0'
 TYPES = ['mc', 'tf', 'numeric', 'short', 'matching', 'multipart']
 PART_TYPES = TYPES[:-1]
 DRAFT_FORMAT = 'prime-questions-draft'

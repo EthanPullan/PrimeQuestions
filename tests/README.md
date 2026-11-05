@@ -59,7 +59,9 @@ checks were written for the Phase 2 interface and now drive the Phase 3 one.
   does to the printed paper, measured with poppler: margins move the text, heading and
   text sizes scale, Classic and Condensed layouts, an untouched test printing exactly
   as before, plain black only, and a property test that no question or stimulus group
-  splits across pages in any style, size and paper.
+  splits across pages in any style, size and paper. Also the option layout (vertical, one
+  line, 2×2 grid): fallbacks, per-question and per-part overrides, Version B, print positions
+  measured with poppler, save/reload and the bank file.
 
 - `ai.js`: `ai-instructions.md` and the JSON draft import. It extracts the example from
   the document and imports it for real (pasted, as a file, dropped, and through
@@ -80,7 +82,7 @@ checks were written for the Phase 2 interface and now drive the Phase 3 one.
   pages. Stored field names and the `tests/` folder are not visible text and are not checked.
 
 `fixtures/bank-schema1-v0.1.0.pdf` (app v0.1.0), `fixtures/bank-schema2-v0.2.0.pdf`
-(app v0.2.0) and `fixtures/bank-schema3-v0.3.0.pdf` (app v0.3.0) and `fixtures/bank-schema4-v0.5.0.pdf` (app v0.5.0) and `fixtures/bank-schema5-v0.6.1.pdf` (app v0.6.1) and `fixtures/bank-schema6-v0.7.0.pdf` (app v0.7.0) were produced by those versions before the schema moved on. Do not
+(app v0.2.0) and `fixtures/bank-schema3-v0.3.0.pdf` (app v0.3.0) and `fixtures/bank-schema4-v0.5.0.pdf` (app v0.5.0) and `fixtures/bank-schema5-v0.6.1.pdf` (app v0.6.1) and `fixtures/bank-schema6-v0.7.0.pdf` (app v0.7.0) and `fixtures/bank-schema7-v0.8.0.pdf` (app v0.8.0) were produced by those versions before the schema moved on. Do not
 regenerate them with a newer app: their job is to be old files.
 
 These run in headless Chromium only. Firefox, Safari and iPad are not covered.

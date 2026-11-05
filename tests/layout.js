@@ -301,7 +301,7 @@ const MM = 72 / 25.4;
   await page.click('#nav-tests'); await page.locator('.card-tile .ct-main', { hasText: 'Area Test' }).click(); await page.waitForSelector('#sheet-preview .tp-q');
   const blankCount = t => q(t).locator('.tp-blankarea').count();
   await page.click('#menu-format');
-  check('Format lists Answer area (after Questions) with its current value, Lines', /Answer area/.test(await page.locator('#mi-answerarea').innerText()) && /Lines/.test(await page.locator('#mi-answerarea').innerText()) && (await page.locator('.menu > .menu-item').allInnerTexts()).findIndex(x => /^Answer area/.test(x)) === 5);
+  check('Format lists Answer area (after Questions and Option layout) with its current value, Lines', /Answer area/.test(await page.locator('#mi-answerarea').innerText()) && /Lines/.test(await page.locator('#mi-answerarea').innerText()) && (await page.locator('.menu > .menu-item').allInnerTexts()).findIndex(x => /^Answer area/.test(x)) === 6);
   await page.click('#mi-answerarea');
   check('it offers Lines (checked) and Blank space', (await page.locator('#mi-answerarea-lines .menu-check').innerText()) === '✓' && (await page.locator('#mi-answerarea-blank .menu-check').innerText()) === '');
   await page.click('#mi-answerarea-lines');
@@ -370,7 +370,7 @@ const MM = 72 / 25.4;
   fs.writeFileSync('area.pdf', Buffer.from(b64, 'base64'));
   fs.rmSync('area', { recursive: true, force: true }); fs.mkdirSync('area'); execFileSync('pdfdetach', ['-saveall', '-o', 'area', 'area.pdf']);
   const pa = JSON.parse(fs.readFileSync('area/prime-questions.pq', 'utf8')), ta = pa.tests.find(t => t.id === 'test2'), tOther = pa.tests.find(t => t.id === 'test1');
-  check('the exported file (read by poppler) carries answerArea "blank" on that assessment only, as schema 6', pa.schemaVersion === 7 && ta.answerArea === 'blank' && !('answerArea' in tOther), [pa.schemaVersion, ta.answerArea]);
+  check('the exported file (read by poppler) carries answerArea "blank" on that assessment only, as schema 8', pa.schemaVersion === 8 && ta.answerArea === 'blank' && !('answerArea' in tOther), [pa.schemaVersion, ta.answerArea]);
   const rtArea = await page.evaluate(async b => { const bin = atob(b), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); const raw = await PQ.readPdfPayload(u.buffer), r = PQ.parsePayload(raw); return { ok: r.ok, area: r.ok && r.payload.tests.find(t => t.id === 'test2').answerArea, same: r.ok && JSON.stringify(r.payload.tests.find(t => t.id === 'test2')) === JSON.stringify(raw.tests.find(t => t.id === 'test2')) }; }, b64);
   check('importing it validates and keeps answerArea exactly', rtArea.ok && rtArea.area === 'blank' && rtArea.same, rtArea);
 
